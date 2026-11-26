@@ -123,11 +123,12 @@ window.SCTCC = window.SCTCC || {};
       return { ok: true, summary: result.summary, warnings: result.warnings || [] };
     },
 
+    /* The course meeting days (Credits, modality, and dates), which the calendar follows. */
     setMeetingDays(op) {
       const days = (Array.isArray(op.days) ? op.days : []).filter((day) => SCTCC.calendar.DAY_NAMES.includes(day));
-      const calendar = data().calendar;
-      calendar.meetingDays = days.slice();
-      calendar.meetingsPerWeek = Math.min(4, days.length);
+      const pattern = data().course.meetingPattern;
+      pattern.days = days.slice();
+      pattern.meetingsPerWeek = days.length;
       return { ok: true };
     },
 
@@ -136,16 +137,6 @@ window.SCTCC = window.SCTCC || {};
       if (op.key === "mode") calendar.mode = op.value === "weekly" ? "weekly" : "meetings";
       else if (op.key === "includeFinalsWeek" || op.key === "showExcludedAsRows") calendar[op.key] = Boolean(op.value);
       else return { ok: false, message: "That setting cannot be changed here." };
-      return { ok: true };
-    },
-
-    copyCourseDays() {
-      const syllabus = data();
-      const days = syllabus.course.meetingPattern.days || [];
-      if (!days.length) return { ok: false, message: "Choose the meeting days under Credits, modality, and dates in the builder first." };
-      syllabus.calendar.meetingDays = days.slice();
-      syllabus.calendar.meetingsPerWeek = Math.min(4, days.length);
-      if (syllabus.course.modality === "online") syllabus.calendar.mode = "weekly";
       return { ok: true };
     },
 
@@ -287,7 +278,7 @@ window.SCTCC = window.SCTCC || {};
     const result = handler(op) || { ok: true };
     if (op.op !== "readSyllabusFile" && result.ok !== false) {
       app.dataChanged();
-      if (op.op === "setMeeting" || op.op === "shiftDates") {
+      if (op.op === "setMeeting" || op.op === "shiftDates" || op.op === "setMeetingDays") {
         if (SCTCC.editor && SCTCC.editor.populate) SCTCC.editor.populate(); /* course fields changed too */
       } else if (SCTCC.editor && SCTCC.editor.refreshCalendar) {
         SCTCC.editor.refreshCalendar();

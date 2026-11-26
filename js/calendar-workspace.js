@@ -192,23 +192,19 @@
       region.appendChild(el("div", { class: "field" }, el("label", { for: "set-mode" }, "Calendar layout"), mode));
 
       if (!weekly) {
+        const courseDays = snap.course.meetingDays || [];
         const days = el("fieldset", { class: "field ws-days" }, el("legend", null, "Meeting days"),
           DAYS.map((day, index) => {
             const id = `set-day-${index}`;
-            const input = el("input", { type: "checkbox", id, value: day, "data-focus-key": id, checked: (calendar.meetingDays || []).includes(day) || null });
+            const input = el("input", { type: "checkbox", id, value: day, "data-focus-key": id, checked: courseDays.includes(day) || null });
             input.addEventListener("change", () => {
               const chosen = Array.from(region.querySelectorAll(".ws-days input:checked")).map((box) => box.value);
               send({ op: "setMeetingDays", days: chosen });
             });
             return el("span", { class: "ws-day" }, input, el("label", { for: id }, SHORT_DAYS[index]));
           }));
+        days.appendChild(el("p", { class: "ws-hint" }, "The course meeting days, the same as under Credits, modality, and dates. Changing them here changes them there."));
         region.appendChild(days);
-        const courseDays = snap.course.meetingDays || [];
-        if (courseDays.length && courseDays.join() !== (calendar.meetingDays || []).join()) {
-          const copy = el("button", { type: "button", class: "btn btn-small", "data-focus-key": "copy-days" }, `Use the course meeting days (${courseDays.map((day) => day.slice(0, 3)).join(", ")})`);
-          copy.addEventListener("click", () => report(send({ op: "copyCourseDays" }), "Copied the course meeting days."));
-          region.appendChild(copy);
-        }
       }
 
       region.appendChild(el("div", { class: "field" },
