@@ -116,6 +116,7 @@ window.SCTCC = window.SCTCC || {};
       },
       grading: {
         calculationMethod: "points",   /* "points" | "weighted" */
+        weightOverride: false,         /* instructor confirms weights that do not total 100% */
         intro: "",
         categories: [],
         scale: createDefaultGradingScale(),

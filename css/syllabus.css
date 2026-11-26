@@ -147,6 +147,10 @@ main:focus {
   top: 1rem;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .visually-hidden {
   position: absolute !important;
   width: 1px;
@@ -793,6 +797,57 @@ body[data-mode="instructor"] .student-only {
 
 .compact-table {
   font-size: 0.85rem;
+}
+
+/* ---------- Grading editor ---------- */
+
+#editor-grading[data-method="points"] .weighted-only,
+#editor-grading[data-method="weighted"] .points-only {
+  display: none !important;
+}
+
+.editor-subheading {
+  font-size: 1.05rem;
+  margin: 1.5rem 0 0.25rem;
+  color: var(--sctcc-primary);
+}
+
+.category-row,
+.scale-row {
+  background: var(--sctcc-muted);
+}
+
+.field-row-3 > .field {
+  flex: 1 1 6rem;
+}
+
+.row-total {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.row-total output {
+  font-weight: 700;
+}
+
+.grading-summary {
+  margin: 0.5rem 0;
+}
+
+.grading-total {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin: 0.5rem 0;
+}
+
+.grading-summary .notice p,
+.grading-summary .notice ul {
+  margin: 0.2rem 0;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* ---------- Instructor-written blocks inside college sections ---------- */

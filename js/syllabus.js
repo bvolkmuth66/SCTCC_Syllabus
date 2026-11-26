@@ -420,13 +420,10 @@
 
   /* ---------- Grading ---------- */
 
-  function categoryTotal(category) {
-    return (Number(category.count) || 0) * (Number(category.pointsEach) || 0);
-  }
+  const grading = SCTCC.grading;
 
   function formatPercent(value) {
-    const rounded = Math.round(value * 10) / 10;
-    return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}%`;
+    return `${grading.formatNumber(value)}%`;
   }
 
   function tableWrap(label, table) {
@@ -438,30 +435,39 @@
       category.notes ? el("span", { class: "row-note" }, category.notes) : null);
   }
 
-  function gradingTable() {
-    const grading = state.data.grading;
-    const categories = grading.categories || [];
-    if (!categories.length) return el("p", null, missing("Assessment categories (grading editor arrives in Phase 3)"));
+  /* Instructor-only list of grading problems, shown under the tables in the preview. */
+  function gradingNotice(errors, warnings) {
+    if (!errors.length && !warnings.length) return null;
+    return el("div", { class: `notice ${errors.length ? "notice-error" : "notice-warning"} instructor-only` },
+      el("p", null, el("strong", null, errors.length ? "Grading problems to fix before printing:" : "Grading items to check:")),
+      el("ul", null, [...errors, ...warnings].map((message) => el("li", null, message))));
+  }
 
-    if (grading.calculationMethod === "weighted") {
-      const totalWeight = categories.reduce((sum, category) => sum + (Number(category.weight) || 0), 0);
+  function gradingTable() {
+    const data = state.data.grading;
+    const categories = data.categories || [];
+    if (!categories.length) return el("p", null, missing("Assessment categories"));
+
+    if (data.calculationMethod === "weighted") {
+      const showCount = categories.some((category) => Number(category.count) > 0);
+      const totalWeight = grading.weightTotal(categories);
       return tableWrap("Assessments table", el("table", { class: "data-table" },
         el("caption", null, "Assessments and percentage of final grade"),
         el("thead", null, el("tr", null,
           el("th", { scope: "col" }, "Assessment"),
-          el("th", { scope: "col", class: "num" }, "Number"),
+          showCount ? el("th", { scope: "col", class: "num" }, "Number") : null,
           el("th", { scope: "col", class: "num" }, "Percent of grade"))),
         el("tbody", null, categories.map((category) => el("tr", null,
           categoryHeader(category),
-          el("td", { class: "num" }, category.count ? String(category.count) : "—"),
+          showCount ? el("td", { class: "num" }, Number(category.count) > 0 ? String(category.count) : "—") : null,
           el("td", { class: "num" }, formatPercent(Number(category.weight) || 0))))),
         el("tfoot", null, el("tr", null,
           el("th", { scope: "row" }, "Total"),
-          el("td", { class: "num" }, ""),
+          showCount ? el("td", { class: "num" }, "") : null,
           el("td", { class: "num" }, formatPercent(totalWeight))))));
     }
 
-    const courseTotal = categories.reduce((sum, category) => sum + categoryTotal(category), 0);
+    const courseTotal = grading.pointsTotal(categories);
     return tableWrap("Assessments table", el("table", { class: "data-table" },
       el("caption", null, "Assessments, points, and percentage of final grade"),
       el("thead", null, el("tr", null,
@@ -471,54 +477,54 @@
         el("th", { scope: "col", class: "num" }, "Total points"),
         el("th", { scope: "col", class: "num" }, "Percent of grade"))),
       el("tbody", null, categories.map((category) => {
-        const total = categoryTotal(category);
+        const total = grading.categoryTotal(category);
         return el("tr", null,
           categoryHeader(category),
-          el("td", { class: "num" }, String(Number(category.count) || 0)),
-          el("td", { class: "num" }, String(Number(category.pointsEach) || 0)),
-          el("td", { class: "num" }, String(total)),
+          el("td", { class: "num" }, grading.formatNumber(Number(category.count) || 0)),
+          el("td", { class: "num" }, grading.formatNumber(Number(category.pointsEach) || 0)),
+          el("td", { class: "num" }, grading.formatNumber(total)),
           el("td", { class: "num" }, courseTotal ? formatPercent((total / courseTotal) * 100) : "—"));
       })),
       el("tfoot", null, el("tr", null,
         el("th", { scope: "row" }, "Total Points & Percentage"),
         el("td", { class: "num" }, ""),
         el("td", { class: "num" }, ""),
-        el("td", { class: "num" }, String(courseTotal)),
+        el("td", { class: "num" }, grading.formatNumber(courseTotal)),
         el("td", { class: "num" }, courseTotal ? "100%" : "—")))));
   }
 
   function gradingScaleTable() {
-    const grading = state.data.grading;
-    const scale = [...(grading.scale || [])].sort((a, b) => (Number(b.minPercent) || 0) - (Number(a.minPercent) || 0));
+    const data = state.data.grading;
+    const scale = data.scale || [];
     if (!scale.length) return el("p", null, missing("Grading scale"));
 
-    const showPoints = grading.calculationMethod === "points";
-    const courseTotal = showPoints
-      ? (grading.categories || []).reduce((sum, category) => sum + categoryTotal(category), 0)
-      : 0;
-    const minPoints = scale.map((row) => Math.ceil((courseTotal * (Number(row.minPercent) || 0)) / 100));
+    const courseTotal = data.calculationMethod === "points" ? grading.pointsTotal(data.categories) : 0;
+    const ranges = grading.pointRanges(scale, courseTotal);
+    const showPoints = ranges.size > 0;
 
     return tableWrap("Grading scale table", el("table", { class: "data-table grading-scale" },
       el("caption", null, "Grading scale"),
       el("thead", null, el("tr", null,
         el("th", { scope: "col" }, "Grade"),
         el("th", { scope: "col", class: "num" }, "Percentage"),
-        showPoints && courseTotal ? el("th", { scope: "col", class: "num" }, "Points") : null)),
-      el("tbody", null, scale.map((row, index) => {
-        const highPoints = index === 0 ? courseTotal : minPoints[index - 1] - 1;
+        showPoints ? el("th", { scope: "col", class: "num" }, "Points") : null)),
+      el("tbody", null, grading.sortedScale(scale).map(({ row, index }) => {
+        const range = ranges.get(index);
         return el("tr", null,
-          el("th", { scope: "row" }, row.label || missing("Grade label")),
-          el("td", { class: "num" }, `${row.minPercent}–${row.maxPercent}%`),
-          showPoints && courseTotal ? el("td", { class: "num" }, `${minPoints[index]}–${highPoints}`) : null);
+          el("th", { scope: "row" }, String(row.label || "").trim() || missing("Grade label")),
+          el("td", { class: "num" }, `${grading.formatNumber(Number(row.minPercent) || 0)}–${grading.formatNumber(Number(row.maxPercent) || 0)}%`),
+          showPoints ? el("td", { class: "num" }, range ? `${range.min}–${range.max}` : "—") : null);
       }))));
   }
 
   function renderGrading() {
-    const grading = state.data.grading;
-    const narrative = grading.gradesNarrative || {};
+    const data = state.data.grading;
+    const narrative = data.gradesNarrative || {};
+    const check = grading.checkGrading(data);
     return majorSection("grading", "Grading", [
-      subsection("Assignments & Points", [textBlocks(grading.intro), gradingTable()]),
+      subsection("Assignments & Points", [textBlocks(data.intro), gradingTable()]),
       subsection("Grading Scale", gradingScaleTable()),
+      gradingNotice(check.errors, check.warnings),
       subsection("Grades", [
         textBlocks(narrative.postedWhere, "Where grades are posted"),
         textBlocks(narrative.turnaround, "Grading turnaround"),
@@ -526,7 +532,7 @@
         textBlocks(narrative.additional)
       ]),
       isOptionalEnabled("timeCommitment")
-        ? subsection("Time Commitment", textBlocks(grading.timeCommitment, "Time commitment"))
+        ? subsection("Time Commitment", textBlocks(data.timeCommitment, "Time commitment"))
         : null
     ]);
   }
@@ -749,8 +755,20 @@
     setMode(snapshot.mode);
   }
 
-  /* Phase 2 print: student view + suggested file name. Validation is added in Phase 5. */
+  /*
+   * Print to PDF button. Phase 3 checks grading before printing; Phase 5 adds
+   * the full pre-print validation. The browser's own Print command cannot be
+   * stopped, but the problems remain listed in the editor and preview.
+   */
   function printToPdf() {
+    if (state.renderTimer) render();
+    const check = SCTCC.grading.checkGrading(state.data.grading);
+    if (check.errors.length) {
+      setMode("instructor");
+      SCTCC.editor.showGradingProblems(check.errors);
+      announce(`Not printed. ${check.errors.length} grading problem(s) need fixing first.`);
+      return;
+    }
     enterPrintMode();
     window.print();
   }
