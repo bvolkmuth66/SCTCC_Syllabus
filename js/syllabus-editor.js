@@ -366,7 +366,7 @@ window.SCTCC = window.SCTCC || {};
         })
       ]),
       fieldset("Program Diversity Statement", [
-        note("The college Statement of Diversity is always included. Add your program’s own statement here if it has one; it appears right after the college statement."),
+        note("The College Diversity Statement is always included. Add your program’s own statement here if it has one; it appears right after the college statement."),
         toggle("programDiversity", "Include a Program Diversity Statement"),
         field("textarea", "policies.programDiversity", "Program Diversity Statement", { rows: 5 })
       ]),

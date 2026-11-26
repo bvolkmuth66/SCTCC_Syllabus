@@ -245,7 +245,7 @@ window.SCTCC = window.SCTCC || {};
     "pulse-app": "Pulse App for D2L",
     "student-services": "Student Services & Academic Support",
     "accessibility-data-privacy": "Accessibility & Data Privacy Policies",
-    "diversity-statement": "Statement of Diversity"
+    "diversity-statement": "College Diversity Statement"
   };
 
   /* Wording that belongs to college content even when it sits in an instructor section. */
@@ -811,7 +811,7 @@ window.SCTCC = window.SCTCC || {};
       }, {
         checked: Boolean(programText),
         note: programText
-          ? "Shown right after the college Statement of Diversity."
+          ? "Shown right after the College Diversity Statement."
           : "This was in your old diversity statement but is not the college wording. The college statement is always included; keep this only if it is your program’s own statement."
       });
     }
