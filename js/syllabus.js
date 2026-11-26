@@ -759,7 +759,8 @@
       config.institutionName,
       `${courseIdentifier() || "Course"}${course.title.trim() ? `: ${course.title.trim()}` : ""} Syllabus`,
       [course.term, course.year].map((part) => String(part || "").trim()).filter(Boolean).join(" "),
-      `Version ${state.data.meta.syllabusVersion.trim() || "1.0"}`
+      `Version ${state.data.meta.syllabusVersion.trim() || "1.0"}`,
+      state.data.meta.lastRevised ? `Revised ${util.formatDate(state.data.meta.lastRevised, "short")}` : ""
     ].filter(Boolean);
     style.textContent = `@media print { @page { @bottom-left { content: ${cssString(parts.join(" · "))}; } } }`;
   }
@@ -943,7 +944,7 @@
     return term ? `${name}, ${term}` : name;
   }
 
-  /* Runs for the Print to PDF button and for the browser's own Print command. */
+  /* Runs for the Save as PDF button and for the browser's own Print command. */
   function enterPrintMode() {
     if (state.printSnapshot) return;
     if (state.renderTimer) render();
@@ -972,7 +973,7 @@
   }
 
   /*
-   * Print to PDF button: check first, then guide the instructor through saving.
+   * Save as PDF button: check first, then guide the instructor through saving.
    * Problems that must be fixed stop printing. The browser's own Print command
    * cannot be stopped, but the same problems are shown in the editor.
    */

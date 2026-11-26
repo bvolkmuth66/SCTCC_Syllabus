@@ -199,9 +199,9 @@ window.SCTCC = window.SCTCC || {};
       el("p", { id: "file-status", class: "save-status", role: "status" }, "New syllabus — not saved yet."),
       el("div", { id: "data-messages", class: "data-messages", "aria-live": "polite" }),
       el("div", { class: "button-row" },
-        actionButton("save", "Save", "btn-primary", { "aria-keyshortcuts": "Control+S Meta+S" }),
+        actionButton("save", "Save syllabus", "btn-primary", { "aria-keyshortcuts": "Control+S Meta+S" }),
         actionButton("save-as", "Save as…"),
-        actionButton("open", "Open…")),
+        actionButton("open", "Open a saved syllabus")),
       el("div", { class: "button-row" },
         actionButton("import-docx", "Import a previous syllabus…"),
         actionButton("start-over", "Start over…"),
@@ -217,7 +217,7 @@ window.SCTCC = window.SCTCC || {};
 
   function checkGroup() {
     return group("editor-check", "Check before printing", [
-      note("Print to PDF runs these checks automatically. You can also check at any time."),
+      note("Save as PDF runs these checks automatically. You can also check at any time."),
       el("div", { class: "button-row" }, actionButton("run-check", "Check my syllabus", "btn-primary", { id: "run-check" })),
       el("div", { id: "check-results", "aria-live": "polite" })
     ], true);
@@ -232,11 +232,48 @@ window.SCTCC = window.SCTCC || {};
       field("text", "course.title", "Course title"),
       el("div", { class: "field-row" },
         field("select", "course.term", "Term", { choices: TERMS, narrow: true }),
-        field("text", "course.year", "Year", { narrow: true, inputmode: "numeric" })),
+        field("select", "course.year", "Year", { choices: yearChoices(""), narrow: true })),
       el("div", { class: "field-row" },
         field("text", "meta.syllabusVersion", "Syllabus version", { hint: "Shown in the PDF footer", narrow: true }),
-        field("date", "meta.lastRevised", "Last revised", { narrow: true, optionalLabel: true }))
+        lastRevisedField())
     ], true);
+  }
+
+  /*
+   * Year choices: this year and the next two, worked out from the computer's date each
+   * time the form is filled or the list is opened, so they move forward on January 1.
+   * A year already in the syllabus (for example last year's) stays as a choice.
+   */
+  function yearChoices(savedYear) {
+    const thisYear = new Date().getFullYear();
+    const years = [thisYear, thisYear + 1, thisYear + 2].map(String);
+    const saved = String(savedYear || "").trim();
+    if (saved && !years.includes(saved)) years.push(saved);
+    years.sort();
+    return [["", "Choose a year"], ...years.map((year) => [year, year])];
+  }
+
+  function refreshYearChoices() {
+    const select = root.querySelector("#f-course-year");
+    if (!select) return;
+    const saved = util.getPath(app.getData(), "course.year");
+    const choices = yearChoices(saved);
+    const current = Array.from(select.options).map((option) => option.value).join(",");
+    if (current === choices.map(([value]) => value).join(",")) return;
+    select.replaceChildren(...choices.map(([value, text]) => el("option", { value }, text)));
+    select.value = saved === null || saved === undefined ? "" : String(saved);
+  }
+
+  /* Last revised date, with a button that fills in today's date. */
+  function lastRevisedField() {
+    const wrapper = field("date", "meta.lastRevised", "Last revised", { narrow: true, optionalLabel: true, className: "field-with-button" });
+    wrapper.append(actionButton("revised-today", "Use today’s date", "btn-small", { id: "revised-today" }));
+    return wrapper;
+  }
+
+  function todayIso() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   }
 
   function instructorGroup() {
@@ -905,6 +942,7 @@ window.SCTCC = window.SCTCC || {};
   function populate(scope) {
     const data = app.getData();
     const area = scope || root;
+    refreshYearChoices();
     area.querySelectorAll("[data-path]").forEach((control) => {
       const value = util.getPath(data, control.getAttribute("data-path"));
       const kind = control.getAttribute("data-kind");
@@ -1181,7 +1219,7 @@ window.SCTCC = window.SCTCC || {};
     app.markSaved(result.fileName);
     if (result.method === "download") {
       showMessages("info", `Downloaded ${result.fileName}.`,
-        ["Move it from your Downloads folder to your own folder or OneDrive. To keep editing later, use Open… and choose that file."]);
+        ["Move it from your Downloads folder to your own folder or OneDrive. To keep editing later, use Open a saved syllabus and choose that file."]);
       announce(`Downloaded ${result.fileName}.`);
     } else {
       showMessages("info", `Saved ${result.fileName}.`);
@@ -1195,6 +1233,14 @@ window.SCTCC = window.SCTCC || {};
       case "save":
         handleSave(false);
         break;
+
+      case "revised-today": {
+        const input = root.querySelector("#f-meta-lastRevised");
+        input.value = todayIso();
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        announce("Last revised set to today.");
+        break;
+      }
 
       case "save-as":
         handleSave(true);
@@ -1629,6 +1675,8 @@ window.SCTCC = window.SCTCC || {};
 
     const form = root.querySelector("#syllabus-editor");
     form.addEventListener("submit", (event) => event.preventDefault());
+    /* Opening the year list after midnight on January 1 shows the new years. */
+    form.addEventListener("focusin", (event) => { if (event.target.id === "f-course-year") refreshYearChoices(); });
     form.addEventListener("input", (event) => {
       if (event.target.type === "file" || event.target.id === "saved-list") return;
       handleInput(event);

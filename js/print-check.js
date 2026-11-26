@@ -1,8 +1,8 @@
 /*
- * SCTCC Syllabus Builder — guided Print to PDF and the findings list
+ * SCTCC Syllabus Builder — guided Save as PDF and the findings list
  *
  * Shows the results of SCTCC.validation.validate() in two places:
- *   - the Print to PDF dialog (a native <dialog>, so focus stays inside it and
+ *   - the Save as PDF dialog (a native <dialog>, so focus stays inside it and
  *     Escape closes it), and
  *   - the "Check before printing" group in the editor.
  * Each finding with a field has a "Go to" button that opens the editor at that field.
@@ -64,7 +64,7 @@ window.SCTCC = window.SCTCC || {};
     if (dialog.open) dialog.close();
   }
 
-  /* Open the guided Print to PDF dialog. */
+  /* Open the guided Save as PDF dialog. */
   function open(result, options) {
     const dialog = dialogElement();
     const body = dialog.querySelector("#print-dialog-body");
@@ -75,7 +75,7 @@ window.SCTCC = window.SCTCC || {};
     actions.textContent = "";
 
     if (result.errors.length) {
-      body.appendChild(el("p", null, "Your syllabus is not ready to print yet. Fix the problems below, then choose Print to PDF again."));
+      body.appendChild(el("p", null, "Your syllabus is not ready to print yet. Fix the problems below, then choose Save as PDF again."));
       const findings = el("div");
       renderFindings(findings, result, 3);
       body.appendChild(findings);

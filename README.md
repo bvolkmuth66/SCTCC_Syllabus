@@ -2,7 +2,7 @@
 
 An accessible HTML syllabus builder for St. Cloud Technical & Community College (SCTCC).
 
-Instructors open the builder in a web browser, enter their course information, and use **Print to PDF** to create the syllabus they post in their D2L course shell. Students only ever see the PDF.
+Instructors open the builder in a web browser, enter their course information, and use **Save as PDF** to create the syllabus they post in their D2L course shell. Students only ever see the PDF.
 
 College-wide content (policies, support information, the footer) is **not** typed by instructors. Each piece lives in its own file in the `content/` folder, maintained by the office that owns it. Every syllabus picks up the current approved wording the next time an instructor makes a PDF.
 
@@ -67,7 +67,7 @@ SCTCC_Syllabus/
 │   ├── grading.js                  Grading totals, weight check, scale check, point ranges
 │   ├── calendar-builder.js         Calendar generation, regeneration, shifting topics, CSV
 │   ├── syllabus-validation.js      Checks before printing (errors, warnings, notices)
-│   ├── print-check.js              Guided Print to PDF dialog and the findings list
+│   ├── print-check.js              Guided Save as PDF dialog and the findings list
 │   ├── syllabus-files.js           Save / Save as / Open with the computer's file dialogs
 │   ├── content-loader.js           Loads, checks, and sanitizes college content
 │   ├── syllabus-editor.js          The instructor editing panel
@@ -79,7 +79,7 @@ SCTCC_Syllabus/
 │   ├── calendar-workspace.js       The calendar workspace: month and list views, details, reuse
 │   ├── faq.js                      The FAQs window: reads content/faq.html, search, highlighting
 │   ├── faq-link.js                 Opens the FAQs in their own window from any FAQs link
-│   └── syllabus.js                 Builds the syllabus, unsaved-changes tracking, Print to PDF
+│   └── syllabus.js                 Builds the syllabus, unsaved-changes tracking, Save as PDF
 ├── content/
 │   ├── content-manifest.json       List of college sections and where they go
 │   ├── academic-calendar.json      College semester dates, finals, deadlines, no-class dates
@@ -147,20 +147,20 @@ When the builder opens, it asks **How would you like to start?**
 | **Start from scratch** | New courses | A blank syllabus with hints in every section. |
 | *See an example* | Anyone curious | Opens the sample course. |
 
-**Start over…** in *Save and open your syllabus* (and **Import a previous syllabus…**) bring these choices back at any time. **Save** and **Open…** are also in the green toolbar.
+**Start over…** in *Save and open your syllabus* (and **Import a previous syllabus…**) bring these choices back at any time. **Save syllabus** and **Open a saved syllabus** are also in the green toolbar.
 
 Then:
 
 1. Work through the groups in the **Edit syllabus** panel. They are in the same order as the syllabus, and each shows the number of the syllabus section(s) it fills in (for example **2.2 Materials and technology**), matching the numbers in the preview and the PDF. The numbers update when optional sections are turned on or off. The preview updates as you type. Anything still needed is marked in the preview, for example **[Withdrawal date needed]**.
-   - **Course** and **Description, outcomes, and requisites**: copy from the official SCTCC Course Outline. Outcomes appear under a **Student Learning Outcomes** heading as a bulleted list (the July 2026 template numbers them; changed 2026-11-26 at the project lead's request).
+   - **Course** and **Description, outcomes, and requisites**: copy from the official SCTCC Course Outline. **Year** is a list of this year and the next two, worked out from the computer’s date, so it moves forward every January 1 (a year already in an opened syllabus stays in the list). **Last revised** has a **Use today’s date** button, and prints in the PDF footer after the version (for example "Version 1.1 · Revised 11/26/2026"). Outcomes appear under a **Student Learning Outcomes** heading as a bulleted list (the July 2026 template numbers them; changed 2026-11-26 at the project lead's request).
    - **Credits, modality, and dates**: choose the term, then **Fill in these dates**.
    - **Course policies**: your attendance and late-work wording; accepted file formats; optional college statements; your own Class Environment text; and **Additional course sections** such as Exams or Lab Safety.
    - **Course policies** also has an optional **Program Diversity Statement**, shown right after the **College Diversity Statement**. The two headings say which statement is the college's and which is the program's.
    - **Tools and vendors**: each outside tool's accessibility statement (**required**; if the vendor has none, check "This tool has no accessibility statement" and link its VPAT), privacy policy, and support link.
    - **Grading** and **Course calendar**: see the sections below.
    - Web addresses typed into any text box become working links in the syllabus.
-2. **Save** (Ctrl+S / ⌘S) to a folder on your computer or your OneDrive folder.
-3. **Check my syllabus**, then **Print to PDF** and upload the PDF to D2L.
+2. **Save syllabus** (Ctrl+S / ⌘S) to a folder on your computer or your OneDrive folder.
+3. **Check my syllabus**, then **Save as PDF** and upload the PDF to D2L.
 
 The editor never changes college content. To use different college wording, the content owner updates the file in `content/`.
 
@@ -208,10 +208,10 @@ Pictures are not taken from a PDF; the instructor uploads a photo in the editor.
 
 **Your syllabus is your intellectual property.** The builder never keeps a copy. It does not use browser storage, cookies, GitHub, or any server. When you close the page, the only copies are the files you saved.
 
-- **Save** — In Chrome or Edge, the first Save opens your computer's Save dialog. Choose any folder, including your **OneDrive** folder (OneDrive appears in File Explorer or Finder when the OneDrive app is installed). The file is named after your course, for example `CPTR-1118-Spring-2027-Syllabus.json`. After that, **Save** or **Ctrl+S / ⌘S** updates the same file without asking again.
+- **Save syllabus** — In Chrome or Edge, the first save opens your computer's Save dialog. Choose any folder, including your **OneDrive** folder (OneDrive appears in File Explorer or Finder when the OneDrive app is installed). The file is named after your course, for example `CPTR-1118-Spring-2027-Syllabus.json`. After that, **Save syllabus** or **Ctrl+S / ⌘S** updates the same file without asking again.
 - **Save as…** — Always asks where to save. Use it to start next term's syllabus from this one.
-- **Open…** — Opens a syllabus file you saved. The file is checked first: anything unexpected is skipped and listed, files from a newer version of the builder are refused, and you are told if college content has changed since the file was saved, so you know to review it and make a new PDF.
-- **Other browsers** (Firefox, Safari) cannot save directly to a chosen folder. There, **Save** downloads the file to your Downloads folder; move it to your own folder or OneDrive. **Open…** uses the standard file chooser.
+- **Open a saved syllabus** — Opens a syllabus file you saved. The file is checked first: anything unexpected is skipped and listed, files from a newer version of the builder are refused, and you are told if college content has changed since the file was saved, so you know to review it and make a new PDF.
+- **Other browsers** (Firefox, Safari) cannot save directly to a chosen folder. There, **Save syllabus** downloads the file to your Downloads folder; move it to your own folder or OneDrive. **Open a saved syllabus** uses the standard file chooser.
 - **Unsaved changes** — The status line at the top of the editor shows whether your latest changes are saved. The builder asks before **New syllabus**, **Open…**, or **Load sample course** would discard unsaved work, and the browser warns you if you try to close the page.
 - **Clear this syllabus** empties the fields on screen. Your saved file is not changed unless you save afterward.
 - **Instructor photo** — Uploaded photos (PNG, JPEG, or WebP up to 300 KB) are stored inside your syllabus file.
@@ -227,7 +227,7 @@ Open **Grading** in the editor.
 **How the final grade is calculated**
 - **Points** — each category has a number of assignments and points per assignment. Category total = number × points each; the course total is the sum of the categories. The syllabus table shows each category's total and its share of the course total.
 - **Points with set weights** — each category has a number of assignments, points each, **and a weight you set**, for example Labs 200 points = 40% even though Labs are half the points. The syllabus table shows Number, Points each, Total points, and Weight. Weights must total 100%, with the same rules as below. The grading scale shows percentages only, because points do not convert directly to the final grade.
-- **Percentage weights only** — each category has a weight. The current total is shown as you type, for example "Total weight: 90% — 10% short of 100%." The builder **never changes your percentages**. If the total is not 100%, Print to PDF is stopped until you fix it or tick **Publish with weights that do not total 100%** (for example, for extra credit — explain it under "Additional grading information"). The number of assessments is optional; the column appears only if you fill it in.
+- **Percentage weights only** — each category has a weight. The current total is shown as you type, for example "Total weight: 90% — 10% short of 100%." The builder **never changes your percentages**. If the total is not 100%, Save as PDF is stopped until you fix it or tick **Publish with weights that do not total 100%** (for example, for extra credit — explain it under "Additional grading information"). The number of assessments is optional; the column appears only if you fill it in.
 
 **Assessment categories** — **Add a category**, then fill in its name and numbers. Each category has **Move up**, **Move down**, and **Remove** buttons. Fields that do not apply to the chosen method are hidden but kept, so switching methods loses nothing.
 
@@ -248,7 +248,7 @@ The scale is checked as you type:
 | The top grade stops below 100%, or the bottom grade starts above 0% | Warning |
 | A maximum above 100% | Warning (fine for extra credit) |
 
-Problems are listed under the categories and the scale in the editor, and in the instructor preview under the grading tables (never in the PDF). **Print to PDF** is stopped while any "must fix" problem remains, and the list of problems appears at the top of the editor. The browser's own Print command cannot be stopped, so watch for those messages.
+Problems are listed under the categories and the scale in the editor, and in the instructor preview under the grading tables (never in the PDF). **Save as PDF** is stopped while any "must fix" problem remains, and the list of problems appears at the top of the editor. The browser's own Print command cannot be stopped, so watch for those messages.
 
 ## Course calendar generator
 
@@ -427,11 +427,11 @@ Change `contentVersion` and `lastUpdated` at the top when a set of changes is ap
 
 ## Checks before printing
 
-**Print to PDF** checks the syllabus first. The same checks run whenever the instructor clicks **Check my syllabus** at the top of the editor. Results come in three levels, each with a **Go to field** button that opens the editor at the right place (even from Student preview):
+**Save as PDF** checks the syllabus first. The same checks run whenever the instructor clicks **Check my syllabus** at the top of the editor. Results come in three levels, each with a **Go to field** button that opens the editor at the right place (even from Student preview):
 
 | Level | Effect | Examples |
 |---|---|---|
-| **Problems to fix before printing** | Print to PDF is stopped | Anything the syllabus still shows as "[… needed]" (course prefix, number, title, term, year, instructor name and email, office and hours, credits, modality, meeting days/times/room, begin/end/drop/withdraw dates, description, outcomes, prerequisites, attendance and late policies, required materials, grading categories and scale, where grades are posted, turnaround, calendar or schedule statement, and any optional section that is turned on but empty); an incomplete email address; end date not after begin date; drop date before the course begins; withdraw date not after the drop date or after the course ends; template placeholders left in your text (XXX, YOUR NAME, COURSE NAME, GIVE WITHDRAWAL DATE, LIST ASSIGNMENT, DATE & TIME…); grading errors (weights not 100% without the override, overlapping grades, bad percentages, missing or duplicate grade labels); a tool with no accessibility statement link and "This tool has no accessibility statement" not checked; a required college section that failed to load |
+| **Problems to fix before printing** | Save as PDF is stopped | Anything the syllabus still shows as "[… needed]" (course prefix, number, title, term, year, instructor name and email, office and hours, credits, modality, meeting days/times/room, begin/end/drop/withdraw dates, description, outcomes, prerequisites, attendance and late policies, required materials, grading categories and scale, where grades are posted, turnaround, calendar or schedule statement, and any optional section that is turned on but empty); an incomplete email address; end date not after begin date; drop date before the course begins; withdraw date not after the drop date or after the course ends; template placeholders left in your text (XXX, YOUR NAME, COURSE NAME, GIVE WITHDRAWAL DATE, LIST ASSIGNMENT, DATE & TIME…); grading errors (weights not 100% without the override, overlapping grades, bad percentages, missing or duplicate grade labels); a tool with no accessibility statement link and "This tool has no accessibility statement" not checked; a required college section that failed to load |
 | **Please review** | Printing allowed | Course starts before the semester or ends before final exam week; calendar rows outside the course dates; calendar with no topics; gaps in the grading scale; zero-point categories; weights published with the override; "Include my photo" on with no photo; a tool's web address that is not a full https:// address; an optional college section that failed to load |
 | **For your information** | Printing allowed | College dates not yet confirmed by Records & Registration; tools with no privacy policy link; unscheduled calendar rows outside the course dates (allowed as exceptions); "here" link text in college content (for content owners); placeholder logo |
 
@@ -439,7 +439,7 @@ The browser's own Print command (Ctrl+P) cannot be stopped, but it still switche
 
 ## Printing to PDF
 
-1. Click **Print to PDF** in the builder toolbar. If there are problems to fix, the dialog lists them with **Go to field** buttons. Otherwise it shows anything to review and these steps.
+1. Click **Save as PDF** in the builder toolbar. If there are problems to fix, the dialog lists them with **Go to field** buttons. Otherwise it shows anything to review and these steps.
 2. Click **Open print window**. The builder switches to the student view and sets the PDF's title, which is also the suggested file name, for example `CPTR 1118 Cisco II Syllabus, Spring 2027`. A readable title matters because screen readers announce it and PDF viewers show it (WCAG 2.4.2). Characters that file names cannot contain (such as `:` or `/`) are left out. The saved `.json` file and the calendar CSV keep hyphenated names such as `CPTR-1118-Spring-2027-Syllabus.json`.
 3. Set **Destination** to **Save as PDF**. **Do not choose "Adobe PDF" or "Microsoft Print to PDF."** Those print drivers turn the text into shapes: the PDF has no tags (headings, lists, reading order), its text cannot be selected or searched, and screen readers read nonsense. A syllabus made that way fails the accessibility requirements.
 4. Under **More settings**, turn **Headers and footers off**. The syllabus prints its own footer (college name, course, term, syllabus version, and page numbers). Leave **Background graphics** off to save ink.
@@ -549,7 +549,7 @@ Phase 6 (tested on 2026-11-26 in headless Chrome):
 
 Phase 5 (tested on 2026-11-25 in headless Chrome and Node):
 
-- [x] Blank syllabus → Print to PDF opens a dialog listing what is missing; focus starts on Close; Escape closes and returns focus to Print to PDF
+- [x] Blank syllabus → Save as PDF opens a dialog listing what is missing; focus starts on Close; Escape closes and returns focus to Save as PDF
 - [x] Go to field opens the right editor group and focuses the field (also from Student preview, and to "Add a grade" for scale problems)
 - [x] Sample course → no problems; review notices listed; steps shown with the suggested file name; Open print window prints in student view
 - [x] Template placeholder ("XXX") and withdraw-before-drop reported in Check my syllabus, with working Go to field
@@ -585,7 +585,7 @@ Phase 3:
 - [x] Scale point ranges follow the course total (300 points → A 270–300 … F 0–179)
 - [x] Move down → order changes in editor and preview; focus stays on the moved category's button
 - [x] Switching to weights shows weight fields and hides points fields (values kept)
-- [x] Weights totaling 90% → "10% short of 100%"; entered values unchanged; Print to PDF stopped with the problem list focused
+- [x] Weights totaling 90% → "10% short of 100%"; entered values unchanged; Save as PDF stopped with the problem list focused
 - [x] Override checkbox turns the error into a reminder and lets printing continue; exactly 100% shows no message
 - [x] Overlap → must-fix error; gap → warning; plus/minus sample → 12 grades with no errors; removing F → "lowest grade starts at 60%" warning
 - [x] Remove category/grade → focus returns to the Add button
@@ -627,7 +627,7 @@ Still to test by a person: keyboard-only use, a screen reader (NVDA or JAWS), 20
 ## Known limitations
 
 - `content/academic-calendar.json` was copied from the published calendar and awaits confirmation by Records & Registration; drop/withdraw deadlines come from eServices.
-- The browser's own Print command (Ctrl+P) cannot be stopped by the checks; use the Print to PDF button.
+- The browser's own Print command (Ctrl+P) cannot be stopped by the checks; use the Save as PDF button.
 - There is no autosave, by design. Save regularly (Ctrl+S); the status line shows when changes are unsaved.
 - Firefox and Safari save by download rather than to a chosen folder.
 - The logo is a placeholder.
@@ -649,9 +649,9 @@ Still to test by a person: keyboard-only use, a screen reader (NVDA or JAWS), 20
 
 | Phase | Scope |
 |---|---|
-| 1 (done) | Content files, manifest, loader, sanitizer, rendered preview, print styles, basic Print to PDF |
+| 1 (done) | Content files, manifest, loader, sanitizer, rendered preview, print styles, basic Save as PDF |
 | 2 (done) | Instructor editing panel, Save / Save as / Open to the instructor's own files or OneDrive (no browser storage), vendor table, photo upload, instructor overrides (Class Environment, accepted file formats) |
 | 3 (done) | Grading editor: points and percentage methods, category rows with move/remove, live totals, weight check with instructor override, scale editor with overlap/gap/range checks and point ranges, plus/minus sample, print stopped on grading errors |
 | 4 (done) | Course calendar generator: 1–4 meetings per week or one row per week, no-class dates, finals week, first-week schedule, regeneration that keeps entered text, move/shift topics, unscheduled rows, CSV export; college academic calendar file for official dates and no-class dates |
-| 5 (done) | Checks before printing (errors, warnings, notices with Go to field), guided Print to PDF dialog, Check my syllabus panel, GitHub Action that checks content files and links |
+| 5 (done) | Checks before printing (errors, warnings, notices with Go to field), guided Save as PDF dialog, Check my syllabus panel, GitHub Action that checks content files and links |
 | **6 (this version)** | Start screen (import / open / scratch / example), Word and PDF syllabus import with review (current and older table-form templates), additional course sections, college Statement of Diversity plus optional Program Diversity Statement, required tool accessibility statements, toolbar Save and Open, linked web addresses |
