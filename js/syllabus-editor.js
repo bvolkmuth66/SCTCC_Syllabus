@@ -75,7 +75,7 @@ window.SCTCC = window.SCTCC || {};
       });
     }
 
-    return el("div", { class: `field field-${kind}${opts.narrow ? " field-narrow" : ""}` },
+    return el("div", { class: `field field-${kind}${opts.narrow ? " field-narrow" : ""}${opts.className ? ` ${opts.className}` : ""}` },
       el("label", { for: id }, label, opts.optionalLabel ? el("span", { class: "field-optional" }, " (optional)") : null),
       hintFor(id, opts.hint),
       control);
@@ -313,21 +313,55 @@ window.SCTCC = window.SCTCC || {};
   }
 
   function gradingGroup() {
-    return group("editor-grading", "Grading text", [
-      note("The assignments table and grading scale editor arrive in Phase 3. Imported files and the sample course keep their tables."),
+    return group("editor-grading", "Grading", [
+      field("select", "grading.calculationMethod", "How the final grade is calculated", {
+        choices: [
+          ["points", "Points: assignments add up to a course point total"],
+          ["weighted", "Percentage weights: categories add up to 100%"]
+        ]
+      }),
       field("textarea", "grading.intro", "Assignments & points introduction", {
         rows: 4,
         optionalLabel: true,
         hint: "Sample: There are eight units in this course… Assessments for the course include:"
       }),
-      field("textarea", "grading.gradesNarrative.postedWhere", "Where grades are posted", {
-        hint: "Sample: You can check your grade through D2L Brightspace Grades at any point during the semester."
-      }),
-      field("textarea", "grading.gradesNarrative.turnaround", "Grading turnaround", {
-        hint: "Sample: You can expect to have graded assignments returned within 5 days of the due date. (A 3- to 5-day turnaround is encouraged.)"
-      }),
-      field("textarea", "grading.gradesNarrative.contact", "Questions about grades", { optionalLabel: true }),
-      field("textarea", "grading.gradesNarrative.additional", "Additional grading information", { optionalLabel: true }),
+
+      el("h3", { class: "editor-subheading" }, "Assessment categories"),
+      note("Each category is one row of the grading table, for example Labs, Quizzes, or Final Exam."),
+      el("div", { id: "category-rows" }),
+      el("div", { class: "button-row" }, actionButton("add-category", "Add a category", "btn-primary", { id: "add-category" })),
+      el("div", { id: "category-summary", class: "grading-summary", "aria-live": "polite" }),
+      el("div", { id: "weight-override-wrap", class: "field field-toggle weighted-only" },
+        el("input", {
+          type: "checkbox",
+          id: "f-grading-weightOverride",
+          "data-path": "grading.weightOverride",
+          "data-kind": "boolean",
+          "aria-describedby": "f-grading-weightOverride-hint"
+        }),
+        el("label", { for: "f-grading-weightOverride" }, "Publish with weights that do not total 100%"),
+        el("p", { id: "f-grading-weightOverride-hint", class: "field-hint" },
+          "Only if this is intentional (for example, extra credit). Explain it under “Additional grading information.” The builder never changes your percentages.")),
+
+      el("h3", { class: "editor-subheading" }, "Grading scale"),
+      note("Each range includes both ends, for example A = 90–100% and B = 80–89%. Point ranges are calculated from the course total."),
+      el("div", { id: "scale-rows" }),
+      el("div", { class: "button-row" },
+        actionButton("add-grade", "Add a grade", "btn-primary", { id: "add-grade" }),
+        actionButton("scale-default", "Reset to A–F"),
+        actionButton("scale-plusminus", "Use plus/minus sample")),
+      el("div", { id: "scale-summary", class: "grading-summary", "aria-live": "polite" }),
+
+      fieldset("Grades", [
+        field("textarea", "grading.gradesNarrative.postedWhere", "Where grades are posted", {
+          hint: "Sample: You can check your grade through D2L Brightspace Grades at any point during the semester."
+        }),
+        field("textarea", "grading.gradesNarrative.turnaround", "Grading turnaround", {
+          hint: "Sample: You can expect to have graded assignments returned within 5 days of the due date. (A 3- to 5-day turnaround is encouraged.)"
+        }),
+        field("textarea", "grading.gradesNarrative.contact", "Questions about grades", { optionalLabel: true }),
+        field("textarea", "grading.gradesNarrative.additional", "Additional grading information", { optionalLabel: true })
+      ]),
       fieldset("Time commitment", [
         toggle("timeCommitment", "Include a Time Commitment section"),
         field("textarea", "grading.timeCommitment", "Time commitment", {
@@ -388,6 +422,125 @@ window.SCTCC = window.SCTCC || {};
     populate(container);
   }
 
+  /* ---------- Grading rows ---------- */
+
+  function categoryLegend(index, name) {
+    return `Category ${index + 1}${name ? `: ${name}` : ""}`;
+  }
+
+  function gradeLegend(index, label) {
+    return `Grade ${index + 1}${label ? `: ${label}` : ""}`;
+  }
+
+  function rowName(prefix, index, name) {
+    return String(name || "").trim() || `${prefix} ${index + 1}`;
+  }
+
+  function buildCategoryRows() {
+    const container = root.querySelector("#category-rows");
+    container.textContent = "";
+    const categories = app.getData().grading.categories;
+    if (!categories.length) {
+      container.appendChild(note("No categories yet."));
+      return;
+    }
+    categories.forEach((category, index) => {
+      const base = `grading.categories.${index}`;
+      const name = rowName("category", index, category.name);
+      container.appendChild(el("fieldset", { class: "field-group category-row" },
+        el("legend", { id: `category-legend-${index}` }, categoryLegend(index, category.name)),
+        field("text", `${base}.name`, "Category name", { hint: "For example: Labs" }),
+        el("div", { class: "field-row" },
+          field("number", `${base}.count`, "Number of assignments", { narrow: true, step: "1" }),
+          field("number", `${base}.pointsEach`, "Points each", { narrow: true, className: "points-only" }),
+          field("number", `${base}.weight`, "Weight (%)", { narrow: true, className: "weighted-only" })),
+        el("p", { class: "row-total points-only" },
+          "Category total: ", el("output", { id: `category-total-${index}`, for: `${fieldId(`${base}.count`)} ${fieldId(`${base}.pointsEach`)}` }, "0"), " points"),
+        field("text", `${base}.notes`, "Note shown under the category", { optionalLabel: true, hint: "For example: Taken during final exam week" }),
+        el("div", { class: "button-row" },
+          actionButton("move-category", "Move up", null, { "data-index": String(index), "data-direction": "-1", "aria-label": `Move ${name} up`, disabled: index === 0 }),
+          actionButton("move-category", "Move down", null, { "data-index": String(index), "data-direction": "1", "aria-label": `Move ${name} down`, disabled: index === categories.length - 1 }),
+          actionButton("remove-category", "Remove", "btn-danger", { "data-index": String(index), "aria-label": `Remove ${name}` }))));
+    });
+    populate(container);
+  }
+
+  function buildScaleRows() {
+    const container = root.querySelector("#scale-rows");
+    container.textContent = "";
+    const scale = app.getData().grading.scale;
+    if (!scale.length) {
+      container.appendChild(note("No grades yet."));
+      return;
+    }
+    scale.forEach((row, index) => {
+      const base = `grading.scale.${index}`;
+      const name = rowName("grade", index, row.label);
+      container.appendChild(el("fieldset", { class: "field-group scale-row" },
+        el("legend", { id: `grade-legend-${index}` }, gradeLegend(index, row.label)),
+        el("div", { class: "field-row field-row-3" },
+          field("text", `${base}.label`, "Grade", { narrow: true }),
+          field("number", `${base}.minPercent`, "From (%)", { narrow: true }),
+          field("number", `${base}.maxPercent`, "To (%)", { narrow: true })),
+        el("p", { class: "row-total points-only" },
+          "Points: ", el("output", { id: `grade-points-${index}` }, "—")),
+        el("div", { class: "button-row" },
+          actionButton("remove-grade", "Remove", "btn-danger", { "data-index": String(index), "aria-label": `Remove grade ${name}` }))));
+    });
+    populate(container);
+  }
+
+  function summaryBlock(container, label, errors, warnings) {
+    container.textContent = "";
+    if (label) container.appendChild(el("p", { class: "grading-total" }, label));
+    if (errors.length) {
+      container.appendChild(el("div", { class: "notice notice-error" },
+        el("p", null, el("strong", null, errors.length === 1 ? "Fix before printing:" : `Fix these ${errors.length} problems before printing:`)),
+        el("ul", null, errors.map((message) => el("li", null, message)))));
+    }
+    if (warnings.length) {
+      container.appendChild(el("div", { class: "notice notice-warning" },
+        el("p", null, el("strong", null, "Please check:")),
+        el("ul", null, warnings.map((message) => el("li", null, message)))));
+    }
+  }
+
+  /* Update totals, point ranges, and messages without rebuilding the inputs. */
+  function refreshGrading() {
+    const grading = app.getData().grading;
+    const method = grading.calculationMethod === "weighted" ? "weighted" : "points";
+    root.querySelector("#editor-grading").setAttribute("data-method", method);
+
+    grading.categories.forEach((category, index) => {
+      const output = root.querySelector(`#category-total-${index}`);
+      if (output) output.textContent = SCTCC.grading.formatNumber(SCTCC.grading.categoryTotal(category));
+    });
+
+    const summary = SCTCC.grading.summarizeCategories(grading);
+    summaryBlock(root.querySelector("#category-summary"), summary.label, summary.errors, summary.warnings);
+
+    const overrideWrap = root.querySelector("#weight-override-wrap");
+    const weightsOff = method === "weighted" && summary.total !== 100;
+    overrideWrap.hidden = !(weightsOff || grading.weightOverride);
+
+    const ranges = SCTCC.grading.pointRanges(grading.scale, method === "points" ? summary.total : 0);
+    grading.scale.forEach((row, index) => {
+      const output = root.querySelector(`#grade-points-${index}`);
+      if (!output) return;
+      const range = ranges.get(index);
+      output.textContent = range ? `${range.min}–${range.max}` : "—";
+    });
+
+    const scaleCheck = SCTCC.grading.validateScale(grading.scale);
+    summaryBlock(root.querySelector("#scale-summary"), "", scaleCheck.errors, scaleCheck.warnings);
+  }
+
+  function buildGrading() {
+    buildCategoryRows();
+    buildScaleRows();
+    refreshGrading();
+  }
+
   /* ---------- Filling controls from data ---------- */
 
   function populate(scope) {
@@ -407,6 +560,7 @@ window.SCTCC = window.SCTCC || {};
     });
     if (!scope) {
       buildVendorRows();
+      buildGrading();
       updatePhotoStatus();
     }
   }
@@ -429,6 +583,18 @@ window.SCTCC = window.SCTCC || {};
     box.appendChild(el("div", { class: `notice notice-${kind}` },
       el("p", null, el("strong", null, title)),
       lines && lines.length ? el("ul", null, lines.map((line) => el("li", null, line))) : null));
+  }
+
+  /* Called when Print to PDF is stopped by grading problems. */
+  function showGradingProblems(errors) {
+    const groupElement = root.querySelector("#editor-grading");
+    groupElement.open = true;
+    showMessages("error", "Not printed. Fix these grading problems first (see Grading below):", errors);
+    const notice = root.querySelector("#data-messages .notice");
+    if (notice) {
+      notice.setAttribute("tabindex", "-1");
+      notice.focus();
+    }
   }
 
   function setFileStatus(fileName, unsaved) {
@@ -489,6 +655,17 @@ window.SCTCC = window.SCTCC || {};
       const legend = root.querySelector(`#vendor-legend-${vendorName[1]}`);
       if (legend) legend.textContent = vendorLegend(Number(vendorName[1]), value);
     }
+    const categoryName = /^grading\.categories\.(\d+)\.name$/.exec(path);
+    if (categoryName) {
+      const legend = root.querySelector(`#category-legend-${categoryName[1]}`);
+      if (legend) legend.textContent = categoryLegend(Number(categoryName[1]), value);
+    }
+    const gradeLabel = /^grading\.scale\.(\d+)\.label$/.exec(path);
+    if (gradeLabel) {
+      const legend = root.querySelector(`#grade-legend-${gradeLabel[1]}`);
+      if (legend) legend.textContent = gradeLegend(Number(gradeLabel[1]), value);
+    }
+    if (path.startsWith("grading.")) refreshGrading();
     app.dataChanged();
   }
 
@@ -656,6 +833,89 @@ window.SCTCC = window.SCTCC || {};
         break;
       }
 
+      case "add-category": {
+        data.grading.categories.push({ name: "", count: 1, pointsEach: 0, weight: 0, notes: "" });
+        buildCategoryRows();
+        refreshGrading();
+        app.dataChanged();
+        const index = data.grading.categories.length - 1;
+        root.querySelector(`#${fieldId(`grading.categories.${index}.name`)}`).focus();
+        announce(`Added category ${index + 1}.`);
+        break;
+      }
+
+      case "remove-category": {
+        const index = Number(button.getAttribute("data-index"));
+        const name = rowName("category", index, data.grading.categories[index] && data.grading.categories[index].name);
+        if (data.grading.categories[index] && data.grading.categories[index].name.trim()
+          && !window.confirm(`Remove the “${name}” category?`)) return;
+        data.grading.categories.splice(index, 1);
+        buildCategoryRows();
+        refreshGrading();
+        app.dataChanged();
+        root.querySelector("#add-category").focus();
+        announce(`Removed ${name}.`);
+        break;
+      }
+
+      case "move-category": {
+        const index = Number(button.getAttribute("data-index"));
+        const direction = Number(button.getAttribute("data-direction"));
+        const target = index + direction;
+        const list = data.grading.categories;
+        if (target < 0 || target >= list.length) return;
+        [list[index], list[target]] = [list[target], list[index]];
+        buildCategoryRows();
+        refreshGrading();
+        app.dataChanged();
+        const name = rowName("category", target, list[target].name);
+        const same = root.querySelector(`[data-action='move-category'][data-index='${target}'][data-direction='${direction}']`);
+        const other = root.querySelector(`[data-action='move-category'][data-index='${target}'][data-direction='${-direction}']`);
+        (same && !same.disabled ? same : other).focus();
+        announce(`Moved ${name} to position ${target + 1} of ${list.length}.`);
+        break;
+      }
+
+      case "add-grade": {
+        data.grading.scale.push({ label: "", minPercent: 0, maxPercent: 0 });
+        buildScaleRows();
+        refreshGrading();
+        app.dataChanged();
+        const index = data.grading.scale.length - 1;
+        root.querySelector(`#${fieldId(`grading.scale.${index}.label`)}`).focus();
+        announce(`Added grade ${index + 1}.`);
+        break;
+      }
+
+      case "remove-grade": {
+        const index = Number(button.getAttribute("data-index"));
+        const name = rowName("grade", index, data.grading.scale[index] && data.grading.scale[index].label);
+        data.grading.scale.splice(index, 1);
+        buildScaleRows();
+        refreshGrading();
+        app.dataChanged();
+        root.querySelector("#add-grade").focus();
+        announce(`Removed grade ${name}.`);
+        break;
+      }
+
+      case "scale-default":
+      case "scale-plusminus": {
+        const plusMinus = action === "scale-plusminus";
+        if (!window.confirm(`Replace your grading scale with ${plusMinus ? "the plus/minus sample" : "the default A–F scale"}?`)) return;
+        data.grading.scale = plusMinus ? SCTCC.grading.plusMinusSampleScale() : SCTCC.createDefaultGradingScale();
+        buildScaleRows();
+        refreshGrading();
+        app.dataChanged();
+        button.focus();
+        const message = plusMinus
+          ? "Plus/minus sample scale added. These cutoffs are only a starting point; confirm them for your program."
+          : "Grading scale reset to A–F.";
+        root.querySelector("#scale-summary").prepend(el("p", { class: "notice notice-info" }, message));
+        announce(message);
+        break;
+      }
+
       case "remove-photo":
         data.instructor.photoData = "";
         updatePhotoStatus();
@@ -726,6 +986,7 @@ window.SCTCC = window.SCTCC || {};
     init,
     populate: () => populate(),
     setFileStatus,
-    showMessages
+    showMessages,
+    showGradingProblems
   });
 })();
