@@ -494,7 +494,10 @@ window.SCTCC = window.SCTCC || {};
           "The calendar workspace gives you a month view, a list view, and Reuse last term’s schedule, with room to work. It opens in its own window, so you can put it on a second screen. Or use the settings below. Both change the same calendar."),
         el("div", { class: "button-row" },
           actionButton("calendar-workspace", "Open the calendar workspace", "btn-primary", { id: "calendar-open-window" }),
-          actionButton("calendar-workspace-here", "Open it full screen here", null, { id: "calendar-open-here" }))),
+          actionButton("calendar-workspace-here", "Open it full screen here", null, { id: "calendar-open-here" }),
+          actionButton("calendar-shift-dates", "Shift dates for a new term…", null, { id: "calendar-shift-dates" })),
+        el("p", { class: "editor-note" },
+          "Shift dates moves every calendar date by the same number of days, like D2L does when a course is copied: for example, the first day of class last year to the first day of class this year.")),
       field("textarea", "calendar.locationStatement", "Statement about the course schedule", {
         optionalLabel: true,
         hint: "Shown above the calendar, or by itself if you do not build a calendar. For example: The complete, current schedule is posted in D2L under Content > Course Schedule."
@@ -1132,7 +1135,22 @@ window.SCTCC = window.SCTCC || {};
       return;
     }
     SCTCC.files.setCurrentFile(read.handle);
-    openData(result.data, `Opened ${read.fileName}.`, result.warnings, { fileName: read.fileName });
+    const warnings = result.warnings.slice();
+    const oldCalendar = calendarFromEarlierTerm(result.data);
+    if (oldCalendar) warnings.push(oldCalendar);
+    openData(result.data, `Opened ${read.fileName}.`, warnings, { fileName: read.fileName });
+  }
+
+  /* A saved syllabus whose calendar dates are all in the past: point to Shift dates and Reuse. */
+  function calendarFromEarlierTerm(data) {
+    const dates = data.calendar.entries.map((entry) => entry.date).filter((date) => util.parseISODate(date)).sort();
+    if (!dates.length) return "";
+    const today = new Date();
+    const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    if (dates[dates.length - 1] >= todayISO) return "";
+    const term = [data.course.term, data.course.year].filter(Boolean).join(" ");
+    return `The course calendar is from an earlier term${term ? ` (${term})` : ""}: its last date is ${util.formatDate(dates[dates.length - 1], "long")}. ` +
+      "To carry it forward, choose the new term under Course and use Fill in these dates, then in Course calendar choose Shift dates… (moves every date by the same number of days) or open the calendar workspace and use Reuse last term’s schedule… (lays the topics onto the new term’s class days).";
   }
 
   async function handleOpen() {
@@ -1379,6 +1397,14 @@ window.SCTCC = window.SCTCC || {};
 
       case "calendar-workspace-here": {
         SCTCC.calendarBridge.openEmbedded();
+        break;
+      }
+
+      case "calendar-shift-dates": {
+        const how = SCTCC.calendarBridge.openWindow("shift");
+        announce(how === "embedded"
+          ? "The calendar workspace opened full screen here with Shift dates."
+          : "Shift dates opened in the calendar workspace window.");
         break;
       }
 

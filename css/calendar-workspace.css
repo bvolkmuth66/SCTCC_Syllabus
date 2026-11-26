@@ -262,6 +262,10 @@ fieldset.field { min-width: 0; }
 .ws-dialog h2 { margin: 0 0 0.75rem; color: var(--sctcc-primary); }
 .ws-preview { max-height: 20rem; overflow-y: auto; margin: 0.75rem 0; }
 .ws-dialog-buttons { justify-content: flex-end; }
+.ws-shift-dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 0 1rem; }
+.ws-narrow { max-width: 16rem; }
+.field input[type=number] { width: 100%; font: inherit; padding: 0.45rem 0.5rem; border: 1px solid var(--border-strong); border-radius: 0.25rem; }
+.ws-offset { font-weight: 700; font-size: 1.05rem; color: var(--sctcc-primary); margin: 0.5rem 0; }
 
 @media (max-width: 48rem) {
   .ws-settings, .ws-detail { max-width: none; position: static; }

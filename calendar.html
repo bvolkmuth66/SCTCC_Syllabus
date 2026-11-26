@@ -18,6 +18,7 @@
     </div>
     <p id="ws-link" class="ws-link"><span class="ws-dot" aria-hidden="true"></span><span id="ws-link-text">Connecting to the syllabus builder…</span></p>
     <div class="ws-actions">
+      <button type="button" id="ws-shift" class="btn btn-light">Shift dates…</button>
       <button type="button" id="ws-reuse" class="btn btn-light">Reuse last term’s schedule…</button>
       <button type="button" id="ws-close" class="btn btn-outline-light">Back to the builder</button>
     </div>
@@ -67,6 +68,11 @@
   <dialog id="reuse-dialog" class="ws-dialog" aria-labelledby="reuse-title">
     <h2 id="reuse-title">Reuse last term’s schedule</h2>
     <div id="reuse-body"></div>
+  </dialog>
+
+  <dialog id="shift-dialog" class="ws-dialog" aria-labelledby="shift-title">
+    <h2 id="shift-title">Shift dates</h2>
+    <div id="shift-body"></div>
   </dialog>
 
   <script src="js/dom-helpers.js"></script>

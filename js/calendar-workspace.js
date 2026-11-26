@@ -27,7 +27,9 @@
     month: null,          /* { year, month } */
     selected: null,       /* index into calendar.entries */
     lost: false,
-    reuse: null           /* { label, entries, mode, keepFinals } */
+    reuse: null,          /* { label, entries, mode, keepFinals } */
+    shift: null,          /* { method, oldDate, newDate, days, shiftCourse, replaceClosures } */
+    message: null         /* { summary, warnings }: the latest result, kept through re-renders */
   };
 
   /* ---------- Talking to the builder ---------- */
@@ -68,6 +70,7 @@
       markLost();
       return { ok: false, message: "Not connected to the builder." };
     }
+    if (op.op !== "setField" && op.op !== "readSyllabusFile") state.message = null;
     const result = JSON.parse(state.bridge.apply(JSON.stringify(op)));
     readSnapshot();
     renderAll();
@@ -85,6 +88,7 @@
     }
     readSnapshot();
     renderAll();
+    checkRequestedTool();
   }
 
   /* ---------- Small helpers ---------- */
@@ -272,18 +276,27 @@
       });
       region.appendChild(generate);
       region.appendChild(el("p", { class: "ws-hint" }, "First-week schedules and other options are in the builder’s Course calendar section."));
-      region.appendChild(el("div", { id: "ws-flash", "aria-live": "polite" }));
+      region.appendChild(el("div", { id: "ws-flash" }));
+      showMessage();
     });
   }
 
-  function flash(summary, warnings) {
+  /* The latest result stays visible until the next change; screen readers hear it through announce(). */
+  function showMessage() {
     const box = document.getElementById("ws-flash");
     if (!box) return;
     box.textContent = "";
-    if (summary) box.appendChild(el("p", { class: "notice notice-info" }, summary));
-    if (warnings && warnings.length) {
-      box.appendChild(el("div", { class: "notice notice-warning" }, el("ul", null, warnings.map((message) => el("li", null, message)))));
+    const message = state.message;
+    if (!message) return;
+    if (message.summary) box.appendChild(el("p", { class: "notice notice-info" }, message.summary));
+    if (message.warnings && message.warnings.length) {
+      box.appendChild(el("div", { class: "notice notice-warning" }, el("ul", null, message.warnings.map((text) => el("li", null, text)))));
     }
+  }
+
+  function flash(summary, warnings) {
+    state.message = { summary: summary || "", warnings: warnings || [] };
+    showMessage();
   }
 
   function report(result, success) {
@@ -776,6 +789,225 @@
     document.getElementById("ws-reuse").focus();
   }
 
+  /* ---------- Shift dates (like D2L's date offset) ---------- */
+
+  const DAY_MS = 86400000;
+  const TEXT_DATE = /\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2}\b/i;
+
+  function daysBetween(fromISO, toISO) {
+    const from = util.parseISODate(fromISO);
+    const to = util.parseISODate(toISO);
+    if (!from || !to) return null;
+    return Math.round((Date.UTC(to.getFullYear(), to.getMonth(), to.getDate()) - Date.UTC(from.getFullYear(), from.getMonth(), from.getDate())) / DAY_MS);
+  }
+
+  function addDays(value, days) {
+    const date = util.parseISODate(value);
+    if (!date) return value;
+    return iso(new Date(date.getFullYear(), date.getMonth(), date.getDate() + days));
+  }
+
+  function weekdayName(value) {
+    const date = util.parseISODate(value);
+    return date ? date.toLocaleDateString("en-US", { weekday: "long" }) : "";
+  }
+
+  function shiftDefaults() {
+    const snap = state.snap;
+    const classDates = entries().filter((entry) => entry.date && !entry.noClass).map((entry) => entry.date).sort();
+    const firstClass = classDates[0] || "";
+    const courseStart = snap.course.startDate || "";
+    const today = iso(new Date());
+    /* The course dates were already updated for the new term; the calendar is still on the old one. */
+    if (firstClass && courseStart && daysBetween(firstClass, courseStart) > 30) {
+      return { method: "dates", oldDate: firstClass, newDate: courseStart, days: "", shiftCourse: false };
+    }
+    /* Everything is from an earlier term: move the course dates too. */
+    const oldDate = courseStart || firstClass;
+    const suggested = snap.term && snap.term.startDate && snap.term.startDate > oldDate ? snap.term.startDate : "";
+    return { method: "dates", oldDate, newDate: suggested, days: "", shiftCourse: Boolean(courseStart && courseStart < today) };
+  }
+
+  function shiftDays() {
+    const shift = state.shift;
+    if (shift.method === "days") {
+      const value = Number(shift.days);
+      return Number.isFinite(value) && shift.days !== "" ? Math.round(value) : null;
+    }
+    return daysBetween(shift.oldDate, shift.newDate);
+  }
+
+  function describeOffset(days) {
+    if (days === null) return "Enter both dates to see how far the calendar will move.";
+    if (days === 0) return "The two dates are the same, so nothing would move.";
+    const direction = days > 0 ? "forward" : "back";
+    const size = Math.abs(days);
+    const weeks = size % 7 === 0 ? ` (${size / 7} week${size === 7 ? "" : "s"})` : ` (${Math.floor(size / 7)} weeks and ${size % 7} day${size % 7 === 1 ? "" : "s"})`;
+    return `Every calendar date moves ${direction} by ${size} day${size === 1 ? "" : "s"}${weeks}.`;
+  }
+
+  function renderShift() {
+    const body = document.getElementById("shift-body");
+    const shift = state.shift;
+    const snap = state.snap;
+    body.textContent = "";
+    body.appendChild(el("p", null, "Moves every date in the calendar by the same number of days, the way D2L offsets dates when a course is copied. Topics, readings, due items, and notes stay with their classes. Class times are set once for the course, under Credits, modality, and dates, so only dates move."));
+
+    if (!entries().some((entry) => entry.date)) {
+      body.appendChild(el("p", { class: "notice notice-warning" }, "There are no calendar dates to move yet."));
+      body.appendChild(dialogButtons([["Close", closeShift, "btn"]]));
+      return;
+    }
+
+    const method = el("fieldset", { class: "field ws-radios" }, el("legend", null, "How far to move the dates"),
+      [["dates", "By the difference between two dates"], ["days", "By a number of days"]].map(([value, label]) => {
+        const id = `shift-method-${value}`;
+        const input = el("input", { type: "radio", name: "shift-method", id, value, checked: shift.method === value || null });
+        input.addEventListener("change", () => { state.shift.method = value; renderShift(); document.getElementById(id).focus(); });
+        return el("span", { class: "ws-radio" }, input, el("label", { for: id }, label));
+      }));
+    body.appendChild(method);
+
+    if (shift.method === "dates") {
+      const oldInput = el("input", { type: "date", id: "shift-old", "aria-describedby": "shift-old-hint" });
+      oldInput.value = shift.oldDate || "";
+      const newInput = el("input", { type: "date", id: "shift-new", "aria-describedby": "shift-new-hint" });
+      newInput.value = shift.newDate || "";
+      oldInput.addEventListener("change", () => { state.shift.oldDate = oldInput.value; renderShift(); document.getElementById("shift-old").focus(); });
+      newInput.addEventListener("change", () => { state.shift.newDate = newInput.value; renderShift(); document.getElementById("shift-new").focus(); });
+      const termHint = snap.term && snap.term.startDate
+        ? `The college calendar starts ${snap.term.term} ${snap.term.year} on ${longDate(snap.term.startDate)}.`
+        : "Usually the new term’s first day of class.";
+      body.appendChild(el("div", { class: "ws-shift-dates" },
+        el("div", { class: "field" }, el("label", { for: "shift-old" }, "Old date (for example, the first day of class last time)"), oldInput,
+          el("p", { class: "ws-hint", id: "shift-old-hint" }, shift.oldDate ? `${weekdayName(shift.oldDate)}` : "")),
+        el("div", { class: "field" }, el("label", { for: "shift-new" }, "New date (the same day in the new term)"), newInput,
+          el("p", { class: "ws-hint", id: "shift-new-hint" }, `${shift.newDate ? `${weekdayName(shift.newDate)}. ` : ""}${termHint}`))));
+    } else {
+      const daysInput = el("input", { type: "number", id: "shift-days", step: "1", inputmode: "numeric", "aria-describedby": "shift-days-hint" });
+      daysInput.value = shift.days;
+      daysInput.addEventListener("input", () => { state.shift.days = daysInput.value; renderShiftSummary(); });
+      body.appendChild(el("div", { class: "field ws-narrow" }, el("label", { for: "shift-days" }, "Number of days"), daysInput,
+        el("p", { class: "ws-hint", id: "shift-days-hint" }, "Use a negative number to move dates earlier. 364 days (52 weeks) keeps every class on the same weekday one year later.")));
+    }
+
+    const course = el("input", { type: "checkbox", id: "shift-course", checked: shift.shiftCourse || null });
+    course.addEventListener("change", () => { state.shift.shiftCourse = course.checked; renderShiftSummary(); });
+    body.appendChild(el("div", { class: "field-check" }, course,
+      el("label", { for: "shift-course" }, "Also move the course begin, end, drop, and withdrawal dates"),
+      el("p", { class: "ws-hint" }, `Now ${snap.course.startDate ? `${longDate(snap.course.startDate)} – ${longDate(snap.course.endDate)}` : "not entered"}. Leave this off if you already used Fill in these dates for the new term.`)));
+
+    const closures = el("input", { type: "checkbox", id: "shift-closures", checked: (shift.replaceClosures && snap.term) || null, disabled: !snap.term || null });
+    closures.addEventListener("change", () => { state.shift.replaceClosures = closures.checked; renderShiftSummary(); });
+    body.appendChild(el("div", { class: "field-check" }, closures,
+      el("label", { for: "shift-closures" }, snap.term ? `Replace the old no-class dates with the college’s dates for ${snap.term.term} ${snap.term.year}` : "Replace the old no-class dates with the college’s dates"),
+      el("p", { class: "ws-hint" }, snap.term
+        ? "Otherwise your no-class dates move by the same number of days, which rarely matches the new term’s holidays."
+        : "Choose the new term and year under Course in the builder first, so the college’s no-class dates can be used.")));
+
+    body.appendChild(el("div", { id: "shift-summary", "aria-live": "polite" }));
+    body.appendChild(el("div", { id: "shift-buttons" }));
+    renderShiftSummary();
+  }
+
+  function renderShiftSummary() {
+    const summary = document.getElementById("shift-summary");
+    const buttonsBox = document.getElementById("shift-buttons");
+    if (!summary) return;
+    const days = shiftDays();
+    const shift = state.shift;
+    const snap = state.snap;
+    summary.textContent = "";
+    buttonsBox.textContent = "";
+    summary.appendChild(el("p", { class: "ws-offset" }, describeOffset(days)));
+
+    if (days !== null && days !== 0) {
+      const sample = entries().find((entry) => entry.date && !entry.noClass);
+      if (sample && days % 7 !== 0) {
+        summary.appendChild(el("p", { class: "notice notice-warning" },
+          `Classes will move to different weekdays: ${weekdayName(sample.date)} becomes ${weekdayName(addDays(sample.date, days))}. To keep the same weekdays, use a multiple of 7 days, or use Reuse last term’s schedule instead.`));
+      }
+      /* Preview, with the closures the new dates will be checked against. */
+      const closed = new Map();
+      if (shift.replaceClosures && snap.term) snap.term.noClassDates.forEach((item) => closed.set(item.date, item.label));
+      else (snap.calendar.excludedDates || []).forEach((item) => closed.set(addDays(item.date, days), item.label || "No class"));
+      const start = shift.shiftCourse ? addDays(snap.course.startDate, days) : snap.course.startDate;
+      const end = shift.shiftCourse ? addDays(snap.course.endDate, days) : snap.course.endDate;
+      const moving = entries().filter((entry) => entry.date && !(entry.noClass && !["topic", "preparation", "due"].some((field) => String(entry[field] || "").trim())));
+      const rows = moving.map((entry) => {
+        const next = addDays(entry.date, days);
+        let problem = "";
+        if (!entry.noClass && closed.has(next)) problem = `No class: ${closed.get(next)}`;
+        else if (!entry.noClass && ((start && next < start) || (end && next > end))) problem = "Outside the course dates";
+        return { entry, next, problem };
+      });
+      const problems = rows.filter((row) => row.problem);
+      const textDates = entries().filter((entry) => CONTENT_FIELDS.some((field) => TEXT_DATE.test(String(entry[field] || ""))));
+
+      summary.appendChild(el("div", { class: "ws-table-wrap ws-preview", role: "region", "aria-label": "Preview of moved dates", tabindex: "0" },
+        el("table", { class: "ws-list" },
+          el("caption", null, `Preview (${rows.length} dates)`),
+          el("thead", null, el("tr", null, el("th", { scope: "col" }, "Topic"), el("th", { scope: "col" }, "Old date"), el("th", { scope: "col" }, "New date"), el("th", { scope: "col" }, "Check"))),
+          el("tbody", null, rows.map((row) => el("tr", { class: row.problem ? "is-leftover" : "" },
+            el("td", null, row.entry.noClass ? "No class" : (row.entry.topic || "(no topic)")),
+            el("td", null, weekdayDate(row.entry.date)),
+            el("td", null, weekdayDate(row.next)),
+            el("td", null, row.problem || "—")))))));
+
+      const notes = [`${rows.length} dates will move.`];
+      if (problems.length) notes.push(`${problems.length} class${problems.length === 1 ? "" : "es"} would land on a no-class date or outside the course; after shifting, use Generate calendar again (topics on those days become unscheduled topics) or Shift topics later.`);
+      if (textDates.length) notes.push(`${textDates.length} row${textDates.length === 1 ? " has" : "s have"} a date typed in its text (for example “due 9/14”). Those are not changed; update them by hand.`);
+      if (!shift.shiftCourse && start && rows.length && !rows.some((row) => !row.entry.noClass && row.next >= start && row.next <= end)) {
+        notes.push("None of the moved dates fall within the course dates. Check the old and new dates, or also move the course dates.");
+      }
+      summary.appendChild(el("p", { class: `notice ${problems.length || textDates.length ? "notice-warning" : "notice-info"}` }, notes.join(" ")));
+    }
+
+    const ready = days !== null && days !== 0 && Math.abs(days) <= 3660;
+    const apply = el("button", { type: "button", class: "btn btn-primary", disabled: !ready || null }, ready ? `Move ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} ${days > 0 ? "later" : "earlier"}` : "Move dates");
+    apply.addEventListener("click", () => applyShift(days));
+    const cancel = el("button", { type: "button", class: "btn" }, "Cancel");
+    cancel.addEventListener("click", closeShift);
+    buttonsBox.appendChild(el("div", { class: "button-row ws-dialog-buttons" }, cancel, apply));
+  }
+
+  function applyShift(days) {
+    const shift = state.shift;
+    const result = send({ op: "shiftDates", days, shiftCourse: shift.shiftCourse, replaceClosures: Boolean(shift.replaceClosures && state.snap.term) });
+    if (!report(result)) return;
+    closeShift();
+    state.month = null;
+    renderAll();
+    const parts = [`Moved ${result.moved} date${result.moved === 1 ? "" : "s"} ${days > 0 ? "later" : "earlier"} by ${Math.abs(days)} days.`];
+    if (result.replacedClosures) parts.push(`Added ${result.closuresAdded} college no-class date${result.closuresAdded === 1 ? "" : "s"}.`);
+    const warnings = [];
+    if (result.conflicts.length) warnings.push(`${result.conflicts.length} class${result.conflicts.length === 1 ? " falls" : "es fall"} on a no-class date: ${result.conflicts.slice(0, 5).map((item) => `${weekdayDate(item.date)} (${item.label})`).join("; ")}${result.conflicts.length > 5 ? "; …" : ""}. Use Generate calendar again or Shift topics later.`);
+    if (result.outside.length) warnings.push(`${result.outside.length} class${result.outside.length === 1 ? " is" : "es are"} outside the course dates.`);
+    flash(parts.join(" "), warnings);
+    announce(parts.join(" ") + (warnings.length ? " Some classes need attention; see the notes under Settings." : ""));
+  }
+
+  function openShift() {
+    if (!state.snap) return;
+    state.shift = Object.assign({ replaceClosures: true }, shiftDefaults());
+    renderShift();
+    const dialog = document.getElementById("shift-dialog");
+    if (!dialog.open) dialog.showModal();
+    const first = document.getElementById(state.shift.method === "dates" ? (state.shift.newDate ? "shift-old" : "shift-new") : "shift-days");
+    if (first) first.focus();
+  }
+
+  function closeShift() {
+    const dialog = document.getElementById("shift-dialog");
+    if (dialog.open) dialog.close();
+    document.getElementById("ws-shift").focus();
+  }
+
+  function checkRequestedTool() {
+    const tool = (state.bridge && state.bridge.takePendingTool) ? state.bridge.takePendingTool() : "";
+    if (tool === "shift") openShift();
+  }
+
   /* ---------- Everything ---------- */
 
   function renderAll() {
@@ -843,14 +1075,17 @@
       (next.disabled ? document.getElementById("month-prev") : next).focus();
     });
     document.getElementById("ws-reuse").addEventListener("click", openReuse);
+    document.getElementById("ws-shift").addEventListener("click", openShift);
     document.getElementById("ws-close").addEventListener("click", close);
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && embedded && !document.getElementById("reuse-dialog").open) close();
+      if (event.key === "Escape" && embedded && !document.getElementById("reuse-dialog").open && !document.getElementById("shift-dialog").open) close();
     });
 
     readSnapshot();
     renderAll();
     announce("Course calendar workspace ready.");
+    if (new URLSearchParams(window.location.search).get("tool") === "shift") openShift();
+    else checkRequestedTool();
   }
 
   document.addEventListener("DOMContentLoaded", init);
