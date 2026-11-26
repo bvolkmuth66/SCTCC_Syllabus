@@ -111,7 +111,7 @@
     },
     {
       "id": "diversity-statement",
-      "title": "Statement of Diversity",
+      "title": "College Diversity Statement",
       "file": "diversity-statement.html",
       "placement": "college-policies",
       "showTitle": true,
@@ -119,7 +119,7 @@
       "defaultEnabled": true,
       "owner": "Office of Community, Culture, and Institutional Climate (to be confirmed)",
       "followWith": "programDiversity",
-      "instructorNote": "Wording from the older SCTCC syllabus template; awaiting confirmation by the college. To add your program's own statement, turn on Program Diversity Statement under Course policies."
+      "instructorNote": "Wording from the older SCTCC syllabus template; awaiting confirmation by the college. To add your program's own statement, turn on Program Diversity Statement under Course policies; it appears right after this one."
     },
     {
       "id": "turnitin",

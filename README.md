@@ -145,7 +145,7 @@ Then:
    - **Course** and **Description, outcomes, and requisites**: copy from the official SCTCC Course Outline. Outcomes appear under a **Student Learning Outcomes** heading as a bulleted list (the July 2026 template numbers them; changed 2026-11-26 at the project lead's request).
    - **Credits, modality, and dates**: choose the term, then **Fill in these dates**.
    - **Course policies**: your attendance and late-work wording; accepted file formats; optional college statements; your own Class Environment text; and **Additional course sections** such as Exams or Lab Safety.
-   - **Course policies** also has an optional **Program Diversity Statement**, shown right after the college Statement of Diversity.
+   - **Course policies** also has an optional **Program Diversity Statement**, shown right after the **College Diversity Statement**. The two headings say which statement is the college's and which is the program's.
    - **Tools and vendors**: each outside tool's accessibility statement (**required**; if the vendor has none, check "This tool has no accessibility statement" and link its VPAT), privacy policy, and support link.
    - **Grading** and **Course calendar**: see the sections below.
    - Web addresses typed into any text box become working links in the syllabus.
@@ -181,7 +181,7 @@ Text still holding a template placeholder such as "COURSE NAME" or "XXX" is flag
 - **The term, year, and all dates.** The instructor chooses the new term and uses **Fill in these dates**. Old calendar dates are dropped; when the new calendar is generated, imported topics are placed in order into the class meetings.
 - Mission statement, change notice, footer, and template instructions.
 - A section that was under College Policies but is not a current college section is offered **unticked**, with a note to include it only if it is the instructor's own statement.
-- The old **Statement of Diversity** is recognized as college text (the college statement is always included). A section titled **Program Diversity Statement** is imported into that optional section; other wording found under an old diversity heading is offered unticked as a program statement.
+- The old **Statement of Diversity** is recognized as college text (the College Diversity Statement is always included). A section titled **Program Diversity Statement** is imported into that optional section; other wording found under an old diversity heading is offered unticked as a program statement.
 
 **The review screen** lists every item found, grouped like the editor, with the text it found. Everything is ticked except items that need a decision. **Import selected** fills a new, unsaved syllabus and lists the next steps; **Cancel** (or Escape) changes nothing.
 
