@@ -52,14 +52,14 @@ window.SCTCC = window.SCTCC || {};
 
   /* ---------- Settings ---------- */
 
-  /* Calendar settings, falling back to the course dates when the calendar's are blank. */
+  /* Calendar settings. The calendar always runs from the course begin date to the course end date. */
   function resolveSettings(data) {
     const calendar = data.calendar;
     const course = data.course;
     return {
       mode: calendar.mode === "weekly" ? "weekly" : "meetings",
-      startDate: calendar.startDate || course.startDate,
-      endDate: calendar.endDate || course.endDate,
+      startDate: course.startDate,
+      endDate: course.endDate,
       meetingsPerWeek: Number(calendar.meetingsPerWeek) || 0,
       meetingDays: (calendar.meetingDays || []).filter((day) => DAY_NAMES.includes(day)),
       useFirstWeekSchedule: Boolean(calendar.useFirstWeekSchedule),

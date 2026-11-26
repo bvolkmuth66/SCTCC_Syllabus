@@ -443,11 +443,9 @@ window.SCTCC = window.SCTCC || {};
           ["weekly", "One row per week (online courses)"]
         ]
       }),
+      el("p", { id: "calendar-dates-note", class: "field-hint", "aria-live": "polite" }),
       el("div", { class: "button-row" },
-        actionButton("calendar-copy-course", "Use course dates and meeting days")),
-      el("div", { class: "field-row" },
-        field("date", "calendar.startDate", "Calendar start date", { narrow: true, hint: "Blank = course begin date" }),
-        field("date", "calendar.endDate", "Calendar end date", { narrow: true, hint: "Blank = course end date" })),
+        actionButton("calendar-copy-course", "Use the course meeting days")),
       el("div", { class: "meetings-only" },
         field("select", "calendar.meetingsPerWeek", "Meetings per week", {
           narrow: true,
@@ -580,6 +578,17 @@ window.SCTCC = window.SCTCC || {};
   function currentTerm() {
     const data = app.getData();
     return SCTCC.calendar.findTerm(app.academicCalendar(), data.course.term, data.course.year);
+  }
+
+  /* The calendar uses the course begin and end dates; show them beside the calendar settings. */
+  function refreshCalendarDates() {
+    const note = root && root.querySelector("#calendar-dates-note");
+    if (!note) return;
+    const course = app.getData().course;
+    const fmt = (iso) => (iso ? SCTCC.util.formatDate(iso, "long") : "");
+    note.textContent = course.startDate && course.endDate
+      ? `The calendar runs from the course begin date (${fmt(course.startDate)}) to the course end date (${fmt(course.endDate)}). Change these under Credits, modality, and dates.`
+      : "The calendar uses the course begin and end dates. Enter them under Credits, modality, and dates first.";
   }
 
   function refreshCollegeDates() {
@@ -825,6 +834,7 @@ window.SCTCC = window.SCTCC || {};
       buildGrading();
       buildCalendar();
       refreshCollegeDates();
+      refreshCalendarDates();
       updatePhotoStatus();
     }
   }
@@ -949,6 +959,7 @@ window.SCTCC = window.SCTCC || {};
     }
     if (path.startsWith("grading.")) refreshGrading();
     if (/^course\.(term|year|startDate|endDate)$/.test(path)) refreshCollegeDates();
+    if (/^course\.(startDate|endDate)$/.test(path)) refreshCalendarDates();
     if (path === "calendar.meetingsPerWeek") util.setPath(data, path, Number(value) || 0);
     if (path.startsWith("calendar.entries.")) {
       if (/\.(noClass|date)$/.test(path)) {
@@ -1258,8 +1269,6 @@ window.SCTCC = window.SCTCC || {};
 
       case "calendar-copy-course": {
         const course = data.course;
-        data.calendar.startDate = course.startDate;
-        data.calendar.endDate = course.endDate;
         if (course.meetingPattern.days.length) {
           data.calendar.meetingDays = course.meetingPattern.days.slice();
           data.calendar.meetingsPerWeek = Math.min(4, course.meetingPattern.days.length);
@@ -1296,6 +1305,7 @@ window.SCTCC = window.SCTCC || {};
         Object.entries(updates).forEach(([key, value]) => { if (value) course[key] = value; });
         populate(root.querySelector("#editor-schedule"));
         refreshCollegeDates();
+        refreshCalendarDates();
         refreshCalendarSettings();
         app.dataChanged();
         const fill = root.querySelector("#fill-college-dates");

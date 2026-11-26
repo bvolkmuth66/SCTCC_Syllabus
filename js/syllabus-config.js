@@ -28,6 +28,9 @@ window.SCTCC.config = Object.freeze({
   legacyStoragePrefixes: ["sctcc-syllabus:"],
   previewDelayMs: 250,
 
+  /* Number section headings (1, 1.1, 1.2, 2 …) in the preview, the PDF, and the contents list. */
+  numberSections: true,
+
   /* Largest instructor photo file accepted for upload, in bytes (300 KB). */
   maxPhotoBytes: 300 * 1024,
 

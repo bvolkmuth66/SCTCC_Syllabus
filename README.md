@@ -44,6 +44,8 @@ College-wide content (policies, support information, the footer) is **not** type
 4. `js/syllabus.js` assembles the syllabus in the order of the SCTCC Syllabus Template (July 2026) and inserts each college section where its manifest entry says it belongs.
 5. **Instructor view** shows the editor beside a live preview, plus notes and content-owner labels. **Student preview** and the PDF show only the finished syllabus.
 
+**Section numbers.** Major sections are numbered 1, 2, 3 … and their subsections 1.1, 1.2 … in the preview, the PDF, and the Contents list, so a section can be referred to by number. Numbers follow the sections that are turned on, so they never skip. Set `numberSections: false` in `js/syllabus-config.js` to turn numbering off.
+
 **A finished syllabus is the instructor's intellectual property.** The builder never stores it: not in the browser, not in this repository, and not on any server. GitHub Pages only delivers the builder's own files; nothing an instructor types is sent back. Instructors save their syllabus as a file in a folder they choose (their computer or OneDrive) and post the PDF in D2L.
 
 ## Repository structure
@@ -236,7 +238,7 @@ Open **Course calendar** in the editor.
 2. **Calendar layout**
    - **One row per class meeting** — for courses that meet 1, 2, 3, or 4 times a week. Columns: Week, Meeting, Date, Day, Topic, Preparation/Reading, Assignment Due, Notes.
    - **One row per week** — for asynchronous online courses. Columns: Week, Dates, Topic, Preparation/Reading, Assignment Due, Notes.
-3. **Add the college’s no-class dates** copies the holidays and breaks for the syllabus's term from the college academic calendar (see below) into the no-class dates list, without duplicates. **Use course dates and meeting days** copies the begin/end dates and meeting days from *Credits, modality, and dates* (and picks the weekly layout for online courses). Calendar dates left blank also fall back to the course dates. Class times come from the course meeting information.
+3. **Add the college’s no-class dates** copies the holidays and breaks for the syllabus's term from the college academic calendar (see below) into the no-class dates list, without duplicates. **The calendar always runs from the course begin date to the course end date** entered under *Credits, modality, and dates*; the calendar settings show those dates, and there are no separate calendar dates to keep in step. **Use the course meeting days** copies the meeting days (and picks the weekly layout for online courses). Class times come from the course meeting information. If you change the course dates, generate the calendar again.
 4. **Meetings per week** and **Meeting days** — choose exactly as many days as meetings (2 meetings → 2 days). A mismatch is shown immediately and the calendar is not generated until it is fixed.
 5. Options: **The first week has a different schedule** (choose first-week days), **Include final exam week** (the last week is marked "Finals"; turn off to leave it out), and **Show no-class dates in the calendar** (holidays appear as "No Class" rows instead of being left out).
 6. **No-class dates** — add each holiday or closure with a reason. In the weekly layout they are listed in that week's notes.
@@ -503,7 +505,7 @@ Phase 4 (tested on 2026-11-25; generator logic in Node, editor in headless Chrom
 - [x] Generating again keeps topics by date; a topic on a new holiday is kept with a warning; content that no longer falls on a class day is kept as unscheduled rows; unscheduled rows kept
 - [x] Weekly layout: 18 week rows with date ranges, closures listed in notes, first row starts on a mid-week start date
 - [x] End date before start date and spans over 30 weeks are refused; older files with plain-text no-class dates are converted
-- [x] Editor: typing updates the row label and preview; No class renumbers meetings; Shift topics later; Move topic later (focus follows); add/remove unscheduled row; Use course dates and meeting days
+- [x] Editor: typing updates the row label and preview; No class renumbers meetings; Shift topics later; Move topic later (focus follows); add/remove unscheduled row; Use the course meeting days
 - [x] CSV export: file name follows the course; quotes and commas escaped; opens with a byte-order mark for Excel
 - [x] PDF: calendar spanning two pages repeats its column headings
 - [x] Phase 2 and Phase 3 checks still pass; no console errors

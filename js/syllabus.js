@@ -634,6 +634,22 @@
     appendChildren(slot, placementBlocks("footer"));
   }
 
+  /*
+   * Numbers the major sections (1, 2, 3 …) and their subsections (1.1, 1.2 …) so
+   * instructors and students can refer to a part of the syllabus by number.
+   * Numbers follow whatever sections are turned on, so they never skip.
+   */
+  function numberSections(main) {
+    main.querySelectorAll(":scope > section.major-section").forEach((section, index) => {
+      const major = index + 1;
+      const heading = section.querySelector("h2");
+      heading.prepend(el("span", { class: "section-number" }, `${major}. `));
+      section.querySelectorAll("h3").forEach((subheading, subIndex) => {
+        subheading.prepend(el("span", { class: "section-number" }, `${major}.${subIndex + 1} `));
+      });
+    });
+  }
+
   function renderTableOfContents() {
     const list = document.getElementById("toc-list");
     list.textContent = "";
@@ -736,6 +752,7 @@
       renderCalendar()
     ]);
     renderFooter();
+    if (config.numberSections !== false) numberSections(main);
     renderTableOfContents();
     renderStatusPanel();
     updatePrintFooter();
