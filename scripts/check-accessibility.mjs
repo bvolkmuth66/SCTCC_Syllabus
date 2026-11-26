@@ -6,8 +6,8 @@
  *   1. serves this repository on a local port,
  *   2. opens the builder in Chromium with the sample course,
  *   3. runs axe-core against the WCAG rules listed in AXE_TAGS on the start screen,
- *      the instructor view (every editor group open), the check results, and the
- *      student view,
+ *      the instructor view (every editor group open), the check results, the
+ *      calendar workspace, the FAQs window, and the student view,
  *   4. saves the student view as a tagged PDF (reports/sample-syllabus.pdf) for
  *      scripts/check-pdf.py and for people to review.
  *
@@ -134,7 +134,20 @@ async function main() {
     results.push(await runAxe(workspace, axeSource, "Calendar workspace (Shift dates dialog)", { include: "#shift-dialog" }));
     await workspace.close();
 
-    /* 5. Student view, then the PDF made from it. */
+    /* 5. The FAQs window: all questions, then a search with answers open. */
+    const [faq] = await Promise.all([
+      page.context().waitForEvent("page"),
+      page.click("#toolbar-faq")
+    ]);
+    faq.on("pageerror", (error) => pageErrors.push(`FAQs: ${error}`));
+    await faq.waitForSelector("body.faq-ready", { timeout: 15000 });
+    results.push(await runAxe(faq, axeSource, "FAQs window (all questions)"));
+    await faq.fill("#faq-query", "save onedrive");
+    await faq.waitForTimeout(900);
+    results.push(await runAxe(faq, axeSource, "FAQs window (search with answers open)"));
+    await faq.close();
+
+    /* 6. Student view, then the PDF made from it. */
     await page.click("#toggle-mode");
     await page.waitForTimeout(500);
     results.push(await runAxe(page, axeSource, "Student view (sample course)"));

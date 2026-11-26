@@ -20,6 +20,7 @@
       <button type="button" id="toolbar-save" class="instructor-only">Save</button>
       <button type="button" id="toolbar-open" class="instructor-only">Open…</button>
       <a class="toolbar-link instructor-only" href="#editor">Go to editor</a>
+      <a class="toolbar-link" id="toolbar-faq" href="faq.html" target="sctccFaq" data-faq-link>FAQs<span class="visually-hidden"> (opens in a new window)</span></a>
       <button type="button" id="toggle-mode" aria-pressed="false">Student preview</button>
       <button type="button" id="print-pdf" class="button-primary">Print to PDF</button>
     </div>
@@ -56,7 +57,7 @@
 
     <aside id="editor" class="editor instructor-only" aria-labelledby="editor-heading" tabindex="-1">
       <h2 id="editor-heading">Edit syllabus</h2>
-      <p class="editor-intro">Changes appear in the preview as you type. Print tip: in the print dialog choose <strong>Save as PDF</strong> and turn off <strong>Headers and footers</strong>.</p>
+      <p class="editor-intro">Changes appear in the preview as you type. Print tip: in the print dialog choose <strong>Save as PDF</strong> and turn off <strong>Headers and footers</strong>. Questions? <a href="faq.html" target="sctccFaq" data-faq-link>Search the FAQs<span class="visually-hidden"> (opens in a new window)</span></a>.</p>
       <div id="editor-body">
         <p>Loading the editor…</p>
       </div>
@@ -94,5 +95,6 @@
   <script src="js/start-screen.js"></script>
   <script src="js/calendar-bridge.js"></script>
   <script src="js/syllabus.js"></script>
+  <script src="js/faq-link.js"></script>
 </body>
 </html>

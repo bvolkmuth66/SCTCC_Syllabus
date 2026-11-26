@@ -57,7 +57,7 @@ async function exists(path) {
 
 /* ---------- One content fragment ---------- */
 
-function checkFragment(file, text) {
+function checkFragment(file, text, extraTags = new Set()) {
   /* Curator header comment */
   const header = /^\s*<!--([\s\S]*?)-->/.exec(text);
   if (!header) {
@@ -89,7 +89,7 @@ function checkFragment(file, text) {
       if (!closing) report("error", file, line, `<${tag}> is not allowed in college content. It would be removed, so remove it or ask the builder's maintainer.`);
       continue;
     }
-    if (!ALLOWED_TAGS.has(tag)) {
+    if (!ALLOWED_TAGS.has(tag) && !extraTags.has(tag)) {
       if (!closing) report("warning", file, line, `<${tag}> is not one of the allowed tags; the builder keeps its text but drops the tag.`);
       continue;
     }
@@ -253,6 +253,10 @@ async function checkManifest() {
     if (!section.title) report("warning", file, 1, `Section "${label}" has no title.`);
     if (!section.required && !section.optionalKey) report("warning", file, 1, `Optional section "${label}" has no optionalKey, so instructors cannot turn it on.`);
   }
+  if (manifest.faqFile) {
+    files.add(manifest.faqFile);
+    if (!(await exists(join(CONTENT, manifest.faqFile)))) report("error", file, 1, `faqFile content/${manifest.faqFile} does not exist.`);
+  }
   if (manifest.academicCalendarFile && !(await exists(join(CONTENT, manifest.academicCalendarFile)))) {
     report("error", file, 1, `academicCalendarFile content/${manifest.academicCalendarFile} does not exist.`);
   }
@@ -261,6 +265,44 @@ async function checkManifest() {
     report("warning", join(CONTENT, name), 1, "This file is not listed in content-manifest.json, so the builder never shows it.");
   });
   return manifest;
+}
+
+/* ---------- Instructor FAQs (content/faq.html) ---------- */
+
+/*
+ * The FAQs use the normal answer tags plus section/h2 (topics) and div/h3 (questions).
+ * Each question needs a unique id, because links such as faq.html#save-onedrive use it.
+ */
+function checkFaq(file, text) {
+  checkFragment(file, text, new Set(["section", "div", "h2", "h3"]));
+  const body = text.replace(/<!--[\s\S]*?-->/g, (comment) => comment.replace(/[^\n]/g, " "));
+  const ids = new Map();
+  const blockPattern = /<div\b([^>]*)>([\s\S]*?)<\/div>/g;
+  let block;
+  let count = 0;
+  while ((block = blockPattern.exec(body))) {
+    if (!/class\s*=\s*"faq"/.test(block[1])) continue;
+    count += 1;
+    const line = lineOf(body, block.index);
+    const id = (/\sid\s*=\s*"([^"]*)"/.exec(block[1]) || [])[1] || "";
+    if (!id) report("error", file, line, "A question has no id. Add id=\"...\" (lowercase letters, numbers, hyphens).");
+    else if (!/^[a-z0-9][a-z0-9-]*$/.test(id) || id.startsWith("topic-")) report("error", file, line, `Question id "${id}" must use lowercase letters, numbers, and hyphens, and must not start with "topic-".`);
+    else if (ids.has(id)) report("error", file, line, `Question id "${id}" is also used on line ${ids.get(id)}. Each id must be unique.`);
+    else ids.set(id, line);
+    const questions = block[2].match(/<h3\b[^>]*>[\s\S]*?<\/h3>/g) || [];
+    if (questions.length !== 1) report("error", file, line, `Each question needs exactly one <h3> (the question); this one has ${questions.length}.`);
+    else if (!block[2].replace(questions[0], "").replace(/<[^>]*>/g, "").trim()) report("error", file, line, "This question has no answer.");
+  }
+  if (!count) report("error", file, 1, "No questions found. Each question is a <div class=\"faq\" id=\"...\">.");
+  const topics = new Set();
+  const topicPattern = /<section\b[^>]*data-topic\s*=\s*"([^"]*)"/g;
+  let topic;
+  while ((topic = topicPattern.exec(body))) topics.add(`topic-${topic[1]}`);
+  const anchorPattern = /href\s*=\s*"#([^"]+)"/g;
+  let anchor;
+  while ((anchor = anchorPattern.exec(body))) {
+    if (!ids.has(anchor[1]) && !topics.has(anchor[1])) report("error", file, lineOf(body, anchor.index), `Link to "#${anchor[1]}" does not match any question id.`);
+  }
 }
 
 /* ---------- Optional link check ---------- */
@@ -289,6 +331,10 @@ if (manifest) {
   for (const section of manifest.sections) {
     const path = join(CONTENT, section.file || "");
     if (section.file && await exists(path)) checkFragment(path, await readFile(path, "utf8"));
+  }
+  if (manifest.faqFile) {
+    const path = join(CONTENT, manifest.faqFile);
+    if (await exists(path)) checkFaq(path, await readFile(path, "utf8"));
   }
   if (manifest.academicCalendarFile) {
     const path = join(CONTENT, manifest.academicCalendarFile);
