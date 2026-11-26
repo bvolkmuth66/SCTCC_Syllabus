@@ -6,6 +6,7 @@
   "sourceDocument": "SCTCC Syllabus Template Sample, revised July 2026",
   "academicCalendarFile": "academic-calendar.json",
   "gradingScaleFile": "grading-scale.json",
+  "faqFile": "faq.html",
   "placements": {
     "header": "Below the course title: mission statement and change notice",
     "general-information": "Course Information > General Information, after the instructor's dates",

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Syllabus Builder FAQs | St. Cloud Technical &amp; Community College</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/faq.css">
+</head>
+<body>
+  <a class="skip-link" href="#faq-main">Skip to the questions</a>
+
+  <header class="faq-header">
+    <div>
+      <h1>Syllabus Builder FAQs</h1>
+      <p class="faq-subtitle">St. Cloud Technical &amp; Community College</p>
+    </div>
+    <div class="faq-header-actions">
+      <button type="button" id="faq-close" class="btn btn-outline-light" hidden>Close FAQs</button>
+      <a id="faq-builder-link" class="btn btn-outline-light" href="index.html" hidden>Open the syllabus builder</a>
+    </div>
+  </header>
+
+  <div class="faq-search" role="search">
+    <label for="faq-query">Search the FAQs</label>
+    <div class="faq-search-row">
+      <input type="search" id="faq-query" autocomplete="off" spellcheck="false" aria-describedby="faq-search-hint faq-count">
+      <button type="button" id="faq-clear" class="btn">Clear</button>
+    </div>
+    <p id="faq-search-hint" class="faq-hint">Type a word or two, for example “OneDrive”, “weights”, or “snow day”. Matching questions open automatically.</p>
+    <p id="faq-count" class="faq-count" aria-live="polite"></p>
+  </div>
+
+  <div class="faq-body">
+    <nav class="faq-topics" aria-labelledby="faq-topics-title">
+      <h2 id="faq-topics-title">Topics</h2>
+      <ul id="faq-topic-list"></ul>
+    </nav>
+
+    <main id="faq-main" class="faq-main" tabindex="-1">
+      <div class="faq-toolbar">
+        <button type="button" id="faq-expand" class="btn btn-small">Open all answers</button>
+        <button type="button" id="faq-collapse" class="btn btn-small">Close all answers</button>
+      </div>
+      <div id="faq-list"><p>Loading the FAQs…</p></div>
+      <p id="faq-none" class="faq-none" hidden></p>
+      <p class="faq-version" id="faq-version"></p>
+    </main>
+  </div>
+
+  <script src="js/syllabus-config.js"></script>
+  <script src="js/content-loader.js"></script>
+  <script src="js/faq.js"></script>
+</body>
+</html>

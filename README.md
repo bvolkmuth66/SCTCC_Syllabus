@@ -20,6 +20,7 @@ College-wide content (policies, support information, the footer) is **not** type
 - [Course calendar generator](#course-calendar-generator)
 - [Repository structure](#repository-structure)
 - [Running the builder](#running-the-builder)
+- [Instructor FAQs](#instructor-faqs)
 - [Editing college content (for content owners)](#editing-college-content-for-content-owners)
 - [The content manifest](#the-content-manifest)
 - [College academic calendar (for Records & Registration)](#college-academic-calendar-for-records--registration)
@@ -54,7 +55,9 @@ College-wide content (policies, support information, the footer) is **not** type
 SCTCC_Syllabus/
 ├── index.html                      The builder page
 ├── calendar.html                   The course calendar workspace (opened from the builder)
+├── faq.html                        The searchable FAQs window (opened from the builder)
 ├── css/
+│   ├── faq.css                     FAQs window styles
 │   ├── syllabus.css                Screen styles (brand colors, layout)
 │   └── print.css                   PDF / print styles (US Letter)
 ├── js/
@@ -74,11 +77,14 @@ SCTCC_Syllabus/
 │   ├── start-screen.js             "How would you like to start?" and the import review
 │   ├── calendar-bridge.js          Builder side of the calendar workspace: snapshots and changes
 │   ├── calendar-workspace.js       The calendar workspace: month and list views, details, reuse
+│   ├── faq.js                      The FAQs window: reads content/faq.html, search, highlighting
+│   ├── faq-link.js                 Opens the FAQs in their own window from any FAQs link
 │   └── syllabus.js                 Builds the syllabus, unsaved-changes tracking, Print to PDF
 ├── content/
 │   ├── content-manifest.json       List of college sections and where they go
 │   ├── academic-calendar.json      College semester dates, finals, deadlines, no-class dates
 │   ├── grading-scale.json          College default grading scale (Academic Affairs)
+│   ├── faq.html                    The instructor FAQs (questions and answers)
 │   └── *.html                      One file per college section (20 files)
 ├── assets/
 │   ├── sctcc-logo-placeholder.svg  Placeholder until Marketing supplies the logo
@@ -337,6 +343,16 @@ In the PDF, the calendar table's column headings repeat at the top of each page,
 - *Credits, modality, and dates* shows the college dates for that term, with **Fill in these dates** (begin, end, last day to drop, last day to withdraw; asks before replacing dates already entered).
 - It warns if the course begins before the semester starts or ends before final exam week ("must include final exam week").
 - *Course calendar* has **Add the college’s no-class dates**.
+
+## Instructor FAQs
+
+Instructor directions live **in the builder**, not in this README: the hints beside each field, and the **FAQs**. This README is for the people who maintain the repository.
+
+- **FAQs** in the green toolbar, **Search the FAQs** at the top of the editor, and **Calendar FAQs** in the calendar workspace open `faq.html` in its own window, so it can sit beside the builder. If the browser blocks the window, it opens in a new tab. Opening it never leaves the builder, so unsaved work is safe.
+- **Search** matches every word typed, in the question, the answer, or the topic, ignoring accents and capitals. Matches are highlighted, and matching answers open when there are eight or fewer. Escape or **Clear** shows every question again. **Topics** jump to a group.
+- **Links to one question:** `faq.html#save-onedrive` opens that question; `faq.html#topic-calendar` opens a topic; `faq.html?q=weights` starts a search. Each answer has **Link to this question**.
+- **Editing the questions:** everything is in `content/faq.html`. Each topic is a `<section data-topic="...">` with one `<h2>`; each question is a `<div class="faq" id="...">` with one `<h3>` (the question) and the answer. Answers allow the same tags as college content and are sanitized the same way. Keep ids unique and don't change an id that other pages may link to. Update `LAST-REVIEWED` and `VERSION` in the header comment; both are shown at the bottom of the FAQs.
+- Contacts named in the FAQs: builder questions, Brian Volkmuth; college policy wording, Magen Henry. When a builder feature changes, update the matching FAQ in the same pull request.
 
 ## Editing college content (for content owners)
 
