@@ -15,8 +15,10 @@
   <a class="skip-link instructor-only" href="#editor">Skip to the editor</a>
 
   <div class="builder-toolbar screen-only" role="region" aria-label="Syllabus builder controls">
-    <p class="toolbar-title">SCTCC Syllabus Builder <span class="badge instructor-only">Phase 5 preview</span></p>
+    <p class="toolbar-title">SCTCC Syllabus Builder <span class="badge instructor-only">Phase 6 preview</span></p>
     <div class="toolbar-actions">
+      <button type="button" id="toolbar-save" class="instructor-only">Save</button>
+      <button type="button" id="toolbar-open" class="instructor-only">Open…</button>
       <a class="toolbar-link instructor-only" href="#editor">Go to editor</a>
       <button type="button" id="toggle-mode" aria-pressed="false">Student preview</button>
       <button type="button" id="print-pdf" class="button-primary">Print to PDF</button>
@@ -61,6 +63,9 @@
     </aside>
   </div>
 
+  <dialog id="start-dialog" class="print-dialog start-dialog" aria-labelledby="start-title" aria-describedby="start-intro"></dialog>
+  <dialog id="import-dialog" class="print-dialog import-dialog" aria-labelledby="import-title"></dialog>
+
   <dialog id="print-dialog" class="print-dialog" aria-labelledby="print-dialog-title">
     <h2 id="print-dialog-title">Print to PDF</h2>
     <div id="print-dialog-body"></div>
@@ -77,7 +82,11 @@
   <script src="examples/sample-course-data.js"></script>
   <script src="js/content-loader.js"></script>
   <script src="js/print-check.js"></script>
+  <script src="js/docx-reader.js"></script>
+  <script src="js/pdf-reader.js"></script>
+  <script src="js/syllabus-import.js"></script>
   <script src="js/syllabus-editor.js"></script>
+  <script src="js/start-screen.js"></script>
   <script src="js/syllabus.js"></script>
 </body>
 </html>

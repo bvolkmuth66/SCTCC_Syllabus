@@ -1,8 +1,8 @@
 {
   "schemaVersion": "1.1",
   "institution": "St. Cloud Technical & Community College",
-  "contentVersion": "2026.07",
-  "lastUpdated": "2026-07-01",
+  "contentVersion": "2026.11",
+  "lastUpdated": "2026-11-26",
   "sourceDocument": "SCTCC Syllabus Template Sample, revised July 2026",
   "academicCalendarFile": "academic-calendar.json",
   "placements": {
@@ -108,6 +108,18 @@
       "required": true,
       "defaultEnabled": true,
       "owner": "Office of Community, Culture, and Institutional Climate (to be confirmed)"
+    },
+    {
+      "id": "diversity-statement",
+      "title": "Statement of Diversity",
+      "file": "diversity-statement.html",
+      "placement": "college-policies",
+      "showTitle": true,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "Office of Community, Culture, and Institutional Climate (to be confirmed)",
+      "followWith": "programDiversity",
+      "instructorNote": "Wording from the older SCTCC syllabus template; awaiting confirmation by the college. To add your program's own statement, turn on Program Diversity Statement under Course policies."
     },
     {
       "id": "turnitin",

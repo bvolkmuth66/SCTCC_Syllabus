@@ -38,6 +38,7 @@ window.SCTCC = window.SCTCC || {};
     turnitin: "policies.attendance",
     academicIntegrityExamples: "policies.attendance",
     classEnvironment: "policies.classEnvironment",
+    programDiversity: "policies.programDiversity",
     timeCommitment: "grading.timeCommitment",
     recommendedMaterials: "materials.recommended"
   };
@@ -92,7 +93,9 @@ window.SCTCC = window.SCTCC || {};
     "Where grades are posted": "grading.gradesNarrative.postedWhere",
     "Grading turnaround": "grading.gradesNarrative.turnaround",
     "Time commitment": "grading.timeCommitment",
-    "Statement of where the course schedule is located": "calendar.locationStatement"
+    "Statement of where the course schedule is located": "calendar.locationStatement",
+    "Section title": "policies.additionalSections",
+    "Section text": "policies.additionalSections"
   };
 
   const FRIENDLY_MARKERS = {
@@ -106,6 +109,7 @@ window.SCTCC = window.SCTCC || {};
   const PLACEHOLDERS = [
     /\bXXX+\b/,
     /\bYOUR (COURSE )?NAME\b/,
+    /\bCOURSE NAME\b/,
     /\bGIVE (WITHDRAWAL )?DATE\b/,
     /\bGIVE TIME\b/,
     /\bLIST ASSIGNMENT\b/,
@@ -232,11 +236,14 @@ window.SCTCC = window.SCTCC || {};
     }
   }
 
-  function checkInstructorExtras(data, warnings, notices) {
+  function checkInstructorExtras(data, errors, warnings, notices) {
     const optional = data.optionalSections;
     const instructor = data.instructor;
     if (optional.instructorPhoto && !instructor.photoData && !/^https?:\/\//i.test(String(instructor.photoUrl || "").trim())) {
       warnings.push(finding("“Include my photo” is on, but there is no photo. Upload one or turn the option off.", "optionalSections.instructorPhoto"));
+    }
+    if (optional.programDiversity && !String(data.policies.programDiversity || "").trim()) {
+      warnings.push(finding("“Include a Program Diversity Statement” is on, but the statement is empty, so it is left out.", "policies.programDiversity"));
     }
     if (optional.recommendedMaterials && !data.materials.recommended.length) {
       notices.push(finding("“Include recommended materials” is on but the list is empty, so the section is left out.", "materials.recommended"));
@@ -252,6 +259,13 @@ window.SCTCC = window.SCTCC || {};
           warnings.push(finding(`${name || `Tool ${index + 1}`}: the web address “${value}” is not a full address starting with https://, so it is not shown.`, `vendors.${index}.${key}`));
         }
       });
+      const statement = String(vendor.accessibilityUrl || "").trim();
+      if (name && !statement && !vendor.noAccessibilityStatement) {
+        errors.push(finding(`${name} needs a link to its accessibility statement. If the vendor has none, check “This tool has no accessibility statement” and add its VPAT if there is one.`, `vendors.${index}.accessibilityUrl`));
+      }
+      if (name && !statement && vendor.noAccessibilityStatement && !String(vendor.vpatUrl || "").trim()) {
+        notices.push(finding(`${name} has no accessibility statement or VPAT, so the syllabus lists it among sites without them.`, `vendors.${index}.vpatUrl`));
+      }
       if (name && !String(vendor.privacyUrl || "").trim()) {
         notices.push(finding(`${name} has no privacy policy link, so the syllabus says none was found.`, `vendors.${index}.privacyUrl`));
       }
@@ -302,7 +316,7 @@ window.SCTCC = window.SCTCC || {};
 
     checkCalendar(data, warnings, notices);
     checkContent(content, data, errors, warnings, notices);
-    checkInstructorExtras(data, warnings, notices);
+    checkInstructorExtras(data, errors, warnings, notices);
     checkCollegeDates(data, content.academicCalendar, warnings, notices);
 
     if (input.config && input.config.logo && input.config.logo.isPlaceholder) {

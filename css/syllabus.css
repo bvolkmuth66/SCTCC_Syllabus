@@ -935,6 +935,171 @@ body[data-mode="instructor"] .student-only {
   margin: 0.4rem 0;
 }
 
+/* ---------- Start screen and import review ---------- */
+
+.start-dialog {
+  width: min(40rem, calc(100vw - 2rem));
+}
+
+.start-options {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.start-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 0.85rem 1rem;
+  border: 2px solid var(--sctcc-border-strong);
+  border-left: 6px solid var(--sctcc-primary);
+  border-radius: 0.35rem;
+  background: #ffffff;
+  color: var(--sctcc-text);
+  cursor: pointer;
+}
+
+.start-option:hover {
+  background: var(--notice-info-bg);
+}
+
+.start-option.is-primary {
+  border-left-color: var(--sctcc-orange);
+}
+
+.start-option-title {
+  display: block;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--sctcc-primary);
+}
+
+.start-option-text {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.95rem;
+}
+
+.btn-link {
+  border: 0;
+  padding: 0;
+  min-height: 0;
+  background: none;
+  color: var(--sctcc-primary);
+  text-decoration: underline;
+}
+
+.btn-link:hover {
+  background: none;
+  text-decoration-thickness: 2px;
+}
+
+.import-dialog {
+  width: min(54rem, calc(100vw - 2rem));
+  padding-bottom: 0;
+}
+
+.import-notes {
+  padding-left: 1.25rem;
+}
+
+.import-group {
+  background: var(--sctcc-background);
+}
+
+.import-item {
+  padding: 0.5rem 0 0.6rem;
+  border-bottom: 1px solid var(--sctcc-border);
+}
+
+.import-item:last-child {
+  border-bottom: 0;
+}
+
+.import-preview {
+  margin: 0.3rem 0 0 1.7rem;
+  padding: 0.4rem 0.6rem;
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  background: var(--sctcc-muted);
+  border-radius: 0.25rem;
+  max-width: none;
+}
+
+.import-preview-long {
+  margin: 0.3rem 0 0 1.7rem;
+  font-size: 0.9rem;
+}
+
+.import-preview-long > summary {
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+  background: var(--sctcc-muted);
+  border-radius: 0.25rem;
+  white-space: pre-wrap;
+}
+
+.import-preview-long .import-preview {
+  margin-left: 0;
+}
+
+.show-all {
+  font-weight: 700;
+  color: var(--sctcc-primary);
+  text-decoration: underline;
+}
+
+.photo-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.photo-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.photo-choice label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.photo-choice img {
+  border: 1px solid var(--sctcc-border-strong);
+  border-radius: 0.25rem;
+  height: auto;
+}
+
+.import-skipped {
+  margin: 1rem 0;
+}
+
+.import-skipped summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--sctcc-primary);
+}
+
+.dialog-actions {
+  position: sticky;
+  bottom: 0;
+  margin: 0 -1.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--sctcc-background);
+  border-top: 1px solid var(--sctcc-border-strong);
+}
+
+.extra-row {
+  background: var(--sctcc-muted);
+}
+
 /* ---------- Instructor-written blocks inside college sections ---------- */
 
 .instructor-content {

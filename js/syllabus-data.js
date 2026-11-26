@@ -34,11 +34,12 @@ window.SCTCC = window.SCTCC || {};
     "grading.scale": { label: "", minPercent: 0, maxPercent: 0 },
     "calendar.entries": {
       week: 0, meeting: 0, date: "", weekEnd: "", topic: "", preparation: "", due: "", notes: "",
-      noClass: false, isFinals: false, manual: false
+      noClass: false, isFinals: false, manual: false, pending: false
     },
+    "policies.additionalSections": { title: "", text: "" },
     "calendar.excludedDates": { date: "", label: "" },
     "vendors": {
-      name: "", purpose: "", accessibilityUrl: "", vpatUrl: "", privacyUrl: "",
+      name: "", purpose: "", accessibilityUrl: "", noAccessibilityStatement: false, vpatUrl: "", privacyUrl: "",
       accountRequired: "", dataCollected: "", alternativeAccess: "", supportUrl: ""
     }
   };
@@ -121,7 +122,9 @@ window.SCTCC = window.SCTCC || {};
         attendance: "",
         lateWork: "",
         acceptedFileFormats: "", /* blank = college default in navigating-d2l.html */
-        classEnvironment: ""     /* blank = college sample text */
+        classEnvironment: "",    /* blank = college sample text */
+        programDiversity: "",
+        additionalSections: []   /* { title, text } instructor-written sections */
       },
       grading: {
         calculationMethod: "points",   /* "points" | "weighted" */
@@ -160,6 +163,7 @@ window.SCTCC = window.SCTCC || {};
         mnTransferGoal: false,
         turnitin: false,
         classEnvironment: false,
+        programDiversity: false,
         academicIntegrityExamples: false,
         timeCommitment: true,
         recommendedMaterials: true

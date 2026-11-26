@@ -49,6 +49,20 @@
     return text ? text : missing(label);
   }
 
+  /* Web addresses in instructor text become working links (https:// and http:// only). */
+  const URL_IN_TEXT = /(https?:\/\/[^\s<>()"]+[^\s<>()".,;:!?'])/g;
+
+  function appendLinkedText(parent, line) {
+    let last = 0;
+    line.replace(URL_IN_TEXT, (url, _match, offset) => {
+      if (offset > last) parent.appendChild(document.createTextNode(line.slice(last, offset)));
+      parent.appendChild(el("a", { href: url }, url));
+      last = offset + url.length;
+      return url;
+    });
+    if (last < line.length) parent.appendChild(document.createTextNode(line.slice(last)));
+  }
+
   /* Split free text into paragraphs on blank lines; single line breaks become <br>. */
   function textBlocks(text, missingLabel) {
     const value = typeof text === "string" ? text.trim() : "";
@@ -57,7 +71,7 @@
       const p = el("p");
       paragraph.split(/\n/).forEach((line, index) => {
         if (index) p.appendChild(el("br"));
-        p.appendChild(document.createTextNode(line));
+        appendLinkedText(p, line);
       });
       return p;
     });
@@ -161,12 +175,28 @@
     return [wrapper, extra()];
   }
 
+  /* Instructor-written sections that a manifest entry can place right after itself. */
+  const FOLLOWING_SECTIONS = {
+    programDiversity: () => {
+      const text = String(state.data.policies.programDiversity || "").trim();
+      if (!isOptionalEnabled("programDiversity") || !text) return null;
+      return subsection("Program Diversity Statement",
+        el("div", { class: "instructor-content" },
+          el("p", { class: "content-source instructor-only" }, "Your program’s statement"),
+          textBlocks(text)), 3, "instructor-section");
+    }
+  };
+
   function placementBlocks(placement) {
     return state.content.sections
       .filter((entry) => entry.definition.placement === placement && isSectionEnabled(entry.definition))
-      .map((entry) => (entry.definition.showTitle
-        ? subsection(entry.definition.title, fragmentBlock(entry), 3, "institutional-section")
-        : fragmentBlock(entry)));
+      .flatMap((entry) => {
+        const block = entry.definition.showTitle
+          ? subsection(entry.definition.title, fragmentBlock(entry), 3, "institutional-section")
+          : fragmentBlock(entry);
+        const follow = FOLLOWING_SECTIONS[entry.definition.followWith];
+        return follow ? [block, follow()] : [block];
+      });
   }
 
   /* ---------- Header ---------- */
@@ -374,6 +404,11 @@
         textBlocks(policies.attendance, "Attendance policy")
       ]),
       subsection("Late Policy", textBlocks(policies.lateWork, "Late-work policy")),
+      (policies.additionalSections || [])
+        .filter((section) => section.title.trim() || section.text.trim())
+        .map((section, index) => el("section", { class: "subsection instructor-section", "aria-labelledby": `extra-section-${index}` },
+          el("h3", { id: `extra-section-${index}` }, section.title.trim() || missing("Section title")),
+          textBlocks(section.text, "Section text"))),
       placementBlocks("course-policies")
     ]);
   }
@@ -827,6 +862,8 @@
       announce(next === "student" ? "Showing the student view." : "Showing the editor.");
     });
     document.getElementById("print-pdf").addEventListener("click", printToPdf);
+    document.getElementById("toolbar-save").addEventListener("click", () => SCTCC.editor.save(false));
+    document.getElementById("toolbar-open").addEventListener("click", () => SCTCC.editor.open());
     window.addEventListener("beforeprint", enterPrintMode);
     window.addEventListener("afterprint", exitPrintMode);
     /* Warn before leaving the page with unsaved changes. */
@@ -841,6 +878,10 @@
 
   const app = Object.freeze({
     getData: () => state.data,
+    contentReady: () => state.contentPromise,
+    collegeTexts: () => state.content.sections
+      .filter((entry) => entry.fragment)
+      .map((entry) => ({ id: entry.definition.id, title: entry.definition.title, text: entry.fragment.textContent })),
     academicCalendar: () => state.content.academicCalendar || null,
     dataChanged,
     replaceData,
@@ -867,7 +908,10 @@
         ["The builder no longer stores syllabi. Open your saved file to keep working."]);
     }
 
-    state.content = await SCTCC.contentLoader.loadContent(config);
+    state.contentPromise = SCTCC.contentLoader.loadContent(config);
+    SCTCC.startScreen.init(app);
+    SCTCC.startScreen.show();
+    state.content = await state.contentPromise;
     render();
     SCTCC.editor.refreshCollegeDates();
     document.body.classList.add("content-ready");
