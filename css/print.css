@@ -55,7 +55,7 @@ address {
 .screen-only,
 .instructor-only,
 .builder-toolbar,
-.status-panel,
+.editor,
 .skip-link,
 .back-to-top,
 .content-source,
@@ -167,6 +167,20 @@ body.print-link-urls a[href^="http"]::after {
 
 .institutional-content {
   border-left-width: 2px;
+}
+
+.workspace {
+  display: block !important;
+}
+
+.vendor {
+  break-inside: avoid;
+}
+
+.vendor-details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 1pt 10pt;
 }
 
 .toc {

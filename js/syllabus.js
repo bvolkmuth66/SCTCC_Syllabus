@@ -1,13 +1,13 @@
 /*
- * SCTCC Syllabus Builder — page rendering
+ * SCTCC Syllabus Builder — page rendering and app controller
  *
  * Renders the syllabus from the structured data object plus the institutional
  * fragments loaded by content-loader.js. Instructor-entered text is always
  * inserted as text (textContent / text nodes), never as HTML.
  *
- * Phase 1: renders sample data, instructor/student preview, optional-section
- * toggles, and a basic Print to PDF button. Editing, autosave, validation,
- * the grading editor, and the calendar generator arrive in later phases.
+ * Also owns the syllabus data for the page: re-rendering after edits,
+ * tracking unsaved changes, and printing to PDF. The builder never stores a
+ * syllabus; instructors save files to their own computer or OneDrive.
  */
 (function () {
   "use strict";
@@ -15,54 +15,30 @@
   const SCTCC = window.SCTCC;
   const config = SCTCC.config;
   const util = SCTCC.util;
+  const { el, appendChildren, announce } = SCTCC.dom;
 
   const state = {
     data: null,
     content: { manifest: null, sections: [], errors: [] },
-    usingSampleData: false
+    renderTimer: null,
+    printSnapshot: null,
+    dirty: false,
+    fileName: ""
   };
 
-  /* Friendly names for missing-value markers. */
+  /* Friendly names for missing-value markers in college content tokens. */
   const FIELD_LABELS = {
-    "course.prefix": "Course prefix",
-    "course.number": "Course number",
-    "course.title": "Course title",
-    "course.term": "Term",
-    "course.year": "Year",
-    "course.startDate": "Begin date",
-    "course.endDate": "End date",
-    "course.dropDate": "Last day to drop",
     "course.withdrawalDate": "Withdrawal date",
-    "course.location": "Room number",
-    "instructor.name": "Instructor name",
-    "instructor.email": "Email address"
+    "course.dropDate": "Drop date",
+    "course.startDate": "Begin date",
+    "course.endDate": "End date"
   };
 
   function describeField(field) {
     return FIELD_LABELS[field] || field.split(".").pop().replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
   }
 
-  /* ---------- Small DOM helpers ---------- */
-
-  function appendChildren(node, children) {
-    children.flat(Infinity).forEach((child) => {
-      if (child === null || child === undefined || child === false || child === "") return;
-      node.appendChild(typeof child === "string" || typeof child === "number"
-        ? document.createTextNode(String(child))
-        : child);
-    });
-    return node;
-  }
-
-  function el(tag, attributes, ...children) {
-    const node = document.createElement(tag);
-    Object.entries(attributes || {}).forEach(([name, value]) => {
-      if (value === null || value === undefined || value === false) return;
-      if (name === "class") node.className = value;
-      else node.setAttribute(name, value === true ? "" : String(value));
-    });
-    return appendChildren(node, children);
-  }
+  /* ---------- Small rendering helpers ---------- */
 
   function missing(label) {
     return el("span", { class: "missing-value" }, `[${label} needed]`);
@@ -93,8 +69,12 @@
     return el(ordered ? "ol" : "ul", null, values.map((value) => el("li", null, value)));
   }
 
-  function isSafeUrl(value) {
-    return typeof value === "string" && /^(https?:\/\/|\.{0,2}\/|assets\/)/i.test(value.trim());
+  function isWebUrl(value) {
+    return typeof value === "string" && /^https?:\/\/[^\s]+$/i.test(value.trim());
+  }
+
+  function isImageData(value) {
+    return typeof value === "string" && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(value);
   }
 
   function slug(text) {
@@ -140,22 +120,33 @@
     if (value === null || value === undefined || String(value).trim() === "") return "";
     if (format === "date") return util.formatDate(String(value), "long");
     if (format === "date-short") return util.formatDate(String(value), "short");
-    return String(value);
+    return String(value).trim();
   }
+
+  /* Instructor-written blocks that a manifest entry can append after its college text. */
+  const INSTRUCTOR_BLOCKS = {
+    vendors: renderVendors
+  };
 
   function fragmentBlock(entry) {
     const definition = entry.definition;
-    const wrapper = el("div", { class: "institutional-content", "data-section-id": definition.id });
+    const overrideText = definition.overrideField ? resolveField(definition.overrideField) : "";
 
+    if (overrideText) {
+      return el("div", { class: "instructor-content", "data-section-id": definition.id },
+        el("p", { class: "content-source instructor-only" }, "Your text (replaces the college sample)"),
+        textBlocks(overrideText));
+    }
+
+    const wrapper = el("div", { class: "institutional-content", "data-section-id": definition.id });
     const reviewed = entry.meta["last-reviewed"] ? ` · reviewed ${entry.meta["last-reviewed"]}` : "";
     wrapper.appendChild(el("p", { class: "content-source instructor-only" },
       `College content · ${entry.meta.owner || definition.owner || "owner not set"}${reviewed}`));
     appendChildren(wrapper, [instructorNote(definition.instructorNote)]);
 
     if (entry.fragment) {
-      const content = entry.fragment.cloneNode(true);
       const holder = el("div", { class: "fragment-body" });
-      holder.appendChild(content);
+      holder.appendChild(entry.fragment.cloneNode(true));
       SCTCC.contentLoader.applyFieldTokens(holder, resolveField, describeField);
       wrapper.appendChild(holder);
     } else {
@@ -164,7 +155,10 @@
       wrapper.appendChild(el("p", { class: "student-only" },
         `${definition.title} information is temporarily unavailable. Please check D2L or contact your instructor.`));
     }
-    return wrapper;
+
+    const extra = definition.appendInstructorBlock && INSTRUCTOR_BLOCKS[definition.appendInstructorBlock];
+    if (!extra) return wrapper;
+    return [wrapper, extra()];
   }
 
   function placementBlocks(placement) {
@@ -179,7 +173,7 @@
 
   function courseIdentifier() {
     const course = state.data.course;
-    return [course.prefix, course.number].filter(Boolean).join(" ").trim();
+    return [course.prefix, course.number].map((part) => String(part || "").trim()).filter(Boolean).join(" ");
   }
 
   function renderHeader() {
@@ -205,45 +199,58 @@
     appendChildren(slot, placementBlocks("header"));
 
     const id = courseIdentifier();
-    document.title = `${id ? `${id} ` : ""}${course.title || "Course"} Syllabus | ${config.institutionShortName}`;
+    if (!state.printSnapshot) {
+      document.title = `${id ? `${id} ` : ""}${course.title || "Course"} Syllabus | ${config.institutionShortName}`;
+    }
   }
 
   /* ---------- Instructor Information ---------- */
+
+  function photoSource() {
+    const instructor = state.data.instructor;
+    if (isImageData(instructor.photoData)) return instructor.photoData;
+    if (isWebUrl(instructor.photoUrl)) return instructor.photoUrl.trim();
+    return "";
+  }
 
   function renderInstructorInformation() {
     const instructor = state.data.instructor;
     const children = [];
 
-    if (isOptionalEnabled("instructorPhoto") && isSafeUrl(instructor.photoUrl)) {
+    const photo = isOptionalEnabled("instructorPhoto") ? photoSource() : "";
+    if (photo) {
       children.push(el("img", {
         class: "instructor-photo",
-        src: instructor.photoUrl.trim(),
-        alt: instructor.photoAlt || `Photo of ${instructor.name || "the instructor"}`,
+        src: photo,
+        alt: instructor.photoAlt.trim() || `Photo of ${instructor.name.trim() || "the instructor"}`,
         width: "160"
       }));
+    } else if (isOptionalEnabled("instructorPhoto")) {
+      children.push(el("p", { class: "instructor-only" }, missing("Photo (upload one or turn off “Include my photo”)")));
     }
 
     const nameLine = el("p", { class: "instructor-name" },
       el("strong", null, valueOr(instructor.name, "Instructor name")),
-      instructor.credentials ? `, ${instructor.credentials}` : "");
+      instructor.credentials.trim() ? `, ${instructor.credentials.trim()}` : "");
 
-    const email = instructor.email && instructor.email.trim()
-      ? el("a", { href: `mailto:${instructor.email.trim()}` }, instructor.email.trim())
+    const emailText = instructor.email.trim();
+    const email = emailText
+      ? el("a", { href: `mailto:${emailText}` }, emailText)
       : missing("Email address");
 
     const details = el("dl", { class: "contact-list" },
       el("dt", null, "Email"), el("dd", null, email),
-      instructor.phone ? [el("dt", null, "Telephone"), el("dd", null, instructor.phone)] : null,
+      instructor.phone.trim() ? [el("dt", null, "Telephone"), el("dd", null, instructor.phone.trim())] : null,
       el("dt", null, "Office"), el("dd", null, valueOr(instructor.office, "Office location")),
       el("dt", null, "Office hours"), el("dd", null, textBlocks(instructor.officeHours, "Office hours")));
 
     children.push(el("address", { class: "instructor-contact" }, nameLine, details));
 
     const contactSentence = [];
-    if (instructor.preferredContactMethod) {
-      contactSentence.push(`The best way to contact me is by ${instructor.preferredContactMethod}.`);
+    if (instructor.preferredContactMethod.trim()) {
+      contactSentence.push(`The best way to contact me is by ${instructor.preferredContactMethod.trim().replace(/\.$/, "")}.`);
     }
-    if (instructor.responseTime) contactSentence.push(instructor.responseTime);
+    if (instructor.responseTime.trim()) contactSentence.push(instructor.responseTime.trim());
     if (contactSentence.length) children.push(el("p", null, contactSentence.join(" ")));
 
     if (isOptionalEnabled("instructorBiography")) {
@@ -271,7 +278,7 @@
       return ["This is an exclusively online course with no face-to-face meetings."];
     }
     if (course.modality !== "residential" && course.modality !== "hybrid") {
-      return [missing("Course modality (residential, hybrid, or online)")];
+      return [missing("Course modality")];
     }
     const days = (pattern.days || []).map((day) => `${day}s`);
     const start = util.formatTime(pattern.startTime);
@@ -285,10 +292,13 @@
     ];
   }
 
+  function dateOrMissing(value, label) {
+    return value ? util.formatDate(value) || missing(label) : missing(label);
+  }
+
   function renderCourseInformation() {
     const course = state.data.course;
     const materials = state.data.materials;
-    const definitionSection = state.content.sections.find((entry) => entry.definition.placement === "general-information");
 
     const general = subsection("General Information", [
       el("p", null, el("strong", null, valueOr(courseIdentifier(), "Course prefix & number"), ": ", valueOr(course.title, "Title"))),
@@ -296,13 +306,13 @@
       el("p", null, meetingSentence()),
       textBlocks(course.modalityNote),
       el("p", null,
-        "Begin date: ", el("strong", null, course.startDate ? util.formatDate(course.startDate) : missing("Begin date")),
-        " – End date: ", el("strong", null, course.endDate ? util.formatDate(course.endDate) : missing("End date"))),
-      definitionSection ? placementBlocks("general-information") : null,
+        "Begin date: ", el("strong", null, dateOrMissing(course.startDate, "Begin date")),
+        " – End date: ", el("strong", null, dateOrMissing(course.endDate, "End date"))),
+      placementBlocks("general-information"),
       el("p", null, "Last day to drop and receive full refund is ",
-        el("strong", null, course.dropDate ? util.formatDate(course.dropDate) : missing("Drop date")), "."),
+        el("strong", null, dateOrMissing(course.dropDate, "Drop date")), "."),
       el("p", null, "Last day to withdraw with a grade of “W” is ",
-        el("strong", null, course.withdrawalDate ? util.formatDate(course.withdrawalDate) : missing("Withdrawal date")), ".")
+        el("strong", null, dateOrMissing(course.withdrawalDate, "Withdrawal date")), ".")
     ]);
 
     const login = isOptionalEnabled("courseLogin")
@@ -327,10 +337,11 @@
     ]);
 
     const prerequisites = course.prerequisites || { intro: "", items: [] };
+    const hasPrereqs = prerequisites.intro.trim() || prerequisites.items.length;
     const prereqSection = subsection("Pre/Co-Requisites", [
-      textBlocks(prerequisites.intro, prerequisites.items.length ? null : "Prerequisites (from the SCTCC Course Outline)"),
+      hasPrereqs ? textBlocks(prerequisites.intro) : el("p", null, missing("Prerequisites (from the SCTCC Course Outline)")),
       listOf(prerequisites.items, true),
-      course.corequisites ? textBlocks(`Corequisites: ${course.corequisites}`) : null
+      course.corequisites.trim() ? textBlocks(`Corequisites: ${course.corequisites.trim()}`) : null
     ]);
 
     const outcomes = subsection("Course Description & Outcomes", [
@@ -367,6 +378,46 @@
     ]);
   }
 
+  /* Course tools, shown after the college Accessibility & Data Privacy text. */
+  function renderVendors() {
+    const vendors = (state.data.vendors || []).filter((vendor) => vendor.name.trim());
+    if (!vendors.length) return null;
+
+    const linkOr = (url, text, fallback) => (isWebUrl(url) ? el("a", { href: url.trim() }, text) : fallback);
+    const withoutPolicy = vendors
+      .filter((vendor) => !isWebUrl(vendor.accessibilityUrl) && !isWebUrl(vendor.vpatUrl))
+      .map((vendor) => vendor.name.trim());
+
+    return el("div", { class: "instructor-content vendor-list" },
+      el("p", { class: "content-source instructor-only" }, "Your course tools"),
+      el("p", null, "This course also uses the following tools:"),
+      vendors.map((vendor) => {
+        const name = vendor.name.trim();
+        const account = vendor.accountRequired === "yes" ? "Yes" : (vendor.accountRequired === "no" ? "No" : "");
+        return el("section", { class: "vendor", "aria-labelledby": `vendor-${slug(name)}` },
+          el("h4", { id: `vendor-${slug(name)}` }, name),
+          el("dl", { class: "vendor-details" },
+            vendor.purpose.trim() ? [el("dt", null, "Purpose in this course"), el("dd", null, vendor.purpose.trim())] : null,
+            el("dt", null, "Accessibility"),
+            el("dd", null,
+              linkOr(vendor.accessibilityUrl, `${name} accessibility statement`,
+                linkOr(vendor.vpatUrl, `${name} VPAT (Voluntary Product Accessibility Template)`,
+                  "No accessibility statement or VPAT is available for this tool."))),
+            isWebUrl(vendor.accessibilityUrl) && isWebUrl(vendor.vpatUrl)
+              ? [el("dt", null, "VPAT"), el("dd", null, el("a", { href: vendor.vpatUrl.trim() }, `${name} VPAT`))]
+              : null,
+            el("dt", null, "Data privacy"),
+            el("dd", null, linkOr(vendor.privacyUrl, `${name} privacy policy`, "No data privacy policy was found for this tool.")),
+            account ? [el("dt", null, "Student account required"), el("dd", null, account)] : null,
+            vendor.dataCollected.trim() ? [el("dt", null, "Student data collected"), el("dd", null, vendor.dataCollected.trim())] : null,
+            vendor.alternativeAccess.trim() ? [el("dt", null, "Alternative access"), el("dd", null, vendor.alternativeAccess.trim())] : null,
+            isWebUrl(vendor.supportUrl) ? [el("dt", null, "Technical support"), el("dd", null, el("a", { href: vendor.supportUrl.trim() }, `${name} support`))] : null));
+      }),
+      withoutPolicy.length
+        ? el("p", null, `Sites without Accessibility Policies or Voluntary Product Accessibility Templates (VPATs) used in this course include ${util.joinWords(withoutPolicy)}.`)
+        : null);
+  }
+
   /* ---------- Grading ---------- */
 
   function categoryTotal(category) {
@@ -378,23 +429,30 @@
     return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}%`;
   }
 
+  function tableWrap(label, table) {
+    return el("div", { class: "table-wrap", role: "region", "aria-label": label, tabindex: "0" }, table);
+  }
+
+  function categoryHeader(category) {
+    return el("th", { scope: "row" }, category.name || missing("Category"),
+      category.notes ? el("span", { class: "row-note" }, category.notes) : null);
+  }
+
   function gradingTable() {
     const grading = state.data.grading;
     const categories = grading.categories || [];
-    if (!categories.length) return el("p", null, missing("Assessment categories"));
-
-    const wrap = (table) => el("div", { class: "table-wrap", role: "region", "aria-label": "Assessments table", tabindex: "0" }, table);
+    if (!categories.length) return el("p", null, missing("Assessment categories (grading editor arrives in Phase 3)"));
 
     if (grading.calculationMethod === "weighted") {
       const totalWeight = categories.reduce((sum, category) => sum + (Number(category.weight) || 0), 0);
-      return wrap(el("table", { class: "data-table" },
+      return tableWrap("Assessments table", el("table", { class: "data-table" },
         el("caption", null, "Assessments and percentage of final grade"),
         el("thead", null, el("tr", null,
           el("th", { scope: "col" }, "Assessment"),
           el("th", { scope: "col", class: "num" }, "Number"),
           el("th", { scope: "col", class: "num" }, "Percent of grade"))),
         el("tbody", null, categories.map((category) => el("tr", null,
-          el("th", { scope: "row" }, category.name || missing("Category"), category.notes ? el("span", { class: "row-note" }, category.notes) : null),
+          categoryHeader(category),
           el("td", { class: "num" }, category.count ? String(category.count) : "—"),
           el("td", { class: "num" }, formatPercent(Number(category.weight) || 0))))),
         el("tfoot", null, el("tr", null,
@@ -404,7 +462,7 @@
     }
 
     const courseTotal = categories.reduce((sum, category) => sum + categoryTotal(category), 0);
-    return wrap(el("table", { class: "data-table" },
+    return tableWrap("Assessments table", el("table", { class: "data-table" },
       el("caption", null, "Assessments, points, and percentage of final grade"),
       el("thead", null, el("tr", null,
         el("th", { scope: "col" }, "Assessment"),
@@ -415,7 +473,7 @@
       el("tbody", null, categories.map((category) => {
         const total = categoryTotal(category);
         return el("tr", null,
-          el("th", { scope: "row" }, category.name || missing("Category"), category.notes ? el("span", { class: "row-note" }, category.notes) : null),
+          categoryHeader(category),
           el("td", { class: "num" }, String(Number(category.count) || 0)),
           el("td", { class: "num" }, String(Number(category.pointsEach) || 0)),
           el("td", { class: "num" }, String(total)),
@@ -440,20 +498,19 @@
       : 0;
     const minPoints = scale.map((row) => Math.ceil((courseTotal * (Number(row.minPercent) || 0)) / 100));
 
-    return el("div", { class: "table-wrap", role: "region", "aria-label": "Grading scale table", tabindex: "0" },
-      el("table", { class: "data-table grading-scale" },
-        el("caption", null, "Grading scale"),
-        el("thead", null, el("tr", null,
-          el("th", { scope: "col" }, "Grade"),
-          el("th", { scope: "col", class: "num" }, "Percentage"),
-          showPoints && courseTotal ? el("th", { scope: "col", class: "num" }, "Points") : null)),
-        el("tbody", null, scale.map((row, index) => {
-          const highPoints = index === 0 ? courseTotal : minPoints[index - 1] - 1;
-          return el("tr", null,
-            el("th", { scope: "row" }, row.label || missing("Grade label")),
-            el("td", { class: "num" }, `${row.minPercent}–${row.maxPercent}%`),
-            showPoints && courseTotal ? el("td", { class: "num" }, `${minPoints[index]}–${highPoints}`) : null);
-        }))));
+    return tableWrap("Grading scale table", el("table", { class: "data-table grading-scale" },
+      el("caption", null, "Grading scale"),
+      el("thead", null, el("tr", null,
+        el("th", { scope: "col" }, "Grade"),
+        el("th", { scope: "col", class: "num" }, "Percentage"),
+        showPoints && courseTotal ? el("th", { scope: "col", class: "num" }, "Points") : null)),
+      el("tbody", null, scale.map((row, index) => {
+        const highPoints = index === 0 ? courseTotal : minPoints[index - 1] - 1;
+        return el("tr", null,
+          el("th", { scope: "row" }, row.label || missing("Grade label")),
+          el("td", { class: "num" }, `${row.minPercent}–${row.maxPercent}%`),
+          showPoints && courseTotal ? el("td", { class: "num" }, `${minPoints[index]}–${highPoints}`) : null);
+      }))));
   }
 
   function renderGrading() {
@@ -482,21 +539,21 @@
     const statement = textBlocks(calendar.locationStatement, entries.length ? null : "Statement of where the course schedule is located");
 
     const table = entries.length
-      ? el("div", { class: "table-wrap", role: "region", "aria-label": "Course calendar table", tabindex: "0" },
-        el("table", { class: "data-table calendar-table" },
-          el("caption", null, "Course calendar"),
-          el("thead", null, el("tr", null,
-            ["Week", "Meeting", "Date", "Day", "Topic", "Preparation/Reading", "Assignment Due", "Notes"]
-              .map((label) => el("th", { scope: "col" }, label)))),
-          el("tbody", null, entries.map((entry) => el("tr", { class: entry.noClass ? "no-class" : null },
-            el("td", null, entry.week ? String(entry.week) : ""),
-            el("td", null, entry.meeting ? String(entry.meeting) : ""),
-            el("th", { scope: "row" }, util.formatDate(entry.date, "short") || entry.date || ""),
-            el("td", null, util.weekdayName(entry.date, true)),
-            el("td", null, entry.noClass ? el("strong", null, "No Class") : (entry.topic || ""), entry.noClass && entry.topic ? ` – ${entry.topic}` : ""),
-            el("td", null, entry.preparation || ""),
-            el("td", null, entry.due || ""),
-            el("td", null, entry.notes || ""))))))
+      ? tableWrap("Course calendar table", el("table", { class: "data-table calendar-table" },
+        el("caption", null, "Course calendar"),
+        el("thead", null, el("tr", null,
+          ["Week", "Meeting", "Date", "Day", "Topic", "Preparation/Reading", "Assignment Due", "Notes"]
+            .map((label) => el("th", { scope: "col" }, label)))),
+        el("tbody", null, entries.map((entry) => el("tr", { class: entry.noClass ? "no-class" : null },
+          el("td", null, entry.week ? String(entry.week) : ""),
+          el("td", null, entry.meeting ? String(entry.meeting) : ""),
+          el("th", { scope: "row" }, util.formatDate(entry.date, "short") || entry.date || ""),
+          el("td", null, util.weekdayName(entry.date, true)),
+          el("td", null, entry.noClass ? el("strong", null, "No Class") : (entry.topic || ""), entry.noClass && entry.topic ? ` – ${entry.topic}` : ""),
+          el("td", null, entry.preparation || ""),
+          el("td", null, entry.due || ""),
+          el("td", null, entry.notes || "")))))
+      )
       : null;
 
     return majorSection("course-calendar", "Course Calendar", [statement, table]);
@@ -534,23 +591,18 @@
     const course = state.data.course;
     const parts = [
       config.institutionName,
-      `${courseIdentifier() || "Course"}${course.title ? `: ${course.title}` : ""} Syllabus`,
-      [course.term, course.year].filter(Boolean).join(" "),
-      `Version ${state.data.meta.syllabusVersion || "1.0"}`
+      `${courseIdentifier() || "Course"}${course.title.trim() ? `: ${course.title.trim()}` : ""} Syllabus`,
+      [course.term, course.year].map((part) => String(part || "").trim()).filter(Boolean).join(" "),
+      `Version ${state.data.meta.syllabusVersion.trim() || "1.0"}`
     ].filter(Boolean);
     style.textContent = `@media print { @page { @bottom-left { content: ${cssString(parts.join(" · "))}; } } }`;
   }
 
   function renderStatusPanel() {
     const panel = document.getElementById("builder-status-body");
+    if (!panel) return;
     panel.textContent = "";
     const manifest = state.content.manifest;
-
-    if (state.usingSampleData) {
-      panel.appendChild(el("p", { class: "notice notice-info" },
-        el("strong", null, "Sample data: "),
-        "This preview shows the sample course from examples/sample-course-data.js. The editing forms arrive in Phase 2."));
-    }
 
     if (config.logo.isPlaceholder) {
       panel.appendChild(el("p", { class: "notice notice-warning" },
@@ -565,57 +617,32 @@
         `. ${state.content.sections.filter((entry) => entry.fragment).length} of ${state.content.sections.length} sections loaded.`));
     }
 
-    const errorBox = el("div", { class: "status-errors" });
     if (state.content.errors.length) {
-      errorBox.appendChild(el("p", { class: "notice notice-error" },
-        el("strong", null, "Content problems: "), `${state.content.errors.length} found.`));
-      errorBox.appendChild(el("ul", null, state.content.errors.map((message) => el("li", null, message))));
+      panel.appendChild(el("div", { class: "notice notice-error" },
+        el("p", null, el("strong", null, "Content problems: "), `${state.content.errors.length} found.`),
+        el("ul", null, state.content.errors.map((message) => el("li", null, message)))));
     }
-    panel.appendChild(errorBox);
-
-    const toggles = el("fieldset", { class: "optional-toggles" }, el("legend", null, "Optional sections"));
-    const labels = {
-      instructorPhoto: "Instructor photograph",
-      instructorBiography: "Instructor biography",
-      educationalPhilosophy: "Educational philosophy",
-      courseLogin: "Course log-in requirements",
-      mnTransferGoal: "MN Transfer Curriculum goal area",
-      turnitin: "Turnitin",
-      academicIntegrityExamples: "Academic dishonesty examples",
-      classEnvironment: "Class Environment",
-      timeCommitment: "Time Commitment",
-      recommendedMaterials: "Recommended Materials"
-    };
-    Object.entries(labels).forEach(([key, label]) => {
-      const id = `optional-${key}`;
-      const input = el("input", { type: "checkbox", id, "data-optional-key": key });
-      input.checked = isOptionalEnabled(key);
-      toggles.appendChild(el("div", { class: "checkbox-row" }, input, el("label", { for: id }, label)));
-    });
-    panel.appendChild(toggles);
 
     if (state.content.sections.length) {
-      panel.appendChild(el("details", { class: "content-inventory" },
-        el("summary", null, "College content files"),
-        el("div", { class: "table-wrap", role: "region", "aria-label": "College content files", tabindex: "0" },
-          el("table", { class: "data-table" },
-            el("caption", null, "Institutional sections loaded from the repository"),
-            el("thead", null, el("tr", null,
-              ["Section", "File", "Owner", "Last reviewed", "Status"].map((label) => el("th", { scope: "col" }, label)))),
-            el("tbody", null, state.content.sections.map((entry) => el("tr", null,
-              el("th", { scope: "row" }, entry.definition.title || entry.definition.id),
-              el("td", null, el("code", null, entry.definition.file)),
-              el("td", null, entry.meta.owner || entry.definition.owner || ""),
-              el("td", null, entry.meta["last-reviewed"] || ""),
-              el("td", null, entry.fragment
-                ? (isSectionEnabled(entry.definition) ? "Loaded" : "Loaded (turned off)")
-                : el("strong", null, "Error")))))))));
+      panel.appendChild(tableWrap("College content files", el("table", { class: "data-table compact-table" },
+        el("caption", null, "College sections loaded from the repository"),
+        el("thead", null, el("tr", null,
+          ["Section", "Owner", "Reviewed", "Status"].map((label) => el("th", { scope: "col" }, label)))),
+        el("tbody", null, state.content.sections.map((entry) => el("tr", null,
+          el("th", { scope: "row" }, entry.definition.title || entry.definition.id),
+          el("td", null, entry.meta.owner || entry.definition.owner || ""),
+          el("td", null, entry.meta["last-reviewed"] || ""),
+          el("td", null, entry.fragment
+            ? (isSectionEnabled(entry.definition) ? "Shown" : "Off")
+            : el("strong", null, "Error"))))))));
     }
   }
 
-  /* ---------- Rendering and modes ---------- */
+  /* ---------- Rendering ---------- */
 
   function render() {
+    window.clearTimeout(state.renderTimer);
+    state.renderTimer = null;
     renderHeader();
     const main = document.getElementById("main");
     main.textContent = "";
@@ -634,18 +661,67 @@
     document.body.classList.toggle("print-link-urls", Boolean(config.printLinkUrls));
   }
 
-  function announce(message) {
-    const region = document.getElementById("live-status");
-    region.textContent = "";
-    window.setTimeout(() => { region.textContent = message; }, 50);
+  /* ---------- Unsaved changes ---------- */
+  /*
+   * The builder never stores a syllabus. It only tracks whether the open syllabus
+   * has changes that have not been saved to the instructor's own file.
+   */
+
+  function contentVersion() {
+    return (state.content.manifest && state.content.manifest.contentVersion) || "";
   }
+
+  /* True when nothing has been entered yet. */
+  function isBlank(data) {
+    const blank = SCTCC.createEmptySyllabusData();
+    blank.meta.id = data.meta.id;
+    return JSON.stringify(blank) === JSON.stringify(data);
+  }
+
+  function hasUnsavedChanges() {
+    return state.dirty && !isBlank(state.data);
+  }
+
+  function updateFileStatus() {
+    SCTCC.editor.setFileStatus(state.fileName, hasUnsavedChanges());
+  }
+
+  /* Called by the editor after every change. */
+  function dataChanged() {
+    window.clearTimeout(state.renderTimer);
+    state.renderTimer = window.setTimeout(render, config.previewDelayMs);
+    state.dirty = true;
+    updateFileStatus();
+  }
+
+  /*
+   * Replace the whole syllabus (new, open, sample, clear).
+   * options.fileName: the file it came from; options.dirty: whether it still needs saving.
+   */
+  function replaceData(data, options) {
+    const opts = options || {};
+    state.data = data;
+    state.fileName = opts.fileName || "";
+    state.dirty = Boolean(opts.dirty);
+    render();
+    updateFileStatus();
+  }
+
+  /* Called after a successful save. */
+  function markSaved(fileName) {
+    state.fileName = fileName || state.fileName;
+    state.dirty = false;
+    updateFileStatus();
+  }
+
+  /* ---------- Modes and printing ---------- */
 
   function setMode(mode) {
     const next = mode === "student" ? "student" : "instructor";
     document.body.setAttribute("data-mode", next);
     const button = document.getElementById("toggle-mode");
     button.setAttribute("aria-pressed", next === "student" ? "true" : "false");
-    button.textContent = next === "student" ? "Back to instructor view" : "Student preview";
+    button.textContent = next === "student" ? "Back to editor" : "Student preview";
   }
 
   function suggestedFileName() {
@@ -656,72 +732,80 @@
     return parts.join("-") || "Syllabus";
   }
 
-  /* Phase 1 print: student view + suggested file name. Validation is added in Phase 5. */
-  function printToPdf() {
-    const previousMode = document.body.getAttribute("data-mode");
-    const previousTitle = document.title;
-    const restore = () => {
-      document.title = previousTitle;
-      setMode(previousMode);
-    };
+  /* Runs for the Print to PDF button and for the browser's own Print command. */
+  function enterPrintMode() {
+    if (state.printSnapshot) return;
+    if (state.renderTimer) render();
+    state.printSnapshot = { mode: document.body.getAttribute("data-mode"), title: document.title };
     document.title = suggestedFileName();
     setMode("student");
-    window.addEventListener("afterprint", restore, { once: true });
+  }
+
+  function exitPrintMode() {
+    if (!state.printSnapshot) return;
+    const snapshot = state.printSnapshot;
+    state.printSnapshot = null;
+    document.title = snapshot.title;
+    setMode(snapshot.mode);
+  }
+
+  /* Phase 2 print: student view + suggested file name. Validation is added in Phase 5. */
+  function printToPdf() {
+    enterPrintMode();
     window.print();
   }
 
-  function bindEvents() {
+  function bindPageEvents() {
     document.getElementById("toggle-mode").addEventListener("click", () => {
       const next = document.body.getAttribute("data-mode") === "student" ? "instructor" : "student";
       setMode(next);
-      announce(next === "student" ? "Showing the student view." : "Showing the instructor view.");
+      announce(next === "student" ? "Showing the student view." : "Showing the editor.");
     });
     document.getElementById("print-pdf").addEventListener("click", printToPdf);
-    document.getElementById("builder-status-body").addEventListener("change", (event) => {
-      const key = event.target.getAttribute("data-optional-key");
-      if (!key) return;
-      state.data.optionalSections[key] = event.target.checked;
-      render();
-      const restored = document.getElementById(`optional-${key}`);
-      if (restored) restored.focus();
-      announce(`${event.target.labels[0] ? event.target.labels[0].textContent : "Section"} ${event.target.checked ? "shown" : "hidden"}.`);
+    window.addEventListener("beforeprint", enterPrintMode);
+    window.addEventListener("afterprint", exitPrintMode);
+    /* Warn before leaving the page with unsaved changes. */
+    window.addEventListener("beforeunload", (event) => {
+      if (!hasUnsavedChanges()) return;
+      event.preventDefault();
+      event.returnValue = "";
     });
   }
 
-  function loadInitialData() {
-    const empty = SCTCC.createEmptySyllabusData();
-    if (config.loadSampleData && window.SCTCC_SAMPLE_DATA) {
-      state.usingSampleData = true;
-      /* Merge sample over the empty model so every expected key exists. */
-      const sample = JSON.parse(JSON.stringify(window.SCTCC_SAMPLE_DATA));
-      return deepMerge(empty, sample);
-    }
-    return empty;
-  }
+  /* ---------- Startup ---------- */
 
-  function deepMerge(base, override) {
-    Object.keys(override).forEach((key) => {
-      const value = override[key];
-      if (value && typeof value === "object" && !Array.isArray(value) && base[key] && typeof base[key] === "object" && !Array.isArray(base[key])) {
-        deepMerge(base[key], value);
-      } else {
-        base[key] = value;
-      }
-    });
-    return base;
-  }
+  const app = Object.freeze({
+    getData: () => state.data,
+    dataChanged,
+    replaceData,
+    markSaved,
+    hasUnsavedChanges,
+    contentVersion,
+    suggestedFileName
+  });
 
   async function init() {
-    state.data = loadInitialData();
+    /* Remove any syllabus copies left in this browser by earlier preview builds. */
+    const erased = SCTCC.files.eraseBrowserCopies(config.legacyStoragePrefixes || []);
+
+    state.data = SCTCC.createEmptySyllabusData();
     setMode(config.mode);
-    bindEvents();
-    render(); /* render immediately with instructor data while content loads */
+    bindPageEvents();
+    SCTCC.editor.init(app);
+    render(); /* show the blank syllabus immediately while college content loads */
+    updateFileStatus();
+    if (erased) {
+      SCTCC.editor.showMessages("info", "Removed syllabus copies that an earlier preview of this builder had kept in this browser.",
+        ["The builder no longer stores syllabi. Open your saved file to keep working."]);
+    }
+
     state.content = await SCTCC.contentLoader.loadContent(config);
     render();
     document.body.classList.add("content-ready");
+
     announce(state.content.errors.length
-      ? `Syllabus loaded with ${state.content.errors.length} content problem(s).`
-      : "Syllabus loaded.");
+      ? `Builder ready, with ${state.content.errors.length} college content problem(s).`
+      : "Builder ready.");
   }
 
   document.addEventListener("DOMContentLoaded", init);

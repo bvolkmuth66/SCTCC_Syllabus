@@ -1,9 +1,9 @@
 /*
- * SCTCC Syllabus Builder — data model and shared utilities
+ * SCTCC Syllabus Builder — data model, import validation, and shared utilities
  *
  * createEmptySyllabusData() returns a complete, empty syllabus record.
- * Every instructor-entered value lives in this structure; the student view is
- * rendered from it. Phase 2 adds editing, autosave, and JSON import/export.
+ * validateSyllabusData() checks an imported or saved record and rebuilds it on top
+ * of the empty model, so every expected field exists with the right type.
  */
 window.SCTCC = window.SCTCC || {};
 
@@ -11,6 +11,12 @@ window.SCTCC = window.SCTCC || {};
   "use strict";
 
   const SCHEMA_VERSION = "1.1";
+  const EXPORT_FORMAT = "sctcc-syllabus-data";
+
+  function createId() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") return window.crypto.randomUUID();
+    return `syl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  }
 
   function createDefaultGradingScale() {
     return [
@@ -22,11 +28,40 @@ window.SCTCC = window.SCTCC || {};
     ];
   }
 
+  /* Templates for items inside lists of objects (used when importing). */
+  const ITEM_TEMPLATES = {
+    "grading.categories": { name: "", count: 0, pointsEach: 0, weight: 0, notes: "" },
+    "grading.scale": { label: "", minPercent: 0, maxPercent: 0 },
+    "calendar.entries": { week: 0, meeting: 0, date: "", topic: "", preparation: "", due: "", notes: "", noClass: false },
+    "vendors": {
+      name: "", purpose: "", accessibilityUrl: "", vpatUrl: "", privacyUrl: "",
+      accountRequired: "", dataCollected: "", alternativeAccess: "", supportUrl: ""
+    }
+  };
+
+  /* Lists of plain text values. */
+  const STRING_LISTS = new Set([
+    "course.meetingPattern.days",
+    "course.prerequisites.items",
+    "course.outcomes",
+    "materials.required",
+    "materials.recommended",
+    "materials.requiredTechnologyAdditions",
+    "materials.technicalSkills",
+    "calendar.meetingDays",
+    "calendar.excludedDates"
+  ]);
+
+  function createEmptyVendor() {
+    return JSON.parse(JSON.stringify(ITEM_TEMPLATES.vendors));
+  }
+
   function createEmptySyllabusData() {
     return {
       schemaVersion: SCHEMA_VERSION,
       institution: { name: "St. Cloud Technical & Community College" },
       meta: {
+        id: createId(),
         syllabusVersion: "1.0",
         lastRevised: ""
       },
@@ -38,13 +73,13 @@ window.SCTCC = window.SCTCC || {};
         year: "",
         credits: { total: 0, lecture: 0, laboratory: 0, soe: 0 },
         modality: "",            /* "residential" | "hybrid" | "online" */
-        modalityNote: "",        /* e.g. "The lecture component of this course is online..." */
+        modalityNote: "",
         location: "",
         startDate: "",           /* ISO yyyy-mm-dd */
         endDate: "",
         dropDate: "",
         withdrawalDate: "",
-        meetingPattern: { meetingsPerWeek: 2, days: [], startTime: "", endTime: "" },
+        meetingPattern: { meetingsPerWeek: 0, days: [], startTime: "", endTime: "" },
         courseLogin: "",
         prerequisites: { intro: "", items: [] },
         corequisites: "",
@@ -63,7 +98,8 @@ window.SCTCC = window.SCTCC || {};
         responseTime: "",
         biography: "",
         philosophy: "",
-        photoUrl: "",
+        photoUrl: "",            /* web address of a photo */
+        photoData: "",           /* uploaded photo stored as a data: URL */
         photoAlt: ""
       },
       materials: {
@@ -74,12 +110,14 @@ window.SCTCC = window.SCTCC || {};
       },
       policies: {
         attendance: "",
-        lateWork: ""
+        lateWork: "",
+        acceptedFileFormats: "", /* blank = college default in navigating-d2l.html */
+        classEnvironment: ""     /* blank = college sample text */
       },
       grading: {
         calculationMethod: "points",   /* "points" | "weighted" */
         intro: "",
-        categories: [],                /* { name, count, pointsEach, weight, notes } */
+        categories: [],
         scale: createDefaultGradingScale(),
         gradesNarrative: {
           postedWhere: "",
@@ -93,10 +131,10 @@ window.SCTCC = window.SCTCC || {};
         locationStatement: "",
         startDate: "",
         endDate: "",
-        meetingsPerWeek: 2,
+        meetingsPerWeek: 0,
         meetingDays: [],
         excludedDates: [],
-        entries: []                    /* { week, meeting, date, topic, preparation, due, notes, noClass } */
+        entries: []
       },
       vendors: [],
       optionalSections: {
@@ -111,6 +149,146 @@ window.SCTCC = window.SCTCC || {};
         timeCommitment: true,
         recommendedMaterials: true
       }
+    };
+  }
+
+  /* ---------- Import validation ---------- */
+
+  function isPlainObject(value) {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+  }
+
+  /*
+   * Copy `incoming` onto `base`, keeping only known fields of the right type.
+   * Problems are collected in `issues` as plain-language messages.
+   */
+  function mergeTyped(base, incoming, path, issues) {
+    if (incoming === undefined || incoming === null) return base;
+    const where = path || "file";
+
+    if (Array.isArray(base)) {
+      if (!Array.isArray(incoming)) {
+        issues.push(`"${where}" should be a list; it was skipped.`);
+        return base;
+      }
+      if (STRING_LISTS.has(path)) {
+        return incoming
+          .filter((item) => typeof item === "string" || typeof item === "number")
+          .map((item) => String(item));
+      }
+      const template = ITEM_TEMPLATES[path];
+      if (template) {
+        return incoming.filter(isPlainObject).map((item) =>
+          mergeTyped(JSON.parse(JSON.stringify(template)), item, `${path}[]`, issues));
+      }
+      return base;
+    }
+
+    if (isPlainObject(base)) {
+      if (!isPlainObject(incoming)) {
+        issues.push(`"${where}" has the wrong format; it was skipped.`);
+        return base;
+      }
+      Object.keys(base).forEach((key) => {
+        base[key] = mergeTyped(base[key], incoming[key], path ? `${path}.${key}` : key, issues);
+      });
+      return base;
+    }
+
+    if (typeof base === "string") {
+      if (typeof incoming === "string") return incoming;
+      if (typeof incoming === "number") return String(incoming);
+      issues.push(`"${where}" should be text; it was skipped.`);
+      return base;
+    }
+
+    if (typeof base === "number") {
+      const number = typeof incoming === "string" && incoming.trim() === "" ? NaN : Number(incoming);
+      if (Number.isFinite(number)) return number;
+      issues.push(`"${where}" should be a number; it was skipped.`);
+      return base;
+    }
+
+    if (typeof base === "boolean") {
+      if (typeof incoming === "boolean") return incoming;
+      issues.push(`"${where}" should be true or false; it was skipped.`);
+      return base;
+    }
+
+    return base;
+  }
+
+  /*
+   * Validate a parsed JSON value. Accepts either an export file
+   * ({ format: "sctcc-syllabus-data", syllabus: {...} }) or a bare syllabus object.
+   * Returns { ok, data, errors, warnings, contentVersion }.
+   */
+  function validateSyllabusData(raw, options) {
+    const settings = options || {};
+    const result = { ok: false, data: null, errors: [], warnings: [], contentVersion: "" };
+
+    let payload = raw;
+    if (isPlainObject(raw) && raw.format === EXPORT_FORMAT) {
+      if (!isPlainObject(raw.syllabus)) {
+        result.errors.push("This export file does not contain a syllabus.");
+        return result;
+      }
+      payload = raw.syllabus;
+      result.contentVersion = typeof raw.contentVersion === "string" ? raw.contentVersion : "";
+    }
+
+    if (!isPlainObject(payload)) {
+      result.errors.push("This file is not an SCTCC syllabus file.");
+      return result;
+    }
+    if (!isPlainObject(payload.course) && !isPlainObject(payload.instructor)) {
+      result.errors.push("This file does not look like an SCTCC syllabus file (no course or instructor information).");
+      return result;
+    }
+
+    const version = String(payload.schemaVersion || "");
+    const major = Number.parseInt(version, 10);
+    if (!version) {
+      result.warnings.push("The file has no version number; it was read as an older syllabus file.");
+    } else if (Number.isFinite(major) && major > 1) {
+      result.errors.push(`This file was made by a newer version of the builder (format ${version}). Update the builder and try again.`);
+      return result;
+    }
+
+    const issues = [];
+    const data = mergeTyped(createEmptySyllabusData(), payload, "", issues);
+    data.schemaVersion = SCHEMA_VERSION;
+    if (!data.meta.id) data.meta.id = createId();
+    if (settings.newId) data.meta.id = createId();
+    if (data.instructor.photoData && !/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(data.instructor.photoData)) {
+      data.instructor.photoData = "";
+      issues.push("The uploaded photo was not a supported image and was removed.");
+    }
+
+    if (issues.length) {
+      const shown = issues.slice(0, 8);
+      result.warnings.push(...shown);
+      if (issues.length > shown.length) result.warnings.push(`…and ${issues.length - shown.length} more item(s) skipped.`);
+    }
+    if (settings.currentContentVersion && result.contentVersion && result.contentVersion !== settings.currentContentVersion) {
+      result.warnings.push(
+        `College content has been updated since this file was saved (${result.contentVersion} → ${settings.currentContentVersion}). ` +
+        "Review the syllabus and make a new PDF before posting it."
+      );
+    }
+
+    result.ok = true;
+    result.data = data;
+    return result;
+  }
+
+  function createExportEnvelope(data, contentVersion) {
+    return {
+      format: EXPORT_FORMAT,
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: new Date().toISOString(),
+      contentVersion: contentVersion || "",
+      syllabus: data
     };
   }
 
@@ -151,7 +329,7 @@ window.SCTCC = window.SCTCC || {};
   /* "13:30" → "1:30 p.m." */
   function formatTime(value) {
     if (typeof value !== "string") return "";
-    const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+    const match = /^(\d{1,2}):(\d{2})/.exec(value.trim());
     if (!match) return "";
     let hours = Number(match[1]);
     const suffix = hours >= 12 ? "p.m." : "a.m.";
@@ -159,7 +337,7 @@ window.SCTCC = window.SCTCC || {};
     return `${hours}:${match[2]} ${suffix}`;
   }
 
-  /* Read a dotted path such as "course.withdrawalDate" from an object. */
+  /* Read a dotted path such as "course.withdrawalDate" or "vendors.0.name". */
   function getPath(source, path) {
     return String(path).split(".").reduce(
       (value, key) => (value !== null && value !== undefined ? value[key] : undefined),
@@ -167,7 +345,20 @@ window.SCTCC = window.SCTCC || {};
     );
   }
 
-  /* ["Monday", "Wednesday"] → "Mondays and Wednesdays" */
+  /* Write a dotted path. Only existing containers are written to. */
+  function setPath(target, path, value) {
+    const keys = String(path).split(".");
+    const last = keys.pop();
+    const container = keys.reduce(
+      (node, key) => (node !== null && node !== undefined ? node[key] : undefined),
+      target
+    );
+    if (container === null || container === undefined || typeof container !== "object") return false;
+    container[last] = value;
+    return true;
+  }
+
+  /* ["Mondays", "Wednesdays"] → "Mondays and Wednesdays" */
   function joinWords(words) {
     const list = words.filter(Boolean);
     if (list.length <= 1) return list.join("");
@@ -177,13 +368,18 @@ window.SCTCC = window.SCTCC || {};
 
   window.SCTCC.SCHEMA_VERSION = SCHEMA_VERSION;
   window.SCTCC.createEmptySyllabusData = createEmptySyllabusData;
+  window.SCTCC.createEmptyVendor = createEmptyVendor;
   window.SCTCC.createDefaultGradingScale = createDefaultGradingScale;
+  window.SCTCC.validateSyllabusData = validateSyllabusData;
+  window.SCTCC.createExportEnvelope = createExportEnvelope;
   window.SCTCC.util = Object.freeze({
     parseISODate,
     formatDate,
     formatTime,
     weekdayName,
     getPath,
-    joinWords
+    setPath,
+    joinWords,
+    createId
   });
 })();

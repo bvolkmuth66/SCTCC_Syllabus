@@ -136,6 +136,8 @@ window.SCTCC = window.SCTCC || {};
         target.setAttribute("data-field", field);
         const format = source.getAttribute("data-format");
         if (format === "date" || format === "date-short") target.setAttribute("data-format", format);
+        const fallback = source.getAttribute("data-default");
+        if (fallback) target.setAttribute("data-default", fallback.slice(0, 200));
       }
     }
     if (tag === "OL") {
@@ -222,15 +224,20 @@ window.SCTCC = window.SCTCC || {};
 
   /*
    * Fill <span data-field="..."> tokens with instructor data.
-   * `resolve(field, format)` returns a string; an empty string marks the value as missing.
-   * Values are inserted with textContent, never as HTML.
+   * `resolve(field, format)` returns a string; an empty string means no value.
+   * With no value, data-default (if present) is used; otherwise the token is
+   * marked as missing. Values are inserted with textContent, never as HTML.
    */
   function applyFieldTokens(root, resolve, describeMissing) {
     root.querySelectorAll("span[data-field]").forEach((span) => {
       const field = span.getAttribute("data-field");
       const value = resolve(field, span.getAttribute("data-format"));
+      const fallback = span.getAttribute("data-default");
       if (value) {
         span.textContent = value;
+        span.classList.remove("missing-value");
+      } else if (fallback) {
+        span.textContent = fallback;
         span.classList.remove("missing-value");
       } else {
         span.textContent = `[${describeMissing(field)} needed]`;

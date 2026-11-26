@@ -5,9 +5,11 @@
   VERSION: 2026.07
   SOURCE: SCTCC Syllabus Template Sample, July 2026
 
-  VERIFY: (1) The Announcements item describes what is normally the Content tool.
-  (2) "Microsoft Word or PDF" is an instructor choice; an instructor override for accepted
-  file formats is planned for Phase 2.
+  VERIFY: The Announcements item describes what is normally the Content tool.
+
+  FIELD TOKEN: <span data-field="policies.acceptedFileFormats" data-default="Microsoft Word or PDF">
+  shows the instructor's accepted file formats, or "Microsoft Word or PDF" (the template's
+  wording) when the instructor leaves that field blank. Do not remove it.
 
   HOW TO EDIT: Change only the words between the tags. Allowed tags: p, strong, em,
   ul, ol, li, a, br, h4. Scripts, styles, and other tags are removed automatically.
@@ -20,7 +22,7 @@
   <li>The <strong>Discussions menu</strong> gives you the ability to contain space to engage in direct, asynchronous discussions with fellow students.</li>
   <li>The <strong>Assignments menu</strong> will be used to upload assignments and course work.
     <ul>
-      <li><strong>NOTE</strong>: All D2L Brightspace Assignment submissions must be in Microsoft Word or PDF. If you submit in any other format, your assignment will not be graded. If you need help with this feature, contact the Student Computer Lab.</li>
+      <li><strong>NOTE</strong>: All D2L Brightspace Assignment submissions must be in <span data-field="policies.acceptedFileFormats" data-default="Microsoft Word or PDF">Microsoft Word or PDF</span>. If you submit in any other format, your assignment will not be graded. If you need help with this feature, contact the Student Computer Lab.</li>
     </ul>
   </li>
   <li>Click on <strong>Grades menu</strong> to check points for individual assignments and for total points earned so far.</li>

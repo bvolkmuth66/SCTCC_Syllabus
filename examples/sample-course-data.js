@@ -53,6 +53,7 @@ window.SCTCC_SAMPLE_DATA = {
     biography: "This sample biography shows where an instructor can introduce themselves.",
     philosophy: "This sample statement shows where an instructor can describe their educational philosophy.",
     photoUrl: "",
+    photoData: "",
     photoAlt: ""
   },
   materials: {
@@ -73,7 +74,9 @@ window.SCTCC_SAMPLE_DATA = {
   },
   policies: {
     attendance: "Please see me or send me an email with any attendance-related issues throughout the semester.",
-    lateWork: "Late work is not accepted. Extra time for illness or similar circumstances must be requested before the due date."
+    lateWork: "Late work is not accepted. Extra time for illness or similar circumstances must be requested before the due date.",
+    acceptedFileFormats: "",
+    classEnvironment: ""
   },
   grading: {
     calculationMethod: "points",
@@ -116,7 +119,19 @@ window.SCTCC_SAMPLE_DATA = {
       { week: 3, meeting: 6, date: "2027-01-27", topic: "Sample topic 3, continued", preparation: "", due: "Lab 2", notes: "", noClass: false }
     ]
   },
-  vendors: [],
+  vendors: [
+    {
+      name: "Sample Publisher Lab Platform",
+      purpose: "Weekly virtual lab activities",
+      accessibilityUrl: "https://www.example.com/accessibility",
+      vpatUrl: "",
+      privacyUrl: "https://www.example.com/privacy",
+      accountRequired: "yes",
+      dataCollected: "Name, school email address, and lab scores",
+      alternativeAccess: "Contact the instructor for an alternative lab assignment.",
+      supportUrl: "https://www.example.com/support"
+    }
+  ],
   optionalSections: {
     instructorPhoto: false,
     instructorBiography: true,
