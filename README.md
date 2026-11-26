@@ -352,7 +352,7 @@ Instructor directions live **in the builder**, not in this README: the hints bes
 - **Search** matches every word typed, in the question, the answer, or the topic, ignoring accents and capitals. Matches are highlighted, and matching answers open when there are eight or fewer. Escape or **Clear** shows every question again. **Topics** jump to a group.
 - **Links to one question:** `faq.html#save-onedrive` opens that question; `faq.html#topic-calendar` opens a topic; `faq.html?q=weights` starts a search. Each answer has **Link to this question**.
 - **Editing the questions:** everything is in `content/faq.html`. Each topic is a `<section data-topic="...">` with one `<h2>`; each question is a `<div class="faq" id="...">` with one `<h3>` (the question) and the answer. Answers allow the same tags as college content and are sanitized the same way. Keep ids unique and don't change an id that other pages may link to. Update `LAST-REVIEWED` and `VERSION` in the header comment; both are shown at the bottom of the FAQs.
-- Answers marked **[To be confirmed]** (the contact for college wording and for builder questions) need SCTCC answers. When a builder feature changes, update the matching FAQ in the same pull request.
+- Contacts named in the FAQs: builder questions, Brian Volkmuth; college policy wording, Magen Henry. When a builder feature changes, update the matching FAQ in the same pull request.
 
 ## Editing college content (for content owners)
 
