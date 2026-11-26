@@ -242,7 +242,7 @@ window.SCTCC = window.SCTCC || {};
     });
     return {
       calendar: {
-        status: raw.status === "official" ? "official" : "sample",
+        status: ["official", "published"].includes(raw.status) ? raw.status : "sample",
         lastReviewed: typeof raw.lastReviewed === "string" ? raw.lastReviewed : "",
         owner: typeof raw.owner === "string" ? raw.owner : "",
         terms

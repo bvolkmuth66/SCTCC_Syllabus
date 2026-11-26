@@ -216,10 +216,12 @@ In the PDF, the calendar table's column headings repeat at the top of each page,
 - Dates are written `yyyy-mm-dd`. `term` is `Fall`, `Spring`, or `Summer`, matching the editor's term list.
 - `lastDayToDrop` and `lastDayToWithdraw` are for full-semester courses. Instructors of shorter courses are told to use the dates shown in eServices.
 - Add next year's terms before instructors start building those syllabi; older terms can stay.
-- Until `status` is `"official"` and a term's `verified` is `true`, the builder labels that term's dates **Sample dates** wherever they appear.
+- Until `status` is `"official"` and a term's `verified` is `true`, the builder labels that term's dates as sample or not yet confirmed.
 - Entries with missing or badly formatted dates are skipped and listed in the builder's College content status, so one typo does not break the rest.
 
-**Current state:** the file contains **sample dates** for Fall 2026 and Spring 2027 so the feature can be tried. They are *not* the official SCTCC calendar and must be replaced from the published academic calendar (sctcc.edu/academic-calendar) before instructors rely on them.
+**Current state:** the file holds Fall 2026, Spring 2027, and Summer 2027, copied on 2026-11-25 from the published [2026/2027 Academic Calendar](https://sctcc.edu/student-stuff/academic/academic-calendar/20262027-academic-calendar) (`"status": "published"`). Records & Registration should confirm each term, set `"verified": true`, and change `status` to `"official"`. The published calendar does not list add/drop/withdrawal deadlines (they vary by course and are shown in eServices), so those fields are blank and instructors are pointed to eServices. Summer 2027 has no final exam week listed.
+
+`status` can be `"sample"` (placeholder dates, labeled **Sample dates**), `"published"` (copied from the published calendar, labeled *not yet confirmed*), or `"official"` (confirmed).
 
 **In the editor**, once the instructor picks the term and year:
 - *Credits, modality, and dates* shows the college dates for that term, with **Fill in these dates** (begin, end, last day to drop, last day to withdraw; asks before replacing dates already entered).
@@ -371,8 +373,8 @@ This guidance from the template is for instructors and does not appear in the sy
 
 Phase 4 (tested on 2026-11-25; generator logic in Node, editor in headless Chrome):
 
-- [x] College academic calendar: status panel shows available terms and the sample label; choosing Spring 2027 shows its dates with the "Sample dates" flag; Fill in these dates fills begin/end/drop/withdraw and the withdrawal date in the policy text; warnings for starting before the semester and ending before finals week; a term not in the file says so
-- [x] Add the college’s no-class dates: adds 6 dates, a second click adds none; generating then gives 36 rows with 33 class meetings
+- [x] College academic calendar: status panel lists Fall 2026, Spring 2027, Summer 2027 and that they are not yet confirmed; choosing Spring 2027 shows its dates, the "not yet confirmed" flag, and the eServices note for drop/withdraw; Fill in these dates fills begin/end; warnings for starting before the semester and ending before finals week; a term not in the file (Spring 2028) says so
+- [x] Add the college’s no-class dates: adds Spring 2027's 8 dates, a second click adds none; generating then gives 36 Monday/Wednesday rows with 32 class meetings
 - [x] Bad entries in academic-calendar.json are listed and skipped while good terms still work; a missing file is reported without breaking the builder
 
 - [x] 1, 2, 3, and 4 meetings per week over a 17-week semester plus finals week: 18, 36, 54, and 72 rows, every row on a chosen weekday
@@ -436,7 +438,7 @@ Still to test by a person: keyboard-only use, a screen reader (NVDA or JAWS), 20
 
 ## Known limitations
 
-- `content/academic-calendar.json` contains sample dates until Records & Registration enters the official calendar.
+- `content/academic-calendar.json` was copied from the published calendar and awaits confirmation by Records & Registration; drop/withdraw deadlines come from eServices.
 - Only grading problems stop Print to PDF so far; Phase 5 adds the full pre-print check (required fields, dates, placeholders).
 - There is no autosave, by design. Save regularly (Ctrl+S); the status line shows when changes are unsaved.
 - Firefox and Safari save by download rather than to a chosen folder.

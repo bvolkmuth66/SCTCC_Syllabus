@@ -2,10 +2,10 @@
   "schemaVersion": "1.0",
   "title": "SCTCC Academic Calendar dates for syllabi",
   "owner": "Records & Registration (to be confirmed)",
-  "status": "sample",
-  "lastReviewed": "",
-  "source": "https://www.sctcc.edu/academic-calendar",
-  "instructions": "Records & Registration: replace every SAMPLE term below with the official dates from the published academic calendar, set each term's \"verified\" to true, set \"status\" to \"official\", and update \"lastReviewed\" (yyyy-mm-dd). Dates use yyyy-mm-dd. lastDayToDrop and lastDayToWithdraw apply to full-semester courses only; courses with other dates use the dates shown in eServices.",
+  "status": "published",
+  "lastReviewed": "2026-11-25",
+  "source": "https://sctcc.edu/student-stuff/academic/academic-calendar/20262027-academic-calendar",
+  "instructions": "Dates use yyyy-mm-dd. \"status\": \"sample\" = placeholder dates; \"published\" = copied from the published academic calendar but not yet confirmed by Records & Registration; \"official\" = confirmed. Set a term's \"verified\" to true once Records & Registration has confirmed it. The published calendar does not list add/drop/withdrawal deadlines (they vary by course and are shown in eServices), so lastDayToDrop and lastDayToWithdraw are left blank. No-class dates list only days without classes that fall between a term's startDate and endDate; labels are copied from the published calendar.",
   "terms": [
     {
       "term": "Fall",
@@ -15,12 +15,15 @@
       "endDate": "2026-12-18",
       "finalsStart": "2026-12-14",
       "finalsEnd": "2026-12-18",
-      "lastDayToDrop": "2026-08-31",
-      "lastDayToWithdraw": "2026-11-13",
+      "lastDayToDrop": "",
+      "lastDayToWithdraw": "",
       "noClassDates": [
-        { "date": "2026-09-07", "label": "SAMPLE – Labor Day (replace with official date)" },
-        { "date": "2026-11-26", "label": "SAMPLE – Thanksgiving break (replace with official date)" },
-        { "date": "2026-11-27", "label": "SAMPLE – Thanksgiving break (replace with official date)" }
+        { "date": "2026-09-07", "label": "Labor Day - No Classes - College Closed" },
+        { "date": "2026-10-15", "label": "Break - No Classes" },
+        { "date": "2026-10-16", "label": "Break - No Classes" },
+        { "date": "2026-11-11", "label": "Veterans Day - No Classes - College Closed" },
+        { "date": "2026-11-26", "label": "Thanksgiving Holiday - No Classes - College Closed" },
+        { "date": "2026-11-27", "label": "Thanksgiving Holiday - No Classes - College Closed" }
       ]
     },
     {
@@ -31,15 +34,33 @@
       "endDate": "2027-05-14",
       "finalsStart": "2027-05-10",
       "finalsEnd": "2027-05-14",
-      "lastDayToDrop": "2027-01-15",
-      "lastDayToWithdraw": "2027-04-02",
+      "lastDayToDrop": "",
+      "lastDayToWithdraw": "",
       "noClassDates": [
-        { "date": "2027-01-18", "label": "SAMPLE – Martin Luther King Jr. Day (replace with official date)" },
-        { "date": "2027-03-15", "label": "SAMPLE – Spring break (replace with official dates)" },
-        { "date": "2027-03-16", "label": "SAMPLE – Spring break (replace with official dates)" },
-        { "date": "2027-03-17", "label": "SAMPLE – Spring break (replace with official dates)" },
-        { "date": "2027-03-18", "label": "SAMPLE – Spring break (replace with official dates)" },
-        { "date": "2027-03-19", "label": "SAMPLE – Spring break (replace with official dates)" }
+        { "date": "2027-01-18", "label": "Martin Luther King - No Classes - College Closed" },
+        { "date": "2027-02-05", "label": "All College Day - No Classes" },
+        { "date": "2027-02-15", "label": "President's Day - No Classes - College Closed" },
+        { "date": "2027-03-08", "label": "Spring Break - No Classes" },
+        { "date": "2027-03-09", "label": "Spring Break - No Classes" },
+        { "date": "2027-03-10", "label": "Spring Break - No Classes" },
+        { "date": "2027-03-11", "label": "Spring Break - No Classes" },
+        { "date": "2027-03-12", "label": "Spring Break - No Classes" }
+      ]
+    },
+    {
+      "term": "Summer",
+      "year": "2027",
+      "verified": false,
+      "startDate": "2027-05-24",
+      "endDate": "2027-08-13",
+      "finalsStart": "",
+      "finalsEnd": "",
+      "lastDayToDrop": "",
+      "lastDayToWithdraw": "",
+      "noClassDates": [
+        { "date": "2027-05-31", "label": "Memorial Day - No Classes - College Closed" },
+        { "date": "2027-06-18", "label": "Juneteenth Day Observed - No Classes - College Closed" },
+        { "date": "2027-07-05", "label": "Independence Day Observed - No Classes - College Closed" }
       ]
     }
   ]

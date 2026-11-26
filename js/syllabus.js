@@ -650,12 +650,15 @@
     const academic = state.content.academicCalendar;
     if (academic) {
       const terms = academic.terms.map((term) => `${term.term} ${term.year}`).join(", ") || "none";
+      const notes = {
+        official: ["", academic.lastReviewed ? ` Last reviewed ${academic.lastReviewed}.` : ""],
+        published: ["Academic calendar: ", " Copied from the published academic calendar; not yet confirmed by Records & Registration."],
+        sample: ["Sample academic calendar: ", " These dates are samples until Records & Registration replaces them with the official calendar."]
+      }[academic.status];
       panel.appendChild(el("p", { class: academic.status === "official" ? null : "notice notice-warning" },
-        academic.status === "official" ? null : el("strong", null, "Sample academic calendar: "),
+        notes[0] ? el("strong", null, notes[0]) : null,
         `College dates are available for: ${terms}.`,
-        academic.status === "official"
-          ? (academic.lastReviewed ? ` Last reviewed ${academic.lastReviewed}.` : "")
-          : " These dates are samples until Records & Registration replaces them with the official calendar."));
+        notes[1]));
     }
 
     if (state.content.errors.length) {

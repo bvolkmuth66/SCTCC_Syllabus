@@ -556,17 +556,26 @@ window.SCTCC = window.SCTCC || {};
     }
 
     const span = (from, to) => (from && to ? `${util.formatDate(from)} – ${util.formatDate(to)}` : util.formatDate(from || to));
-    const sample = academic.status !== "official" || !term.verified;
+    const flag = academic.status === "sample"
+      ? ["Sample dates: ", "not the college calendar. Check them against the official academic calendar."]
+      : (academic.status !== "official" || !term.verified
+        ? ["From the published academic calendar: ", "not yet confirmed by Records & Registration."]
+        : null);
     box.appendChild(el("div", { class: "notice notice-info" },
       el("p", null, el("strong", null, `College dates for ${term.term} ${term.year}`)),
-      sample ? el("p", { class: "sample-flag" }, el("strong", null, "Sample dates: "), "not yet verified by Records & Registration. Check them against the official academic calendar.") : null,
+      flag ? el("p", { class: "sample-flag" }, el("strong", null, flag[0]), flag[1]) : null,
       el("dl", { class: "vendor-details" },
         el("dt", null, "Semester"), el("dd", null, span(term.startDate, term.endDate)),
         term.finalsStart ? [el("dt", null, "Final exam week"), el("dd", null, span(term.finalsStart, term.finalsEnd))] : null,
         term.lastDayToDrop ? [el("dt", null, "Last day to drop"), el("dd", null, util.formatDate(term.lastDayToDrop))] : null,
         term.lastDayToWithdraw ? [el("dt", null, "Last day to withdraw"), el("dd", null, util.formatDate(term.lastDayToWithdraw))] : null,
+        !term.lastDayToDrop && !term.lastDayToWithdraw
+          ? [el("dt", null, "Drop and withdraw"), el("dd", null, "Deadlines vary by course; use the dates for your course in eServices.")]
+          : null,
         el("dt", null, "No-class dates"), el("dd", null, String(term.noClassDates.length))),
-      el("p", { class: "editor-note" }, "Drop and withdrawal dates are for full-semester courses. If your course runs on different dates, use the dates shown in eServices."),
+      term.lastDayToDrop || term.lastDayToWithdraw
+        ? el("p", { class: "editor-note" }, "Drop and withdrawal dates are for full-semester courses. If your course runs on different dates, use the dates shown in eServices.")
+        : null,
       el("div", { class: "button-row" }, actionButton("fill-college-dates", "Fill in these dates", "btn-primary", { id: "fill-college-dates" }))));
 
     const warnings = SCTCC.calendar.termWarnings(term, course);
