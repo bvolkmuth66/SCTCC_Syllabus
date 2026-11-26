@@ -208,8 +208,11 @@ body[data-mode="instructor"] .student-only {
   max-width: none;
 }
 
-button {
+.builder-toolbar button,
+.toolbar-link {
   font: inherit;
+  display: inline-flex;
+  align-items: center;
   min-height: 2.5rem;
   padding: 0.4rem 1rem;
   border: 2px solid #ffffff;
@@ -217,19 +220,21 @@ button {
   background: transparent;
   color: #ffffff;
   cursor: pointer;
+  text-decoration: none;
 }
 
-button:hover {
+.builder-toolbar button:hover,
+.toolbar-link:hover {
   background: rgba(255, 255, 255, 0.15);
 }
 
-button.button-primary {
+.builder-toolbar button.button-primary {
   background: #ffffff;
   color: var(--sctcc-primary);
   font-weight: 700;
 }
 
-button.button-primary:hover {
+.builder-toolbar button.button-primary:hover {
   background: var(--sctcc-muted);
 }
 
@@ -284,37 +289,7 @@ button.button-primary:hover {
   font-size: 1.05rem;
 }
 
-/* ---------- Status panel (instructor only) ---------- */
-
-.status-panel {
-  margin: 1.5rem 0;
-  padding: 0.25rem 1.25rem 1rem;
-  border: 2px solid var(--sctcc-border-strong);
-  border-radius: 0.4rem;
-  background: var(--sctcc-muted);
-}
-
-.status-panel h2 {
-  margin-top: 0.75rem;
-  border-bottom: 0;
-  font-size: 1.2rem;
-}
-
-.optional-toggles {
-  margin: 1rem 0;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--sctcc-border-strong);
-  border-radius: 0.3rem;
-  background: var(--sctcc-background);
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: 0.25rem 1rem;
-}
-
-.optional-toggles legend {
-  font-weight: 700;
-  padding: 0 0.25rem;
-}
+/* ---------- Checkbox rows ---------- */
 
 .checkbox-row {
   display: flex;
@@ -327,12 +302,6 @@ button.button-primary:hover {
   width: 1.15rem;
   height: 1.15rem;
   accent-color: var(--sctcc-primary);
-}
-
-.content-inventory summary {
-  cursor: pointer;
-  font-weight: 700;
-  color: var(--sctcc-primary);
 }
 
 /* ---------- Notices ---------- */
@@ -556,6 +525,282 @@ button.button-primary:hover {
   margin: 0.25rem 0;
 }
 
+/* ---------- Workspace: preview + editor ---------- */
+
+.workspace {
+  width: 100%;
+}
+
+@media (min-width: 72rem) {
+  body[data-mode="instructor"] .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(24rem, 32rem);
+    align-items: start;
+  }
+
+  body[data-mode="instructor"] .page {
+    margin: 0;
+    max-width: none;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  body[data-mode="instructor"] .editor {
+    position: sticky;
+    top: 3.6rem;
+    max-height: calc(100vh - 3.6rem);
+    overflow-y: auto;
+    border-left: 2px solid var(--sctcc-border-strong);
+    border-top: 0;
+  }
+}
+
+/* ---------- Editor panel ---------- */
+
+.editor {
+  background: var(--sctcc-muted);
+  border-top: 2px solid var(--sctcc-border-strong);
+  padding: 1rem 1.25rem 3rem;
+}
+
+.editor:focus {
+  outline: none;
+}
+
+.editor > h2 {
+  margin-top: 0.25rem;
+  font-size: 1.3rem;
+  border-bottom: 0;
+}
+
+.editor-intro,
+.editor-note {
+  font-size: 0.9rem;
+  color: var(--sctcc-text-muted);
+}
+
+.editor-group {
+  margin: 0.6rem 0;
+  border: 1px solid var(--sctcc-border-strong);
+  border-radius: 0.35rem;
+  background: var(--sctcc-background);
+}
+
+.editor-group > summary {
+  padding: 0.7rem 1rem;
+  font-weight: 700;
+  color: var(--sctcc-primary);
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.editor-group[open] > summary {
+  border-bottom: 1px solid var(--sctcc-border);
+}
+
+.group-body {
+  padding: 0.5rem 1rem 1rem;
+}
+
+.field {
+  margin: 0.85rem 0;
+}
+
+.field > label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.field-optional {
+  font-weight: 400;
+  color: var(--sctcc-text-muted);
+}
+
+.field-hint {
+  margin: 0 0 0.3rem;
+  font-size: 0.85rem;
+  color: var(--sctcc-text-muted);
+}
+
+.field input[type="text"],
+.field input[type="email"],
+.field input[type="tel"],
+.field input[type="url"],
+.field input[type="date"],
+.field input[type="time"],
+.field input[type="number"],
+.field select,
+.field textarea {
+  display: block;
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.55rem;
+  font: inherit;
+  color: var(--sctcc-text);
+  background: #ffffff;
+  border: 1px solid var(--sctcc-border-strong);
+  border-radius: 0.25rem;
+}
+
+.field textarea {
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 1px;
+  border-color: var(--focus-color);
+}
+
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.9rem;
+}
+
+.field-row > .field {
+  flex: 1 1 9rem;
+}
+
+.field-row-4 > .field {
+  flex: 1 1 5rem;
+}
+
+.field-group {
+  margin: 1rem 0;
+  padding: 0.5rem 0.9rem 0.25rem;
+  border: 1px solid var(--sctcc-border);
+  border-radius: 0.3rem;
+}
+
+.field-group > legend {
+  font-weight: 700;
+  padding: 0 0.3rem;
+}
+
+.field-toggle {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 0.15rem 0.5rem;
+}
+
+.field-toggle input {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-top: 0.2rem;
+  accent-color: var(--sctcc-primary);
+}
+
+.field-toggle label {
+  font-weight: 700;
+}
+
+.field-toggle .field-hint {
+  grid-column: 2;
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 0.15rem 0.75rem;
+}
+
+.vendor-row {
+  background: var(--sctcc-muted);
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.6rem 0;
+}
+
+.btn {
+  font: inherit;
+  font-size: 0.95rem;
+  min-height: 2.5rem;
+  padding: 0.35rem 0.9rem;
+  border: 2px solid var(--sctcc-primary);
+  border-radius: 0.3rem;
+  background: #ffffff;
+  color: var(--sctcc-primary);
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: var(--notice-info-bg);
+}
+
+.btn-primary {
+  background: var(--sctcc-primary);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: #00362f;
+}
+
+.btn-danger {
+  border-color: var(--notice-error-border);
+  color: var(--notice-error-border);
+}
+
+.btn-danger:hover {
+  background: var(--notice-error-bg);
+}
+
+.btn[hidden] {
+  display: none;
+}
+
+.save-status {
+  font-weight: 700;
+  margin: 0.25rem 0;
+}
+
+.data-messages .notice p {
+  margin: 0;
+}
+
+.data-messages .notice ul {
+  margin: 0.4rem 0 0;
+}
+
+.compact-table {
+  font-size: 0.85rem;
+}
+
+/* ---------- Instructor-written blocks inside college sections ---------- */
+
+.instructor-content {
+  margin: 0.75rem 0;
+}
+
+.vendor h4 {
+  margin-top: 1rem;
+}
+
+.vendor-details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.2rem 1rem;
+  margin: 0.4rem 0 0.8rem;
+}
+
+.vendor-details dt {
+  font-weight: 700;
+}
+
+.vendor-details dd {
+  margin: 0;
+}
+
 /* ---------- Small screens ---------- */
 
 @media (max-width: 40rem) {
@@ -574,7 +819,8 @@ button.button-primary:hover {
     padding-top: 0.75rem;
   }
 
-  .contact-list {
+  .contact-list,
+  .vendor-details {
     grid-template-columns: 1fr;
   }
 

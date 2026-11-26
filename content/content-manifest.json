@@ -147,7 +147,8 @@
       "showTitle": true,
       "required": true,
       "defaultEnabled": true,
-      "owner": "eLearning (to be confirmed)"
+      "owner": "eLearning (to be confirmed)",
+      "instructorNote": "To accept file formats other than Microsoft Word or PDF, enter them under Course policies in the editor."
     },
     {
       "id": "pulse-app",
@@ -168,7 +169,7 @@
       "required": true,
       "defaultEnabled": true,
       "owner": "IT / Help Desk (to be confirmed)",
-      "instructorNote": "Include links to technical support information for any outside vendors used in the course."
+      "instructorNote": "Include links to technical support information for any outside vendors used in the course (add them under Tools and vendors in the editor)."
     },
     {
       "id": "student-services",
@@ -189,7 +190,8 @@
       "required": true,
       "defaultEnabled": true,
       "owner": "Accessibility Services / IT (to be confirmed)",
-      "instructorNote": "If you use technology not listed under the Resources tab in D2L, add its accessibility statement (or VPAT) and data privacy policy. A vendor table editor is planned for Phase 2."
+      "appendInstructorBlock": "vendors",
+      "instructorNote": "If you use technology not listed under the Resources tab in D2L, add it under Tools and vendors in the editor. It appears below this text."
     },
     {
       "id": "class-environment",
@@ -200,8 +202,9 @@
       "required": false,
       "defaultEnabled": false,
       "optionalKey": "classEnvironment",
+      "overrideField": "policies.classEnvironment",
       "owner": "Academic Affairs (to be confirmed)",
-      "instructorNote": "Sample text from the template. Modify for face-to-face courses as necessary; an instructor override field is planned for Phase 2."
+      "instructorNote": "Sample text from the template. To use your own wording (for example, for a face-to-face course), write it under Course policies > Class Environment in the editor."
     },
     {
       "id": "institutional-footer",
