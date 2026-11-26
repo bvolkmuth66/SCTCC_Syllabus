@@ -264,6 +264,11 @@ fieldset.field { min-width: 0; }
 .ws-dialog-buttons { justify-content: flex-end; }
 .ws-shift-dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 0 1rem; }
 .ws-narrow { max-width: 16rem; }
+.ws-meeting { border: 1px solid var(--border); border-radius: 0.35rem; padding: 0.6rem 0.9rem 0.2rem; }
+.ws-meeting legend { padding: 0 0.3rem; }
+.ws-meeting-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.5rem 1rem; }
+.ws-meeting-row label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.2rem; }
+.ws-meeting-row input { width: 100%; font: inherit; padding: 0.4rem 0.5rem; border: 1px solid var(--border-strong); border-radius: 0.25rem; }
 .field input[type=number] { width: 100%; font: inherit; padding: 0.45rem 0.5rem; border: 1px solid var(--border-strong); border-radius: 0.25rem; }
 .ws-offset { font-weight: 700; font-size: 1.05rem; color: var(--sctcc-primary); margin: 0.5rem 0; }
 

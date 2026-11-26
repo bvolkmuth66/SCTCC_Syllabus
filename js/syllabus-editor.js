@@ -279,7 +279,7 @@ window.SCTCC = window.SCTCC || {};
         field("number", "course.credits.laboratory", "Laboratory", { narrow: true }),
         field("number", "course.credits.soe", "SOE", { narrow: true }))),
       field("select", "course.modality", "Modality", { choices: MODALITIES }),
-      checkboxGroup("course.meetingPattern.days", "Meeting days", DAYS, "Not needed for exclusively online courses."),
+      checkboxGroup("course.meetingPattern.days", "Meeting days", DAYS, "The course calendar uses these days. Not needed for exclusively online courses."),
       el("div", { class: "field-row" },
         field("time", "course.meetingPattern.startTime", "Start time", { narrow: true }),
         field("time", "course.meetingPattern.endTime", "End time", { narrow: true })),
@@ -511,14 +511,7 @@ window.SCTCC = window.SCTCC || {};
         ]
       }),
       el("p", { id: "calendar-dates-note", class: "field-hint", "aria-live": "polite" }),
-      el("div", { class: "button-row" },
-        actionButton("calendar-copy-course", "Use the course meeting days")),
       el("div", { class: "meetings-only" },
-        field("select", "calendar.meetingsPerWeek", "Meetings per week", {
-          narrow: true,
-          choices: [["0", "Choose"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"]]
-        }),
-        checkboxGroup("calendar.meetingDays", "Meeting days", DAYS, "Choose exactly as many days as meetings per week."),
         checkbox("calendar.useFirstWeekSchedule", "The first week has a different schedule"),
         el("div", { id: "first-week-days" },
           checkboxGroup("calendar.firstWeekDays", "First-week meeting days", DAYS)),
@@ -647,15 +640,18 @@ window.SCTCC = window.SCTCC || {};
     return SCTCC.calendar.findTerm(app.academicCalendar(), data.course.term, data.course.year);
   }
 
-  /* The calendar uses the course begin and end dates; show them beside the calendar settings. */
+  /* The calendar uses the course dates and meeting days; show them beside the calendar settings. */
   function refreshCalendarDates() {
     const note = root && root.querySelector("#calendar-dates-note");
     if (!note) return;
     const course = app.getData().course;
     const fmt = (iso) => (iso ? SCTCC.util.formatDate(iso, "long") : "");
-    note.textContent = course.startDate && course.endDate
-      ? `The calendar runs from the course begin date (${fmt(course.startDate)}) to the course end date (${fmt(course.endDate)}). Change these under Credits, modality, and dates.`
-      : "The calendar uses the course begin and end dates. Enter them under Credits, modality, and dates first.";
+    const days = (course.meetingPattern.days || []).slice().sort((a, b) => DAYS.indexOf(a) - DAYS.indexOf(b));
+    const dates = course.startDate && course.endDate
+      ? `The calendar runs from the course begin date (${fmt(course.startDate)}) to the course end date (${fmt(course.endDate)})`
+      : "The calendar uses the course begin and end dates (not entered yet)";
+    const meets = days.length ? `meets on the course meeting days (${util.joinWords(days)})` : "meets on the course meeting days (none chosen yet)";
+    note.textContent = `${dates} and ${meets}. Change these under Credits, modality, and dates.`;
   }
 
   function refreshCollegeDates() {
@@ -1018,7 +1014,11 @@ window.SCTCC = window.SCTCC || {};
         .filter((box) => box.checked)
         .map((box) => box.value);
       util.setPath(data, path, chosen);
-      if (path === "course.meetingPattern.days") data.course.meetingPattern.meetingsPerWeek = chosen.length;
+      if (path === "course.meetingPattern.days") {
+        data.course.meetingPattern.meetingsPerWeek = chosen.length;
+        refreshCalendarDates();
+        refreshCalendarSettings();
+      }
       if (path.startsWith("calendar.")) refreshCalendarSettings();
       app.dataChanged();
       return;
@@ -1405,20 +1405,6 @@ window.SCTCC = window.SCTCC || {};
         announce(how === "embedded"
           ? "The calendar workspace opened full screen here with Shift dates."
           : "Shift dates opened in the calendar workspace window.");
-        break;
-      }
-
-      case "calendar-copy-course": {
-        const course = data.course;
-        if (course.meetingPattern.days.length) {
-          data.calendar.meetingDays = course.meetingPattern.days.slice();
-          data.calendar.meetingsPerWeek = Math.min(4, course.meetingPattern.days.length);
-        }
-        if (course.modality === "online") data.calendar.mode = "weekly";
-        populate(root.querySelector("#editor-calendar"));
-        refreshCalendarSettings();
-        app.dataChanged();
-        announce("Copied the course dates and meeting days into the calendar settings.");
         break;
       }
 

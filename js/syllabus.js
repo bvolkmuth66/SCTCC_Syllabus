@@ -52,29 +52,86 @@
   /* Web addresses in instructor text become working links (https:// and http:// only). */
   const URL_IN_TEXT = /(https?:\/\/[^\s<>()"]+[^\s<>()".,;:!?'])/g;
 
+  /*
+   * A very long web address (a booking link, say) is shown as its site and the start
+   * of its path, so it wraps on the page and reads sensibly; the link keeps the full address.
+   */
+  function linkLabel(url) {
+    if (url.length <= 60) return url;
+    try {
+      const parsed = new URL(url);
+      const first = parsed.pathname.split("/").filter(Boolean)[0];
+      return `${parsed.hostname.replace(/^www\./, "")}${first ? `/${first}` : ""}/…`;
+    } catch (error) {
+      return `${url.slice(0, 50)}…`;
+    }
+  }
+
   function appendLinkedText(parent, line) {
     let last = 0;
     line.replace(URL_IN_TEXT, (url, _match, offset) => {
       if (offset > last) parent.appendChild(document.createTextNode(line.slice(last, offset)));
-      parent.appendChild(el("a", { href: url }, url));
+      parent.appendChild(el("a", { href: url, class: url.length > 60 ? "long-url" : null }, linkLabel(url)));
       last = offset + url.length;
       return url;
     });
     if (last < line.length) parent.appendChild(document.createTextNode(line.slice(last)));
   }
 
-  /* Split free text into paragraphs on blank lines; single line breaks become <br>. */
+  const BULLET_LINE = /^\s*(?:[•●▪◦‣\-*–]\s+)(.+)$/;
+  const NUMBER_LINE = /^\s*\d{1,2}[.)]\s+(.+)$/;
+
+  /*
+   * Split free text into paragraphs on blank lines; single line breaks become <br>.
+   * Lines that start with a bullet (•, -, *) or a number (1. or 1)) become a real list,
+   * and "text: • one • two" typed on one line is split into list items too.
+   */
   function textBlocks(text, missingLabel) {
     const value = typeof text === "string" ? text.trim() : "";
     if (!value) return missingLabel ? [el("p", null, missing(missingLabel))] : [];
-    return value.split(/\n\s*\n/).map((paragraph) => {
-      const p = el("p");
-      paragraph.split(/\n/).forEach((line, index) => {
-        if (index) p.appendChild(el("br"));
+    const blocks = [];
+    value.split(/\n\s*\n/).forEach((paragraph) => {
+      const lines = [];
+      paragraph.split(/\n/).forEach((line) => {
+        const parts = line.split(/\s+[•●▪]\s+/);
+        if (parts.length > 2 || (parts.length === 2 && /^\s*[•●▪]/.test(line) === false && parts[0].trim().endsWith(":"))) {
+          lines.push(parts[0]);
+          parts.slice(1).forEach((part) => lines.push(`• ${part}`));
+        } else {
+          lines.push(line);
+        }
+      });
+      let p = null;
+      let list = null;
+      let listType = "";
+      lines.forEach((line) => {
+        const bullet = BULLET_LINE.exec(line);
+        const number = bullet ? null : NUMBER_LINE.exec(line);
+        if (bullet || number) {
+          const type = bullet ? "ul" : "ol";
+          if (!list || listType !== type) {
+            list = el(type);
+            listType = type;
+            blocks.push(list);
+          }
+          const item = el("li");
+          appendLinkedText(item, (bullet || number)[1]);
+          list.appendChild(item);
+          p = null;
+          return;
+        }
+        list = null;
+        if (!line.trim()) return;
+        if (!p) {
+          p = el("p");
+          blocks.push(p);
+        } else {
+          p.appendChild(el("br"));
+        }
         appendLinkedText(p, line);
       });
-      return p;
     });
+    return blocks;
   }
 
   function listOf(items, ordered, missingLabel) {
@@ -276,12 +333,14 @@
 
     children.push(el("address", { class: "instructor-contact" }, nameLine, details));
 
-    const contactSentence = [];
-    if (instructor.preferredContactMethod.trim()) {
-      contactSentence.push(`The best way to contact me is by ${instructor.preferredContactMethod.trim().replace(/\.$/, "")}.`);
-    }
-    if (instructor.responseTime.trim()) contactSentence.push(instructor.responseTime.trim());
-    if (contactSentence.length) children.push(el("p", null, contactSentence.join(" ")));
+    /* "The best way to contact me is …", then the instructor's own text with its paragraphs and lists. */
+    const method = instructor.preferredContactMethod.trim()
+      ? `The best way to contact me is by ${instructor.preferredContactMethod.trim().replace(/\.$/, "")}.`
+      : "";
+    const contactBlocks = textBlocks(instructor.responseTime);
+    if (method && contactBlocks.length && contactBlocks[0].tagName === "P") contactBlocks[0].prepend(`${method} `);
+    else if (method) contactBlocks.unshift(el("p", null, method));
+    children.push(contactBlocks);
 
     if (isOptionalEnabled("instructorBiography")) {
       children.push(subsection("Instructor Bio", textBlocks(instructor.biography, "Instructor bio")));

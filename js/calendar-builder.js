@@ -52,7 +52,10 @@ window.SCTCC = window.SCTCC || {};
 
   /* ---------- Settings ---------- */
 
-  /* Calendar settings. The calendar always runs from the course begin date to the course end date. */
+  /*
+   * Calendar settings. The calendar always runs from the course begin date to the
+   * course end date, and meets on the course meeting days (Credits, modality, and dates).
+   */
   function resolveSettings(data) {
     const calendar = data.calendar;
     const course = data.course;
@@ -60,8 +63,8 @@ window.SCTCC = window.SCTCC || {};
       mode: calendar.mode === "weekly" ? "weekly" : "meetings",
       startDate: course.startDate,
       endDate: course.endDate,
-      meetingsPerWeek: Number(calendar.meetingsPerWeek) || 0,
-      meetingDays: (calendar.meetingDays || []).filter((day) => DAY_NAMES.includes(day)),
+      meetingsPerWeek: ((course.meetingPattern && course.meetingPattern.days) || []).filter((day) => DAY_NAMES.includes(day)).length,
+      meetingDays: ((course.meetingPattern && course.meetingPattern.days) || []).filter((day) => DAY_NAMES.includes(day)),
       useFirstWeekSchedule: Boolean(calendar.useFirstWeekSchedule),
       firstWeekDays: (calendar.firstWeekDays || []).filter((day) => DAY_NAMES.includes(day)),
       excluded: (calendar.excludedDates || []).filter((item) => util.parseISODate(item.date)),
@@ -87,12 +90,11 @@ window.SCTCC = window.SCTCC || {};
     }
 
     if (settings.mode === "meetings") {
-      const count = settings.meetingsPerWeek;
-      const chosen = settings.meetingDays.length;
-      if (count < 1 || count > 4) {
-        errors.push("Choose how many times the class meets each week (1 to 4).");
-      } else if (chosen !== count) {
-        errors.push(`You chose ${count} meeting${count === 1 ? "" : "s"} per week, so choose exactly ${count} meeting day${count === 1 ? "" : "s"} (${chosen} ${chosen === 1 ? "is" : "are"} chosen now).`);
+      const count = settings.meetingDays.length;
+      if (count < 1) {
+        errors.push("Choose the meeting days under Credits, modality, and dates.");
+      } else if (count > 4) {
+        errors.push(`The calendar shows 1 to 4 class meetings a week, and ${count} meeting days are chosen. Choose “One row per week” as the calendar layout instead.`);
       }
       if (settings.useFirstWeekSchedule && !settings.firstWeekDays.length) {
         errors.push("Choose the first-week meeting days, or turn off the special first-week schedule.");

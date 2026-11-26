@@ -96,6 +96,8 @@ WCAG 2.2 removed 4.1.1 Parsing; it is listed at the end because WCAG 2.1 (the le
 | Tables with header cells; repeated headers | `th` + print CSS | Auto + Manual | Not tested |
 | Links readable and tagged | From page links | Auto + Manual | Not tested |
 | Reading order and artifacts (footer marked as artifact) | Chrome output | Manual (PAC / Acrobat) | Not tested |
+| Made with "Save as PDF" (not the Adobe PDF or Microsoft Print to PDF printers, which produce untagged PDFs with unreadable text) | Print dialog step 1 warns against them | Manual | **Known risk** — a faculty test PDF made with Adobe PDF (2026-11-26) was untagged and its text could not be selected |
+| Body text at least 11 pt; nothing below 9 pt | print.css (raised 2026-11-26 from 10.5 pt) | Manual | Pass (2026-11-26) |
 | Uploads and opens correctly in D2L | — | Manual | Not tested |
 
 ## Manual review procedure (yearly, about 1–2 hours)

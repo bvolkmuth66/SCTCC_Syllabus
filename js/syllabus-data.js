@@ -285,6 +285,13 @@ window.SCTCC = window.SCTCC || {};
     data.schemaVersion = SCHEMA_VERSION;
     if (!data.meta.id) data.meta.id = createId();
     if (settings.newId) data.meta.id = createId();
+    /* Older files kept the calendar's meeting days separately; the course meeting days now drive the calendar. */
+    const rawCalendar = isPlainObject(payload.calendar) ? payload.calendar : null;
+    if (!data.course.meetingPattern.days.length && rawCalendar && Array.isArray(rawCalendar.meetingDays) && data.calendar.meetingDays.length) {
+      data.course.meetingPattern.days = data.calendar.meetingDays.slice();
+      data.course.meetingPattern.meetingsPerWeek = data.course.meetingPattern.days.length;
+    }
+
     /* Files saved before the college-scale choice existed keep their own scale. */
     const rawGrading = isPlainObject(payload.grading) ? payload.grading : null;
     if (rawGrading && rawGrading.scaleSource === undefined) {
