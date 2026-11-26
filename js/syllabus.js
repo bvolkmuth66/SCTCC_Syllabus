@@ -504,6 +504,30 @@
           el("td", { class: "num" }, formatPercent(totalWeight))))));
     }
 
+    if (data.calculationMethod === "pointsWeighted") {
+      const totalPoints = grading.pointsTotal(categories);
+      return tableWrap("Assessments table", el("table", { class: "data-table" },
+        el("caption", null, "Assessments, points, and weight in the final grade"),
+        el("thead", null, el("tr", null,
+          el("th", { scope: "col" }, "Assessment"),
+          el("th", { scope: "col", class: "num" }, "Number"),
+          el("th", { scope: "col", class: "num" }, "Points each"),
+          el("th", { scope: "col", class: "num" }, "Total points"),
+          el("th", { scope: "col", class: "num" }, "Weight"))),
+        el("tbody", null, categories.map((category) => el("tr", null,
+          categoryHeader(category),
+          el("td", { class: "num" }, grading.formatNumber(Number(category.count) || 0)),
+          el("td", { class: "num" }, grading.formatNumber(Number(category.pointsEach) || 0)),
+          el("td", { class: "num" }, grading.formatNumber(grading.categoryTotal(category))),
+          el("td", { class: "num" }, formatPercent(Number(category.weight) || 0))))),
+        el("tfoot", null, el("tr", null,
+          el("th", { scope: "row" }, "Total"),
+          el("td", { class: "num" }, ""),
+          el("td", { class: "num" }, ""),
+          el("td", { class: "num" }, grading.formatNumber(totalPoints)),
+          el("td", { class: "num" }, formatPercent(grading.weightTotal(categories)))))));
+    }
+
     const courseTotal = grading.pointsTotal(categories);
     return tableWrap("Assessments table", el("table", { class: "data-table" },
       el("caption", null, "Assessments, points, and percentage of final grade"),
@@ -737,9 +761,24 @@
 
   /* ---------- Rendering ---------- */
 
+  /* The college default grading scale; the built-in A–F scale if the file could not be loaded. */
+  function collegeGradingScale() {
+    const loaded = state.content && state.content.gradingScale;
+    return (loaded && loaded.length ? loaded : SCTCC.createDefaultGradingScale()).map((row) => Object.assign({}, row));
+  }
+
+  /* With "College grading scale" chosen, the syllabus always shows the current college scale. */
+  function syncCollegeScale() {
+    const gradingData = state.data && state.data.grading;
+    if (!gradingData || gradingData.scaleSource !== "college") return;
+    const college = collegeGradingScale();
+    if (JSON.stringify(gradingData.scale) !== JSON.stringify(college)) gradingData.scale = college;
+  }
+
   function render() {
     window.clearTimeout(state.renderTimer);
     state.renderTimer = null;
+    syncCollegeScale();
     renderHeader();
     const main = document.getElementById("main");
     main.textContent = "";
@@ -917,6 +956,8 @@
       .filter((entry) => entry.fragment)
       .map((entry) => ({ id: entry.definition.id, title: entry.definition.title, text: entry.fragment.textContent })),
     academicCalendar: () => state.content.academicCalendar || null,
+    collegeGradingScale,
+    collegeGradingScaleLoaded: () => Boolean(state.content && state.content.gradingScale && state.content.gradingScale.length),
     dataChanged,
     replaceData,
     markSaved,
@@ -949,6 +990,7 @@
     state.content = await state.contentPromise;
     render();
     SCTCC.editor.refreshCollegeDates();
+    SCTCC.editor.refreshGrading(); /* the college grading scale has loaded */
     document.body.classList.add("content-ready");
 
     announce(state.content.errors.length

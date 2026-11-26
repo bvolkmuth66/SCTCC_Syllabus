@@ -183,6 +183,45 @@ function checkAcademicCalendar(file, text) {
 
 /* ---------- Manifest ---------- */
 
+/* content/grading-scale.json: the college default grading scale. */
+function checkGradingScale(file, text) {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (error) {
+    report("error", file, 1, `Not valid JSON: ${error.message}`);
+    return;
+  }
+  const rows = data && Array.isArray(data.scale) ? data.scale : null;
+  if (!rows || !rows.length) {
+    report("error", file, 1, 'No "scale" list of grades.');
+    return;
+  }
+  const labels = new Set();
+  rows.forEach((row, index) => {
+    const where = `Grade ${index + 1}`;
+    const label = row && typeof row.label === "string" ? row.label.trim() : "";
+    if (!label) report("error", file, 1, `${where} has no label.`);
+    else if (labels.has(label)) report("error", file, 1, `Grade "${label}" is listed twice.`);
+    labels.add(label);
+    const { minPercent: min, maxPercent: max } = row || {};
+    if (!Number.isFinite(min) || !Number.isFinite(max)) report("error", file, 1, `${label || where}: minPercent and maxPercent must be numbers.`);
+    else if (min < 0 || max > 100 || min > max) report("error", file, 1, `${label || where}: ${min}–${max} is not a range between 0 and 100.`);
+  });
+  const sorted = rows.filter((row) => row && Number.isFinite(row.minPercent) && Number.isFinite(row.maxPercent))
+    .sort((a, b) => b.minPercent - a.minPercent);
+  for (let index = 1; index < sorted.length; index += 1) {
+    const higher = sorted[index - 1];
+    const lower = sorted[index];
+    if (lower.maxPercent >= higher.minPercent) report("error", file, 1, `${lower.label} (${lower.minPercent}–${lower.maxPercent}) overlaps ${higher.label} (${higher.minPercent}–${higher.maxPercent}).`);
+    else if (higher.minPercent - lower.maxPercent > 1) report("warning", file, 1, `Gap between ${lower.label} (up to ${lower.maxPercent}) and ${higher.label} (from ${higher.minPercent}).`);
+  }
+  if (sorted.length && sorted[0].maxPercent !== 100) report("warning", file, 1, `The top grade ends at ${sorted[0].maxPercent}, not 100.`);
+  if (sorted.length && sorted[sorted.length - 1].minPercent !== 0) report("warning", file, 1, `The lowest grade starts at ${sorted[sorted.length - 1].minPercent}, not 0.`);
+  if (!data.owner) report("warning", file, 1, 'No "owner" is listed.');
+  if (!isRealDate(String(data.lastReviewed || ""))) report("warning", file, 1, '"lastReviewed" is not a date (YYYY-MM-DD).');
+}
+
 async function checkManifest() {
   const file = join(CONTENT, "content-manifest.json");
   let manifest;
@@ -254,6 +293,11 @@ if (manifest) {
   if (manifest.academicCalendarFile) {
     const path = join(CONTENT, manifest.academicCalendarFile);
     if (await exists(path)) checkAcademicCalendar(path, await readFile(path, "utf8"));
+  }
+  if (manifest.gradingScaleFile) {
+    const path = join(CONTENT, manifest.gradingScaleFile);
+    if (await exists(path)) checkGradingScale(path, await readFile(path, "utf8"));
+    else report("error", join(CONTENT, "content-manifest.json"), 1, `gradingScaleFile content/${manifest.gradingScaleFile} does not exist.`);
   }
 }
 if (CHECK_LINKS) await checkLinks();

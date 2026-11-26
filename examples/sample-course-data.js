@@ -81,6 +81,7 @@ window.SCTCC_SAMPLE_DATA = {
   },
   grading: {
     calculationMethod: "points",
+    scaleSource: "college",
     intro: "This sample course has 15 weeks of instruction. Assessments for the course include weekly labs, quizzes, a midterm exam, a final exam, and a final project.",
     categories: [
       { name: "Labs", count: 10, pointsEach: 20, weight: 0, notes: "" },

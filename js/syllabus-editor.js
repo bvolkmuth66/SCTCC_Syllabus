@@ -421,8 +421,10 @@ window.SCTCC = window.SCTCC || {};
       field("select", "grading.calculationMethod", "How the final grade is calculated", {
         choices: [
           ["points", "Points: assignments add up to a course point total"],
-          ["weighted", "Percentage weights: categories add up to 100%"]
-        ]
+          ["pointsWeighted", "Points with set weights: each category has points and a weight you set"],
+          ["weighted", "Percentage weights only: categories add up to 100%"]
+        ],
+        hint: "With set weights, a category's weight does not have to follow from its points (for example, Labs 200 points = 40%). Weights must total 100%."
       }),
       field("textarea", "grading.intro", "Assignments & points introduction", {
         rows: 4,
@@ -448,13 +450,21 @@ window.SCTCC = window.SCTCC || {};
           "Only if this is intentional (for example, extra credit). Explain it under “Additional grading information.” The builder never changes your percentages.")),
 
       el("h3", { class: "editor-subheading" }, "Grading scale"),
-      note("Each range includes both ends, for example A = 90–100% and B = 80–89%. Point ranges are calculated from the course total."),
-      el("div", { id: "scale-rows" }),
-      el("div", { class: "button-row" },
-        actionButton("add-grade", "Add a grade", "btn-primary", { id: "add-grade" }),
-        actionButton("scale-default", "Reset to A–F"),
-        actionButton("scale-plusminus", "Use plus/minus sample")),
-      el("div", { id: "scale-summary", class: "grading-summary", "aria-live": "polite" }),
+      field("select", "grading.scaleSource", "Grading scale", {
+        choices: [
+          ["college", "Use the college grading scale"],
+          ["custom", "Enter my own grading scale"]
+        ]
+      }),
+      el("div", { id: "college-scale-view", class: "college-scale-only" }),
+      el("div", { class: "custom-scale-only" },
+        note("Each range includes both ends, for example A = 90–100% and B = 80–89%. Point ranges are calculated from the course total."),
+        el("div", { id: "scale-rows" }),
+        el("div", { class: "button-row" },
+          actionButton("add-grade", "Add a grade", "btn-primary", { id: "add-grade" }),
+          actionButton("scale-default", "Start from the college scale"),
+          actionButton("scale-plusminus", "Use plus/minus sample")),
+        el("div", { id: "scale-summary", class: "grading-summary", "aria-live": "polite" })),
 
       fieldset("Grades", [
         field("textarea", "grading.gradesNarrative.postedWhere", "Where grades are posted", {
@@ -799,7 +809,7 @@ window.SCTCC = window.SCTCC || {};
           field("text", `${base}.label`, "Grade", { narrow: true }),
           field("number", `${base}.minPercent`, "From (%)", { narrow: true }),
           field("number", `${base}.maxPercent`, "To (%)", { narrow: true })),
-        el("p", { class: "row-total points-only" },
+        el("p", { class: "row-total scale-points-only" },
           "Points: ", el("output", { id: `grade-points-${index}` }, "—")),
         el("div", { class: "button-row" },
           actionButton("remove-grade", "Remove", "btn-danger", { "data-index": String(index), "aria-label": `Remove grade ${name}` }))));
@@ -825,8 +835,13 @@ window.SCTCC = window.SCTCC || {};
   /* Update totals, point ranges, and messages without rebuilding the inputs. */
   function refreshGrading() {
     const grading = app.getData().grading;
-    const method = grading.calculationMethod === "weighted" ? "weighted" : "points";
-    root.querySelector("#editor-grading").setAttribute("data-method", method);
+    const method = SCTCC.grading.normalizeMethod(grading.calculationMethod);
+    const groupElement = root.querySelector("#editor-grading");
+    groupElement.setAttribute("data-method", method);
+    groupElement.setAttribute("data-points", SCTCC.grading.usesPoints(method) ? "yes" : "no");
+    groupElement.setAttribute("data-weights", SCTCC.grading.usesWeights(method) ? "yes" : "no");
+    groupElement.setAttribute("data-scale", grading.scaleSource === "custom" ? "custom" : "college");
+    renderCollegeScaleView(method);
 
     grading.categories.forEach((category, index) => {
       const output = root.querySelector(`#category-total-${index}`);
@@ -837,7 +852,7 @@ window.SCTCC = window.SCTCC || {};
     summaryBlock(root.querySelector("#category-summary"), summary.label, summary.errors, summary.warnings);
 
     const overrideWrap = root.querySelector("#weight-override-wrap");
-    const weightsOff = method === "weighted" && summary.total !== 100;
+    const weightsOff = SCTCC.grading.usesWeights(method) && summary.total !== 100;
     overrideWrap.hidden = !(weightsOff || grading.weightOverride);
 
     const ranges = SCTCC.grading.pointRanges(grading.scale, method === "points" ? summary.total : 0);
@@ -850,6 +865,27 @@ window.SCTCC = window.SCTCC || {};
 
     const scaleCheck = SCTCC.grading.validateScale(grading.scale);
     summaryBlock(root.querySelector("#scale-summary"), "", scaleCheck.errors, scaleCheck.warnings);
+  }
+
+  /* Read-only view of the college scale, shown when "Use the college grading scale" is chosen. */
+  function renderCollegeScaleView(method) {
+    const view = root.querySelector("#college-scale-view");
+    if (!view) return;
+    const scale = app.collegeGradingScale();
+    const total = method === "points" ? SCTCC.grading.pointsTotal(app.getData().grading.categories) : 0;
+    const ranges = SCTCC.grading.pointRanges(scale, total);
+    view.textContent = "";
+    view.appendChild(el("p", { class: "editor-note" },
+      "The college scale is kept centrally, so your syllabus always shows the current version. To change any range, choose “Enter my own grading scale.”"));
+    view.appendChild(el("ul", { class: "college-scale-list" }, SCTCC.grading.sortedScale(scale).map(({ row, index }) => {
+      const range = ranges.get(index);
+      return el("li", null, el("strong", null, row.label), ` ${SCTCC.grading.formatNumber(row.minPercent)}–${SCTCC.grading.formatNumber(row.maxPercent)}%`,
+        range ? ` (${range.min}–${range.max} points)` : "");
+    })));
+    if (!app.collegeGradingScaleLoaded()) {
+      view.appendChild(el("p", { class: "notice notice-warning" },
+        "The college grading scale file could not be loaded, so the standard A–F scale is shown. Reload the page; if it continues, tell the builder's maintainer."));
+    }
   }
 
   function buildGrading() {
@@ -1003,6 +1039,19 @@ window.SCTCC = window.SCTCC || {};
     if (gradeLabel) {
       const legend = root.querySelector(`#grade-legend-${gradeLabel[1]}`);
       if (legend) legend.textContent = gradeLegend(Number(gradeLabel[1]), value);
+    }
+    if (path === "grading.scaleSource") {
+      /* Keep the instructor's own scale while the college scale is shown, so switching back restores it. */
+      if (value === "college") {
+        data.grading.customScale = data.grading.scale.map((row) => Object.assign({}, row));
+        data.grading.scale = app.collegeGradingScale();
+      } else if (data.grading.customScale && data.grading.customScale.length) {
+        data.grading.scale = data.grading.customScale.map((row) => Object.assign({}, row));
+      } else {
+        data.grading.scale = app.collegeGradingScale();
+      }
+      buildScaleRows();
+      announce(value === "college" ? "Using the college grading scale." : "You can now edit your own grading scale.");
     }
     if (path.startsWith("grading.")) refreshGrading();
     if (/^course\.(term|year|startDate|endDate)$/.test(path)) refreshCollegeDates();
@@ -1300,15 +1349,15 @@ window.SCTCC = window.SCTCC || {};
       case "scale-default":
       case "scale-plusminus": {
         const plusMinus = action === "scale-plusminus";
-        if (!window.confirm(`Replace your grading scale with ${plusMinus ? "the plus/minus sample" : "the default A–F scale"}?`)) return;
-        data.grading.scale = plusMinus ? SCTCC.grading.plusMinusSampleScale() : SCTCC.createDefaultGradingScale();
+        if (!window.confirm(`Replace your grading scale with ${plusMinus ? "the plus/minus sample" : "the college grading scale"}?`)) return;
+        data.grading.scale = plusMinus ? SCTCC.grading.plusMinusSampleScale() : app.collegeGradingScale();
         buildScaleRows();
         refreshGrading();
         app.dataChanged();
         button.focus();
         const message = plusMinus
           ? "Plus/minus sample scale added. These cutoffs are only a starting point; confirm them for your program."
-          : "Grading scale reset to A–F.";
+          : "Started from the college grading scale. Change any range you need.";
         root.querySelector("#scale-summary").prepend(el("p", { class: "notice notice-info" }, message));
         announce(message);
         break;
@@ -1625,6 +1674,7 @@ window.SCTCC = window.SCTCC || {};
     showMessages,
     focusField,
     refreshCollegeDates,
+    refreshGrading,
     save: (saveAs) => handleSave(Boolean(saveAs)),
     open: () => handleOpen(),
     okToDiscard,

@@ -39,13 +39,27 @@ window.SCTCC = window.SCTCC || {};
   }
 
   /*
+   * Methods: "points" (weights follow from points), "weighted" (weights only),
+   * "pointsWeighted" (points per category AND weights the instructor sets).
+   */
+  function normalizeMethod(method) {
+    return ["points", "weighted", "pointsWeighted"].includes(method) ? method : "points";
+  }
+  function usesPoints(method) {
+    return normalizeMethod(method) !== "weighted";
+  }
+  function usesWeights(method) {
+    return normalizeMethod(method) !== "points";
+  }
+
+  /*
    * Summary of the assessment categories.
    * Returns { method, total, label, errors[], warnings[] }.
    */
   function summarizeCategories(grading) {
-    const method = grading.calculationMethod === "weighted" ? "weighted" : "points";
+    const method = normalizeMethod(grading.calculationMethod);
     const categories = grading.categories || [];
-    const result = { method, total: 0, label: "", errors: [], warnings: [] };
+    const result = { method, total: 0, points: 0, label: "", errors: [], warnings: [] };
 
     if (!categories.length) {
       result.label = "No assessment categories yet.";
@@ -56,10 +70,11 @@ window.SCTCC = window.SCTCC || {};
     categories.forEach((category, index) => {
       const name = String(category.name || "").trim() || `Category ${index + 1}`;
       if (!String(category.name || "").trim()) result.warnings.push(`Category ${index + 1} has no name.`);
-      if (method === "points") {
+      if (usesPoints(method)) {
         if (toNumber(category.count) < 0 || toNumber(category.pointsEach) < 0) result.errors.push(`${name}: numbers cannot be negative.`);
         else if (categoryTotal(category) === 0) result.warnings.push(`${name} is worth 0 points.`);
-      } else {
+      }
+      if (usesWeights(method)) {
         if (toNumber(category.weight) < 0) result.errors.push(`${name}: the weight cannot be negative.`);
         else if (toNumber(category.weight) === 0) result.warnings.push(`${name} has a weight of 0%.`);
       }
@@ -73,14 +88,16 @@ window.SCTCC = window.SCTCC || {};
     }
 
     result.total = weightTotal(categories);
+    const pointsNote = method === "pointsWeighted" ? ` Course points: ${formatNumber(pointsTotal(categories))}.` : "";
+    result.points = method === "pointsWeighted" ? pointsTotal(categories) : 0;
     const difference = roundTo(100 - result.total, 4);
     if (difference === 0) {
-      result.label = "Total weight: 100%.";
+      result.label = `Total weight: 100%.${pointsNote}`;
     } else if (difference > 0) {
-      result.label = `Total weight: ${formatNumber(result.total)}% — ${formatNumber(difference)}% short of 100%.`;
+      result.label = `Total weight: ${formatNumber(result.total)}% — ${formatNumber(difference)}% short of 100%.${pointsNote}`;
       if (!grading.weightOverride) result.errors.push(`The weights add up to ${formatNumber(result.total)}%, not 100%.`);
     } else {
-      result.label = `Total weight: ${formatNumber(result.total)}% — ${formatNumber(-difference)}% over 100%.`;
+      result.label = `Total weight: ${formatNumber(result.total)}% — ${formatNumber(-difference)}% over 100%.${pointsNote}`;
       if (!grading.weightOverride) result.errors.push(`The weights add up to ${formatNumber(result.total)}%, not 100%.`);
     }
     if (difference !== 0 && grading.weightOverride) {
@@ -205,6 +222,9 @@ window.SCTCC = window.SCTCC || {};
     weightTotal,
     formatNumber,
     summarizeCategories,
+    normalizeMethod,
+    usesPoints,
+    usesWeights,
     validateScale,
     pointRanges,
     checkGrading,
