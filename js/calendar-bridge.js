@@ -1,0 +1,306 @@
+/*
+ * SCTCC Syllabus Builder — calendar workspace bridge (builder side)
+ *
+ * The calendar workspace (calendar.html) opens in its own window, or full screen
+ * inside the builder when a new window is blocked. It never keeps its own copy of
+ * the syllabus: it reads a snapshot from here and sends every change here, where
+ * the same calendar functions as the editor apply it. The builder stays the one
+ * place the syllabus lives, so Save, the preview, and the PDF always match.
+ *
+ * Messages are plain JSON strings, so objects never cross between windows
+ * (lists made in one window are not recognized as lists by another's checks).
+ * Nothing is stored and nothing leaves the computer.
+ */
+window.SCTCC = window.SCTCC || {};
+
+(function () {
+  "use strict";
+
+  const SCTCC = window.SCTCC;
+  const CONTENT_FIELDS = ["topic", "preparation", "due", "notes"];
+  const WORKSPACE_URL = "calendar.html";
+  const listeners = new Set();
+  let app = null;
+  let workspaceWindow = null;
+
+  function data() {
+    return app.getData();
+  }
+
+  function text(value) {
+    return String(value === null || value === undefined ? "" : value).slice(0, 2000);
+  }
+
+  function entryAt(index) {
+    const entries = data().calendar.entries;
+    return Number.isInteger(index) && index >= 0 && index < entries.length ? entries[index] : null;
+  }
+
+  function renumber() {
+    SCTCC.calendar.renumber(data().calendar.entries, SCTCC.calendar.resolveSettings(data()));
+  }
+
+  function currentTerm() {
+    const course = data().course;
+    return SCTCC.calendar.findTerm(app.academicCalendar(), course.term, course.year);
+  }
+
+  /* ---------- Reading ---------- */
+
+  function snapshot() {
+    const syllabus = data();
+    const course = syllabus.course;
+    const settings = SCTCC.calendar.resolveSettings(syllabus);
+    const check = SCTCC.calendar.checkSettings(settings);
+    const term = currentTerm();
+    return JSON.stringify({
+      course: {
+        prefix: course.prefix, number: course.number, title: course.title,
+        term: course.term, year: course.year,
+        startDate: course.startDate, endDate: course.endDate,
+        location: course.location, modality: course.modality,
+        meetingDays: course.meetingPattern.days, startTime: course.meetingPattern.startTime, endTime: course.meetingPattern.endTime
+      },
+      calendar: syllabus.calendar,
+      term: term ? { term: term.term, year: term.year, finalsStart: term.finalsStart, finalsEnd: term.finalsEnd, noClassDates: term.noClassDates || [] } : null,
+      settingsErrors: check.errors,
+      settingsWarnings: check.warnings
+    });
+  }
+
+  /* ---------- Changing ---------- */
+
+  const OPERATIONS = {
+    setField(op) {
+      const entry = entryAt(op.index);
+      if (!entry) return { ok: false, message: "That calendar row no longer exists." };
+      if (op.field === "noClass") {
+        entry.noClass = Boolean(op.value);
+        renumber();
+        return { ok: true };
+      }
+      if (op.field === "date" && entry.manual) {
+        entry.date = SCTCC.util.parseISODate(op.value) ? op.value : "";
+        renumber();
+        return { ok: true };
+      }
+      if (!CONTENT_FIELDS.includes(op.field)) return { ok: false, message: "That field cannot be changed here." };
+      entry[op.field] = text(op.value);
+      if (entry.pending) entry.pending = false;
+      return { ok: true };
+    },
+
+    move(op) {
+      const target = op.index + (op.direction < 0 ? -1 : 1);
+      if (!SCTCC.calendar.swapContent(data().calendar.entries, op.index, target)) return { ok: false, message: "That topic cannot move further." };
+      return { ok: true, index: target };
+    },
+
+    shift(op) {
+      if (!entryAt(op.index)) return { ok: false, message: "That calendar row no longer exists." };
+      const result = SCTCC.calendar.shiftContentLater(data().calendar.entries, op.index);
+      renumber();
+      return { ok: true, overflow: Boolean(result.overflow) };
+    },
+
+    generate() {
+      const syllabus = data();
+      const check = SCTCC.calendar.checkSettings(SCTCC.calendar.resolveSettings(syllabus));
+      if (check.errors.length) return { ok: false, errors: check.errors };
+      const result = SCTCC.calendar.generate(syllabus);
+      syllabus.calendar.entries = result.entries;
+      return { ok: true, summary: result.summary, warnings: result.warnings || [] };
+    },
+
+    setMeetingDays(op) {
+      const days = (Array.isArray(op.days) ? op.days : []).filter((day) => SCTCC.calendar.DAY_NAMES.includes(day));
+      const calendar = data().calendar;
+      calendar.meetingDays = days.slice();
+      calendar.meetingsPerWeek = Math.min(4, days.length);
+      return { ok: true };
+    },
+
+    setOption(op) {
+      const calendar = data().calendar;
+      if (op.key === "mode") calendar.mode = op.value === "weekly" ? "weekly" : "meetings";
+      else if (op.key === "includeFinalsWeek" || op.key === "showExcludedAsRows") calendar[op.key] = Boolean(op.value);
+      else return { ok: false, message: "That setting cannot be changed here." };
+      return { ok: true };
+    },
+
+    copyCourseDays() {
+      const syllabus = data();
+      const days = syllabus.course.meetingPattern.days || [];
+      if (!days.length) return { ok: false, message: "Choose the meeting days under Credits, modality, and dates in the builder first." };
+      syllabus.calendar.meetingDays = days.slice();
+      syllabus.calendar.meetingsPerWeek = Math.min(4, days.length);
+      if (syllabus.course.modality === "online") syllabus.calendar.mode = "weekly";
+      return { ok: true };
+    },
+
+    addCollegeClosures() {
+      const term = currentTerm();
+      if (!term) return { ok: false, message: "The college calendar has no dates for this term yet, or the term and year are not chosen." };
+      return { ok: true, added: SCTCC.calendar.addTermClosures(data().calendar, term) };
+    },
+
+    addExcluded(op) {
+      if (!SCTCC.util.parseISODate(op.date)) return { ok: false, message: "Enter a date." };
+      data().calendar.excludedDates.push({ date: op.date, label: text(op.label).slice(0, 120) });
+      return { ok: true };
+    },
+
+    removeExcluded(op) {
+      const list = data().calendar.excludedDates;
+      if (!(op.index >= 0 && op.index < list.length)) return { ok: false };
+      list.splice(op.index, 1);
+      return { ok: true };
+    },
+
+    addRow() {
+      const entries = data().calendar.entries;
+      entries.push(SCTCC.calendar.blankRow({ manual: true }));
+      renumber();
+      return { ok: true, index: entries.length - 1 };
+    },
+
+    removeRow(op) {
+      if (!entryAt(op.index)) return { ok: false };
+      data().calendar.entries.splice(op.index, 1);
+      renumber();
+      return { ok: true };
+    },
+
+    /* Read a syllabus file saved from the builder; only its calendar is returned. */
+    readSyllabusFile(op) {
+      let raw;
+      try {
+        raw = JSON.parse(String(op.text || ""));
+      } catch (error) {
+        return { ok: false, message: "That file is not a syllabus saved from this builder (.json)." };
+      }
+      const result = SCTCC.validateSyllabusData(raw);
+      if (!result.ok) return { ok: false, message: result.errors.join(" ") || "That file could not be read." };
+      const course = result.data.course;
+      return {
+        ok: true,
+        label: [course.prefix, course.number, course.title].filter(Boolean).join(" ") + (course.term ? ` (${course.term} ${course.year})` : ""),
+        entries: result.data.calendar.entries
+      };
+    },
+
+    /* Place last term's topics: plan = [{ index, topic, preparation, due, notes }], leftovers = [{ … }]. */
+    reuse(op) {
+      const entries = data().calendar.entries;
+      (Array.isArray(op.plan) ? op.plan : []).forEach((item) => {
+        const entry = entryAt(item.index);
+        if (!entry) return;
+        CONTENT_FIELDS.forEach((field) => { entry[field] = text(item[field]); });
+        entry.pending = false;
+      });
+      (Array.isArray(op.leftovers) ? op.leftovers : []).forEach((item) => {
+        const row = SCTCC.calendar.blankRow({ manual: true });
+        CONTENT_FIELDS.forEach((field) => { row[field] = text(item[field]); });
+        entries.push(row);
+      });
+      renumber();
+      return { ok: true };
+    }
+  };
+
+  function apply(message) {
+    let op;
+    try {
+      op = JSON.parse(message);
+    } catch (error) {
+      return JSON.stringify({ ok: false, message: "The request could not be read." });
+    }
+    const handler = op && Object.prototype.hasOwnProperty.call(OPERATIONS, op.op) ? OPERATIONS[op.op] : null;
+    if (!handler) return JSON.stringify({ ok: false, message: "Unknown request." });
+    const result = handler(op) || { ok: true };
+    if (op.op !== "readSyllabusFile" && result.ok !== false) {
+      app.dataChanged();
+      if (SCTCC.editor && SCTCC.editor.refreshCalendar) SCTCC.editor.refreshCalendar();
+    }
+    return JSON.stringify(result);
+  }
+
+  /* ---------- Keeping the workspace up to date ---------- */
+
+  function subscribe(callback) {
+    listeners.add(callback);
+    return () => listeners.delete(callback);
+  }
+
+  function notify() {
+    listeners.forEach((callback) => {
+      try {
+        callback();
+      } catch (error) {
+        listeners.delete(callback); /* that workspace has closed */
+      }
+    });
+  }
+
+  /* ---------- Opening and closing ---------- */
+
+  function dialog() {
+    return document.getElementById("calendar-dialog");
+  }
+
+  function openEmbedded() {
+    const box = dialog();
+    const frame = document.getElementById("calendar-frame");
+    frame.src = `${WORKSPACE_URL}?embedded=1`;
+    if (!box.open) box.showModal();
+    frame.focus();
+  }
+
+  function closeEmbedded() {
+    const box = dialog();
+    if (box.open) box.close();
+  }
+
+  /* Returns "window", "embedded" (the browser blocked a new window), or "focused". */
+  function openWindow() {
+    if (workspaceWindow && !workspaceWindow.closed) {
+      workspaceWindow.focus();
+      return "focused";
+    }
+    const width = Math.min(1440, Math.max(900, window.screen.availWidth - 80));
+    const height = Math.min(1000, Math.max(700, window.screen.availHeight - 80));
+    workspaceWindow = window.open(WORKSPACE_URL, "sctccCalendarWorkspace", `popup,width=${width},height=${height}`);
+    if (!workspaceWindow) {
+      openEmbedded();
+      return "embedded";
+    }
+    return "window";
+  }
+
+  function init(appInterface) {
+    app = appInterface;
+    document.addEventListener("syllabus:rendered", notify);
+    const box = dialog();
+    if (box) {
+      box.addEventListener("close", () => {
+        document.getElementById("calendar-frame").src = "about:blank";
+        const opener = document.getElementById("calendar-open-here");
+        if (opener) opener.focus();
+      });
+    }
+    window.addEventListener("pagehide", () => {
+      if (workspaceWindow && !workspaceWindow.closed) workspaceWindow.close();
+    });
+  }
+
+  SCTCC.calendarBridge = Object.freeze({
+    init,
+    snapshot,
+    apply,
+    subscribe,
+    openWindow,
+    openEmbedded,
+    closeEmbedded,
+    pdfTitle: () => (app && app.pdfTitle ? app.pdfTitle() : "")
+  });
+})();

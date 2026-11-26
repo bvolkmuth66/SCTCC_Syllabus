@@ -99,6 +99,7 @@ async function main() {
     results.push(await runAxe(page, axeSource, "Start screen", { include: "#start-dialog" }));
 
     /* 2. Instructor view with the sample course and every editor group open. */
+    page.context().on("page", (popup) => popup.on("dialog", (dialog) => dialog.accept()));
     await page.click("[data-start=sample]");
     await page.waitForTimeout(800);
     await page.evaluate(() => document.querySelectorAll("details.editor-group").forEach((group) => { group.open = true; }));
@@ -110,7 +111,26 @@ async function main() {
     await page.waitForTimeout(400);
     results.push(await runAxe(page, axeSource, "Check before printing results", { include: "#editor-check" }));
 
-    /* 4. Student view, then the PDF made from it. */
+    /* 4. The calendar workspace window, and its Reuse dialog. */
+    const [workspace] = await Promise.all([
+      page.context().waitForEvent("page"),
+      page.click("#calendar-open-window")
+    ]);
+    workspace.on("pageerror", (error) => pageErrors.push(`calendar workspace: ${error}`));
+    await workspace.waitForLoadState("load");
+    await workspace.waitForSelector(".ws-month", { timeout: 15000 });
+    await workspace.click(".ws-month .ws-entry");
+    await workspace.waitForTimeout(300);
+    results.push(await runAxe(workspace, axeSource, "Calendar workspace (month view, a class selected)"));
+    await workspace.click("#view-list");
+    await workspace.waitForTimeout(200);
+    results.push(await runAxe(workspace, axeSource, "Calendar workspace (list view)", { include: "#calendar-main" }));
+    await workspace.click("#ws-reuse");
+    await workspace.waitForTimeout(200);
+    results.push(await runAxe(workspace, axeSource, "Calendar workspace (Reuse dialog)", { include: "#reuse-dialog" }));
+    await workspace.close();
+
+    /* 5. Student view, then the PDF made from it. */
     await page.click("#toggle-mode");
     await page.waitForTimeout(500);
     results.push(await runAxe(page, axeSource, "Student view (sample course)"));

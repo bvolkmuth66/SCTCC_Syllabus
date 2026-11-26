@@ -977,6 +977,7 @@
     setMode(config.mode);
     bindPageEvents();
     SCTCC.editor.init(app);
+    SCTCC.calendarBridge.init(app);
     render(); /* show the blank syllabus immediately while college content loads */
     updateFileStatus();
     if (erased) {
