@@ -488,6 +488,13 @@ window.SCTCC = window.SCTCC || {};
 
   function calendarGroup() {
     return group("editor-calendar", "Course calendar", [
+      el("div", { class: "calendar-tool-choice" },
+        el("p", { class: "calendar-tool-title" }, "Choose a calendar tool"),
+        el("p", { class: "editor-note" },
+          "The calendar workspace gives you a month view, a list view, and Reuse last term’s schedule, with room to work. It opens in its own window, so you can put it on a second screen. Or use the settings below. Both change the same calendar."),
+        el("div", { class: "button-row" },
+          actionButton("calendar-workspace", "Open the calendar workspace", "btn-primary", { id: "calendar-open-window" }),
+          actionButton("calendar-workspace-here", "Open it full screen here", null, { id: "calendar-open-here" }))),
       field("textarea", "calendar.locationStatement", "Statement about the course schedule", {
         optionalLabel: true,
         hint: "Shown above the calendar, or by itself if you do not build a calendar. For example: The complete, current schedule is posted in D2L under Content > Course Schedule."
@@ -1363,6 +1370,18 @@ window.SCTCC = window.SCTCC || {};
         break;
       }
 
+      case "calendar-workspace": {
+        const how = SCTCC.calendarBridge.openWindow();
+        if (how === "embedded") announce("Your browser blocked a new window, so the calendar workspace opened full screen here.");
+        else announce(how === "focused" ? "Switched to the calendar workspace window." : "The calendar workspace opened in a new window.");
+        break;
+      }
+
+      case "calendar-workspace-here": {
+        SCTCC.calendarBridge.openEmbedded();
+        break;
+      }
+
       case "calendar-copy-course": {
         const course = data.course;
         if (course.meetingPattern.days.length) {
@@ -1675,6 +1694,15 @@ window.SCTCC = window.SCTCC || {};
     focusField,
     refreshCollegeDates,
     refreshGrading,
+    /* After the calendar workspace changes the calendar. */
+    refreshCalendar() {
+      const calendarGroupElement = root && root.querySelector("#editor-calendar");
+      if (!calendarGroupElement) return;
+      populate(calendarGroupElement);
+      buildExcludedRows();
+      buildCalendarRows();
+      refreshCalendarSettings();
+    },
     save: (saveAs) => handleSave(Boolean(saveAs)),
     open: () => handleOpen(),
     okToDiscard,

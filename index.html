@@ -66,6 +66,11 @@
   <dialog id="start-dialog" class="print-dialog start-dialog" aria-labelledby="start-title" aria-describedby="start-intro"></dialog>
   <dialog id="import-dialog" class="print-dialog import-dialog" aria-labelledby="import-title"></dialog>
 
+  <!-- Full-screen calendar workspace, used when the browser blocks a new window. -->
+  <dialog id="calendar-dialog" class="calendar-dialog" aria-label="Course calendar workspace">
+    <iframe id="calendar-frame" title="Course calendar workspace" src="about:blank"></iframe>
+  </dialog>
+
   <dialog id="print-dialog" class="print-dialog" aria-labelledby="print-dialog-title">
     <h2 id="print-dialog-title">Print to PDF</h2>
     <div id="print-dialog-body"></div>
@@ -87,6 +92,7 @@
   <script src="js/syllabus-import.js"></script>
   <script src="js/syllabus-editor.js"></script>
   <script src="js/start-screen.js"></script>
+  <script src="js/calendar-bridge.js"></script>
   <script src="js/syllabus.js"></script>
 </body>
 </html>

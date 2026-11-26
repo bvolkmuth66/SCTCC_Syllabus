@@ -12,6 +12,7 @@ on:
   pull_request:
     paths:
       - "index.html"
+      - "calendar.html"
       - "css/**"
       - "js/**"
       - "content/**"
@@ -24,6 +25,7 @@ on:
     branches: [main]
     paths:
       - "index.html"
+      - "calendar.html"
       - "css/**"
       - "js/**"
       - "content/**"

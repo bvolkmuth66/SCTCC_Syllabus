@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Course Calendar Workspace | SCTCC Syllabus Builder</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/calendar-workspace.css">
+</head>
+<body>
+  <a class="skip-link" href="#calendar-main">Skip to the calendar</a>
+  <div id="live-status" class="visually-hidden" aria-live="polite"></div>
+
+  <header class="ws-header">
+    <div class="ws-title">
+      <h1>Course Calendar</h1>
+      <p id="ws-course" class="ws-course">Loading…</p>
+    </div>
+    <p id="ws-link" class="ws-link"><span class="ws-dot" aria-hidden="true"></span><span id="ws-link-text">Connecting to the syllabus builder…</span></p>
+    <div class="ws-actions">
+      <button type="button" id="ws-reuse" class="btn btn-light">Reuse last term’s schedule…</button>
+      <button type="button" id="ws-close" class="btn btn-outline-light">Back to the builder</button>
+    </div>
+  </header>
+
+  <div id="ws-lost" class="ws-banner" role="alert" hidden>
+    The syllabus builder window was closed or reloaded, so changes here can no longer be saved. Close this window and open the calendar again from the builder.
+  </div>
+
+  <div class="ws-body">
+    <aside id="ws-settings" class="ws-panel ws-settings" aria-labelledby="settings-title">
+      <h2 id="settings-title">Settings</h2>
+      <div id="settings-body"></div>
+    </aside>
+
+    <main id="calendar-main" class="ws-main" tabindex="-1">
+      <div class="ws-toolbar">
+        <div role="group" aria-label="View" class="ws-tabs">
+          <button type="button" id="view-month" aria-pressed="true">Month</button>
+          <button type="button" id="view-list" aria-pressed="false">List</button>
+        </div>
+        <div id="month-nav" class="ws-month-nav">
+          <button type="button" id="month-prev" class="btn btn-icon" aria-label="Previous month">‹</button>
+          <h2 id="month-title" class="ws-month-title"></h2>
+          <button type="button" id="month-next" class="btn btn-icon" aria-label="Next month">›</button>
+        </div>
+        <ul class="ws-legend" aria-label="Key">
+          <li><span class="key key-class" aria-hidden="true"></span>Class meeting</li>
+          <li><span class="key key-noclass" aria-hidden="true"></span>No class</li>
+          <li><span class="key key-finals" aria-hidden="true"></span>Final exam week</li>
+        </ul>
+      </div>
+      <div id="calendar-view"></div>
+      <section id="unscheduled" class="ws-unscheduled" aria-labelledby="unscheduled-title" hidden>
+        <h2 id="unscheduled-title">Unscheduled topics</h2>
+        <p class="ws-hint">Topics without a class date. Choose one, then give it a date or move it into a class meeting.</p>
+        <ul id="unscheduled-list"></ul>
+      </section>
+    </main>
+
+    <section id="ws-detail" class="ws-panel ws-detail" aria-labelledby="detail-title">
+      <h2 id="detail-title">Class details</h2>
+      <div id="detail-body"></div>
+    </section>
+  </div>
+
+  <dialog id="reuse-dialog" class="ws-dialog" aria-labelledby="reuse-title">
+    <h2 id="reuse-title">Reuse last term’s schedule</h2>
+    <div id="reuse-body"></div>
+  </dialog>
+
+  <script src="js/dom-helpers.js"></script>
+  <script src="js/syllabus-data.js"></script>
+  <script src="js/calendar-workspace.js"></script>
+</body>
+</html>

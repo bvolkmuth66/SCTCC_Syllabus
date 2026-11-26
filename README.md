@@ -53,6 +53,7 @@ College-wide content (policies, support information, the footer) is **not** type
 ```
 SCTCC_Syllabus/
 ├── index.html                      The builder page
+├── calendar.html                   The course calendar workspace (opened from the builder)
 ├── css/
 │   ├── syllabus.css                Screen styles (brand colors, layout)
 │   └── print.css                   PDF / print styles (US Letter)
@@ -71,6 +72,8 @@ SCTCC_Syllabus/
 │   ├── pdf-reader.js               Reads a PDF in the browser with PDF.js (no uploads)
 │   ├── syllabus-import.js          Finds the instructor's information in an old syllabus
 │   ├── start-screen.js             "How would you like to start?" and the import review
+│   ├── calendar-bridge.js          Builder side of the calendar workspace: snapshots and changes
+│   ├── calendar-workspace.js       The calendar workspace: month and list views, details, reuse
 │   └── syllabus.js                 Builds the syllabus, unsaved-changes tracking, Print to PDF
 ├── content/
 │   ├── content-manifest.json       List of college sections and where they go
@@ -243,7 +246,26 @@ Problems are listed under the categories and the scale in the editor, and in the
 
 ## Course calendar generator
 
-Open **Course calendar** in the editor.
+Open **Course calendar** in the editor. At the top, **Choose a calendar tool**:
+
+- **Open the calendar workspace** — a larger workspace in its own window, so it can sit on a second screen. If the browser blocks new windows, it opens full screen inside the builder instead (**Open it full screen here** does that on purpose).
+- Or use the settings and rows below in the editor. Both change the same calendar, and each shows the other's changes as you type.
+
+### The calendar workspace
+
+- **Header:** the course, term, and dates, and whether the workspace is linked to the builder. **Back to the builder** closes it.
+- **Settings** (left): layout (by class meeting or by week), meeting days, final exam week, showing no-class dates, the college's no-class dates and your own closures, and **Generate calendar**. The dates always come from the course dates. First-week schedules stay in the editor.
+- **Month view** (middle): a real month calendar for the term. Class meetings show their meeting number, topic, and anything due; no-class dates, final exam week, and days outside the course are marked. Use the arrows to move between months. **List view** shows every row in a table.
+- **Class details** (right): choose a class to edit its topic, preparation/reading, due item, and notes, mark it as no class, **Move topic earlier/later**, or **Shift topics later from here** (for a snow day). **Add an unscheduled topic** adds one without a date.
+- **Unscheduled topics** are listed under the month, so nothing that lost its date is hidden.
+- **Reuse last term’s schedule…** opens a syllabus file saved from this builder (read on this computer, never uploaded) and lays its topics, readings, due items, and notes onto this term's class meetings:
+  - **In meeting order** (1st class → 1st class), with **Keep final exam week topics in final exam week** on by default; or **By week and weekday** (week 3's 2nd class → week 3's 2nd class).
+  - A preview shows each old date, topic, and new date, which meetings are left open, which topics become unscheduled (when this term has fewer classes), and which meetings already have topics that would be replaced. Nothing changes until you choose **Place**.
+  - If this term's calendar has not been generated yet, the dialog offers to generate it first.
+
+The workspace keeps no copy of the syllabus: every change goes to the builder, which applies it with the same functions as the editor, so Save, the preview, and the PDF always match. Leaving or closing the builder closes the workspace window. Opening `calendar.html` by itself only shows how to open it from the builder.
+
+### Generator settings (in the editor)
 
 1. **Statement about the course schedule** — optional text shown above the calendar (or by itself if you do not build one), for example where the live schedule is posted in D2L.
 2. **Calendar layout**
