@@ -51,6 +51,8 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* WCAG 2.4.11: keep focused items and link targets out from under the sticky toolbar. */
+  scroll-padding-top: var(--toolbar-clearance, 5rem);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -596,6 +598,11 @@ body[data-mode="instructor"] .student-only {
   color: var(--sctcc-primary);
   cursor: pointer;
   list-style-position: inside;
+}
+
+/* The syllabus section number(s) this group edits, matching the preview and PDF. */
+.editor-group > summary .group-number {
+  font-variant-numeric: tabular-nums;
 }
 
 .editor-group[open] > summary {
@@ -1161,5 +1168,9 @@ body[data-mode="instructor"] .student-only {
 
   .builder-toolbar {
     position: static;
+  }
+
+  html {
+    --toolbar-clearance: 1rem; /* the toolbar does not stick on narrow screens */
   }
 }

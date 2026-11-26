@@ -1,0 +1,41 @@
+# Opens a yearly "accessibility review due" issue so the standards and the manual
+# checks in ACCESSIBILITY.md are reviewed before each fall semester.
+# Assign the issue to the owner named (by title) in ACCESSIBILITY.md.
+name: Yearly accessibility review reminder
+
+on:
+  schedule:
+    - cron: "23 14 1 7 *"   # July 1 each year, about 9:23 a.m. Central
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const year = new Date().getFullYear();
+            const title = `Accessibility review due — ${year}`;
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo, state: "open", per_page: 100
+            });
+            if (existing.data.some((issue) => issue.title === title)) {
+              core.info(`"${title}" is already open.`);
+              return;
+            }
+            const body = [
+              "Yearly review of the syllabus builder's accessibility (see `ACCESSIBILITY.md`).",
+              "",
+              "- [ ] Check each source in the **Standards** table of `ACCESSIBILITY.md` for changes (WCAG version, DOJ Title II rule and dates, Minnesota State 1B.4 procedures and the scheduled review under 1B.4.2.1, State of Minnesota standard).",
+              "- [ ] If a standard changed: update `ACCESSIBILITY.md`, add or change rows in `docs/accessibility-checklist.md`, and update `AXE_TAGS` in `scripts/check-accessibility.mjs`.",
+              "- [ ] Run **Actions → Check accessibility → Run workflow** and review the attached sample PDF.",
+              "- [ ] Do the manual review in `docs/accessibility-checklist.md` (keyboard, screen reader, zoom/reflow, Acrobat/PAC, D2L upload) and record results.",
+              "- [ ] Update **Last reviewed** / **Next review due** in `ACCESSIBILITY.md` and add a line to the checklist's review log.",
+              "- [ ] Open an issue for each problem found."
+            ].join("\n");
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title, body });
+            core.info(`Opened "${title}".`);

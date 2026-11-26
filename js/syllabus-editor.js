@@ -125,9 +125,56 @@ window.SCTCC = window.SCTCC || {};
 
   function group(id, title, children, open) {
     return el("details", { class: "editor-group", id, open: Boolean(open) },
-      el("summary", null, title),
+      el("summary", null, el("span", { class: "group-number" }), el("span", { class: "group-title" }, title)),
       el("div", { class: "group-body" }, children));
   }
+
+  /*
+   * Which syllabus sections each editor group fills in. "#id" is a major section;
+   * other entries are subsection heading ids. Numbers are read from the preview
+   * after each render, so they always match the preview and the PDF.
+   */
+  const GROUP_SECTIONS = {
+    "editor-course": [], /* the title block at the top of the syllabus */
+    "editor-instructor": ["#instructor-information"],
+    "editor-schedule": ["general-information-3", "course-log-in-3"],
+    "editor-description": ["pre-co-requisites-3", "course-description-and-outcomes-3", "mn-transfer-curriculum-goal-area-3"],
+    "editor-materials": ["materials-3"],
+    "editor-policies": ["#college-policies", "#course-policies"],
+    "editor-vendors": ["accessibility-and-data-privacy-policies-3"],
+    "editor-grading": ["#grading"],
+    "editor-calendar": ["#course-calendar"]
+  };
+
+  function sectionNumber(target) {
+    const heading = target.startsWith("#")
+      ? document.querySelector(`${target} > h2`)
+      : document.getElementById(target);
+    const number = heading && heading.querySelector(".section-number");
+    return number ? number.textContent.replace(/\.?\s*$/, "") : "";
+  }
+
+  /* "2.3, 2.4, 2.5" becomes "2.3–2.5". */
+  function formatNumbers(numbers) {
+    if (numbers.length <= 2) return numbers.join(", ");
+    const parts = numbers.map((number) => number.split(".").map(Number));
+    const sameMajor = parts.every((part) => part.length === 2 && part[0] === parts[0][0]);
+    const consecutive = sameMajor && parts.every((part, index) => index === 0 || part[1] === parts[index - 1][1] + 1);
+    return consecutive ? `${numbers[0]}–${numbers[numbers.length - 1]}` : numbers.join(", ");
+  }
+
+  function updateSectionNumbers() {
+    if (!root) return;
+    Object.entries(GROUP_SECTIONS).forEach(([groupId, targets]) => {
+      const slot = root.querySelector(`#${groupId} > summary .group-number`);
+      if (!slot) return;
+      const numbers = [...new Set(targets.map(sectionNumber).filter(Boolean))];
+      slot.textContent = numbers.length ? `${formatNumbers(numbers)} ` : "";
+      slot.title = numbers.length ? `Syllabus section ${formatNumbers(numbers)}` : "";
+    });
+  }
+
+  document.addEventListener("syllabus:rendered", updateSectionNumbers);
 
   function note(text) {
     return el("p", { class: "editor-note" }, text);
@@ -1490,13 +1537,15 @@ window.SCTCC = window.SCTCC || {};
       courseGroup(),
       instructorGroup(),
       scheduleGroup(),
-      descriptionGroup(),
       materialsGroup(),
+      descriptionGroup(),
       policiesGroup(),
       vendorsGroup(),
       gradingGroup(),
       calendarGroup(),
       statusGroup()));
+
+    updateSectionNumbers(); /* the preview may already be numbered */
 
     const form = root.querySelector("#syllabus-editor");
     form.addEventListener("submit", (event) => event.preventDefault());

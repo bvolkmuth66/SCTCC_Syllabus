@@ -754,6 +754,7 @@
     renderFooter();
     if (config.numberSections !== false) numberSections(main);
     renderTableOfContents();
+    document.dispatchEvent(new CustomEvent("syllabus:rendered"));
     renderStatusPanel();
     updatePrintFooter();
     document.body.classList.toggle("print-link-urls", Boolean(config.printLinkUrls));

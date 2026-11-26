@@ -84,10 +84,15 @@ SCTCC_Syllabus/
 ├── examples/
 │   └── sample-course-data.js       Invented sample course ("Load sample course" button)
 ├── scripts/
-│   └── check-content.mjs           Checks the content files (run by GitHub on every change)
+│   ├── check-content.mjs           Checks the content files (run by GitHub on every change)
+│   ├── check-accessibility.mjs     axe-core page check and sample PDF (run by GitHub)
+│   └── check-pdf.py                Checks the sample PDF's tags, language, title, headings
+├── docs/
+│   └── accessibility-checklist.md  WCAG 2.2 A/AA criteria, how each is met and tested
+├── ACCESSIBILITY.md                Standards, owner (by title), review schedule
 ├── .github/
 │   ├── CODEOWNERS                  Who reviews changes to each file
-│   └── workflows/check-content.yml Runs the content check on pull requests
+│   └── workflows/                  Content check, accessibility check, yearly review reminder
 ├── .nojekyll                       Serve files as-is on GitHub Pages
 └── README.md
 ```
@@ -127,7 +132,7 @@ When the builder opens, it asks **How would you like to start?**
 
 | Choice | For | What happens |
 |---|---|---|
-| **Import a previous syllabus (Word)** | Instructors using the builder for the first time | Their old .docx syllabus is read in the browser. They review everything found, keep or skip each item, and start with most of the syllabus filled in. See below. |
+| **Import a previous syllabus (Word or PDF)** | Instructors using the builder for the first time | Their old .docx syllabus is read in the browser. They review everything found, keep or skip each item, and start with most of the syllabus filled in. See below. |
 | **Open a syllabus saved from this builder** | Everyone after their first term | Their saved .json file opens exactly as saved. They update the term and dates, generate the calendar, and print. |
 | **Start from scratch** | New courses | A blank syllabus with hints in every section. |
 | *See an example* | Anyone curious | Opens the sample course. |
@@ -136,7 +141,7 @@ When the builder opens, it asks **How would you like to start?**
 
 Then:
 
-1. Work through the groups in the **Edit syllabus** panel. The preview updates as you type. Anything still needed is marked in the preview, for example **[Withdrawal date needed]**.
+1. Work through the groups in the **Edit syllabus** panel. They are in the same order as the syllabus, and each shows the number of the syllabus section(s) it fills in (for example **2.2 Materials and technology**), matching the numbers in the preview and the PDF. The numbers update when optional sections are turned on or off. The preview updates as you type. Anything still needed is marked in the preview, for example **[Withdrawal date needed]**.
    - **Course** and **Description, outcomes, and requisites**: copy from the official SCTCC Course Outline. Outcomes appear under a **Student Learning Outcomes** heading as a bulleted list (the July 2026 template numbers them; changed 2026-11-26 at the project lead's request).
    - **Credits, modality, and dates**: choose the term, then **Fill in these dates**.
    - **Course policies**: your attendance and late-work wording; accepted file formats; optional college statements; your own Class Environment text; and **Additional course sections** such as Exams or Lab Safety.
@@ -429,7 +434,18 @@ Note for Marketing: the brand guide's printed hex values do not match its listed
 
 ## Accessibility
 
-Target: WCAG 2.2 Level AA, for both the builder and the PDF.
+**Standards, owner, and review schedule:** see [`ACCESSIBILITY.md`](ACCESSIBILITY.md). The legal minimum is WCAG 2.1 Level AA (ADA Title II); the design target is WCAG 2.2 Level AA, for both the builder and the PDF. Each WCAG criterion, how the builder meets it, and how it is tested are in [`docs/accessibility-checklist.md`](docs/accessibility-checklist.md).
+
+**Automatic checks on GitHub** (`.github/workflows/check-accessibility.yml`), on every pull request that changes the page, styles, code, or content:
+- `scripts/check-accessibility.mjs` runs axe-core on the start screen, the instructor view with the sample course, the check results, and the student view. Any problem fails the check.
+- It then saves the student view as a tagged PDF, and `scripts/check-pdf.py` checks it (tags, language, title, headings, table headers, figure descriptions). The PDF and results are attached to the run as **accessibility-report**.
+- A yearly issue (July 1) reminds the owner to review the standards and repeat the manual checks (`.github/workflows/accessibility-review-reminder.yml`).
+
+Automated checks find only part of WCAG problems; the manual review in the checklist is still required.
+
+Run locally (needs Node and Python): `npm install --no-save playwright axe-core && npx playwright install chromium && pip install pikepdf`, then `node scripts/check-accessibility.mjs && python3 scripts/check-pdf.py reports/sample-syllabus.pdf`.
+
+**How the builder is built for accessibility:**
 
 - One `h1`, then `h2` for major sections, `h3` and `h4` beneath; headings are never skipped.
 - Contents list (`nav`), `main` landmark, skip link, and "Back to top" links after each major section (screen only).
