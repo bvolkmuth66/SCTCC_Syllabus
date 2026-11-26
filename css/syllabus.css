@@ -762,6 +762,25 @@ body[data-mode="instructor"] .student-only {
 .save-status {
   font-weight: 700;
   margin: 0.25rem 0;
+  padding-left: 0.6rem;
+  border-left: 4px solid var(--sctcc-primary);
+}
+
+.save-status.is-unsaved {
+  border-left-color: var(--sctcc-orange);
+}
+
+.ip-notice {
+  margin-top: 1rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--sctcc-border-strong);
+  border-radius: 0.3rem;
+  background: var(--sctcc-muted);
+  font-size: 0.9rem;
+}
+
+.ip-notice p {
+  margin: 0.25rem 0;
 }
 
 .data-messages .notice p {

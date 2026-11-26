@@ -6,7 +6,7 @@ Instructors open the builder in a web browser, enter their course information, a
 
 College-wide content (policies, support information, the footer) is **not** typed by instructors. Each piece lives in its own file in the `content/` folder, maintained by the office that owns it. Every syllabus picks up the current approved wording the next time an instructor makes a PDF.
 
-> **Status: Phase 2 preview (trial).** Instructors can fill in and save their syllabus, export and import it as a file, and print it to PDF. The grading editor, calendar generator, and pre-print validation come in later phases (see [Roadmap](#roadmap)).
+> **Status: Phase 2 preview (trial).** Instructors can fill in their syllabus, save it as a file to their own computer or OneDrive, open it again later, and print it to PDF. The grading editor, calendar generator, and pre-print validation come in later phases (see [Roadmap](#roadmap)).
 
 ---
 
@@ -14,7 +14,7 @@ College-wide content (policies, support information, the footer) is **not** type
 
 - [How it works](#how-it-works)
 - [Instructor workflow](#instructor-workflow)
-- [Saving, exporting, and importing](#saving-exporting-and-importing)
+- [Saving and opening your syllabus](#saving-and-opening-your-syllabus)
 - [Repository structure](#repository-structure)
 - [Running the builder](#running-the-builder)
 - [Editing college content (for content owners)](#editing-college-content-for-content-owners)
@@ -32,13 +32,13 @@ College-wide content (policies, support information, the footer) is **not** type
 
 ## How it works
 
-1. `index.html` opens the syllabus the instructor last worked on in this browser, or a blank one.
+1. `index.html` opens with a blank syllabus. The instructor starts fresh or opens a syllabus file they saved earlier.
 2. `js/content-loader.js` reads `content/content-manifest.json`, then loads each college content file listed there.
 3. Each content file is **sanitized** before it reaches the page. Only simple formatting tags survive (paragraphs, lists, links, bold, italics). Scripts, styles, images, and forms are removed and never run.
 4. `js/syllabus.js` assembles the syllabus in the order of the SCTCC Syllabus Template (July 2026) and inserts each college section where its manifest entry says it belongs.
 5. **Instructor view** shows the editor beside a live preview, plus notes and content-owner labels. **Student preview** and the PDF show only the finished syllabus.
 
-Instructor data is never sent anywhere or committed to this repository.
+**A finished syllabus is the instructor's intellectual property.** The builder never stores it: not in the browser, not in this repository, and not on any server. GitHub Pages only delivers the builder's own files; nothing an instructor types is sent back. Instructors save their syllabus as a file in a folder they choose (their computer or OneDrive) and post the PDF in D2L.
 
 ## Repository structure
 
@@ -49,13 +49,13 @@ SCTCC_Syllabus/
 │   ├── syllabus.css                Screen styles (brand colors, layout)
 │   └── print.css                   PDF / print styles (US Letter)
 ├── js/
-│   ├── syllabus-config.js          Settings only (content location, logo, autosave timing)
+│   ├── syllabus-config.js          Settings only (content location, logo, preview timing)
 │   ├── dom-helpers.js              Small shared helpers for building page elements
 │   ├── syllabus-data.js            Data model, import validation, date/time helpers
-│   ├── syllabus-storage.js         Autosave in this browser; export/import files
+│   ├── syllabus-files.js           Save / Save as / Open with the computer's file dialogs
 │   ├── content-loader.js           Loads, checks, and sanitizes college content
 │   ├── syllabus-editor.js          The instructor editing panel
-│   └── syllabus.js                 Builds the syllabus, autosave timing, Print to PDF
+│   └── syllabus.js                 Builds the syllabus, unsaved-changes tracking, Print to PDF
 ├── content/
 │   ├── content-manifest.json       List of college sections and where they go
 │   └── *.html                      One file per college section (19 files)
@@ -76,7 +76,8 @@ SCTCC_Syllabus/
 | `college-policies.html` | `academic-integrity.html` (+ optional `academic-integrity-examples.html`) | Each office edits only its own file; "College Policies & Procedures" is the page heading that groups several files. |
 | 10 content files | 19 content files | Mission statement, change notice, academic calendar links, required technology, technical-skills link, first-week drop/FW paragraph, student email, and footer are also college text, so they are maintained the same way instead of being typed into code. |
 | Config inside `syllabus-data.js` | Separate `js/syllabus-config.js` | Keeps settings apart from code. |
-| Editor inside `syllabus.js` | Separate `js/syllabus-editor.js`, `js/syllabus-storage.js`, `js/dom-helpers.js` | Smaller files with one job each. |
+| Editor inside `syllabus.js` | Separate `js/syllabus-editor.js`, `js/syllabus-files.js`, `js/dom-helpers.js` | Smaller files with one job each. |
+| `localStorage` autosave allowed | No browser storage at all | Finished syllabi are faculty intellectual property, and copies left in a browser could be seen by the next person on a shared computer. Syllabi are saved only to files the instructor controls. |
 | `assets/sctcc-logo.svg` | `assets/sctcc-logo-placeholder.svg` | The official logo has not been supplied yet. |
 | `js/calendar-builder.js` | Not yet created | Added in Phase 4. |
 | `LICENSE` | Not yet added | The policy text belongs to SCTCC; choose a license with the college before adding one. |
@@ -99,28 +100,34 @@ Browsers block a page opened directly from your disk (`file://...`) from loading
 
 ## Instructor workflow
 
-1. Open the builder (GitHub Pages address, or a local server; see [Running the builder](#running-the-builder)).
+1. Open the builder (GitHub Pages address, or a local server; see [Running the builder](#running-the-builder)). To keep working on an earlier syllabus, click **Open…** and choose your file. To reuse last term's syllabus, open it, update the term and dates, and use **Save as…** with the new name.
 2. Work through the groups in the **Edit syllabus** panel. The preview updates as you type. Anything still needed is marked in the preview, for example **[Withdrawal date needed]**.
    - **Course** and **Description, outcomes, and requisites**: copy from the official SCTCC Course Outline.
    - **Credits, modality, and dates**: use the college's official dates.
    - **Course policies**: your attendance and late-work wording; accepted file formats (blank = "Microsoft Word or PDF"); optional college statements; your own Class Environment text (blank = college sample).
    - **Tools and vendors**: each outside tool's accessibility statement or VPAT, privacy policy, and support link. Tools with neither an accessibility statement nor a VPAT are listed automatically in the template's required sentence.
    - Checkboxes such as **Include my photo** or **Include a Time Commitment section** turn optional sections on and off. Turning one off keeps what you wrote.
-3. Click **Student preview** to see exactly what students will get.
-4. Click **Print to PDF**, choose **Save as PDF**, turn off **Headers and footers**, and save. Upload the PDF to D2L.
+3. Click **Save** (or press Ctrl+S / ⌘S) and choose a folder on your computer or your OneDrive folder.
+4. Click **Student preview** to see exactly what students will get.
+5. Click **Print to PDF**, choose **Save as PDF**, turn off **Headers and footers**, and save. Upload the PDF to D2L.
 
 The editor never changes college content. To use different college wording, the content owner updates the file in `content/`.
 
-## Saving, exporting, and importing
+## Saving and opening your syllabus
 
-- **Autosave.** Your work saves automatically in this browser on this computer (the browser's local storage). Nothing is sent to a server or to GitHub. Clearing your browser's site data, or using a private/incognito window, removes it.
-- **Several courses.** Each syllabus is saved separately. Pick one from **Syllabi saved in this browser** and click **Open**. **New syllabus** and **Load sample course** start another one without touching the others. A blank syllabus is not saved until you type something.
-- **Export to file (.json).** Downloads a file such as `CPTR-1118-Spring-2027-Syllabus.json`. Keep it as a backup, use it on another computer, or reuse it next term (import it, then update the term and dates).
-- **Import from file.** Opens an exported file. The file is checked first: anything unexpected is skipped and listed, files from a newer version of the builder are refused, and you are told if college content has changed since the file was saved, so you know to review and make a new PDF.
-- **Clear this syllabus** empties every field of the open syllabus. **Delete from this browser** and **Delete all saved syllabi** remove saved copies. Each asks you to confirm first.
-- **Instructor photo.** Uploaded photos (PNG, JPEG, or WebP up to 300 KB) are stored inside the syllabus and its export file.
+**Your syllabus is your intellectual property.** The builder never keeps a copy. It does not use browser storage, cookies, GitHub, or any server. When you close the page, the only copies are the files you saved.
 
-The export file format is `{ "format": "sctcc-syllabus-data", "schemaVersion", "exportedAt", "contentVersion", "syllabus": { … } }`. The `syllabus` object matches `createEmptySyllabusData()` in `js/syllabus-data.js`.
+- **Save** — In Chrome or Edge, the first Save opens your computer's Save dialog. Choose any folder, including your **OneDrive** folder (OneDrive appears in File Explorer or Finder when the OneDrive app is installed). The file is named after your course, for example `CPTR-1118-Spring-2027-Syllabus.json`. After that, **Save** or **Ctrl+S / ⌘S** updates the same file without asking again.
+- **Save as…** — Always asks where to save. Use it to start next term's syllabus from this one.
+- **Open…** — Opens a syllabus file you saved. The file is checked first: anything unexpected is skipped and listed, files from a newer version of the builder are refused, and you are told if college content has changed since the file was saved, so you know to review it and make a new PDF.
+- **Other browsers** (Firefox, Safari) cannot save directly to a chosen folder. There, **Save** downloads the file to your Downloads folder; move it to your own folder or OneDrive. **Open…** uses the standard file chooser.
+- **Unsaved changes** — The status line at the top of the editor shows whether your latest changes are saved. The builder asks before **New syllabus**, **Open…**, or **Load sample course** would discard unsaved work, and the browser warns you if you try to close the page.
+- **Clear this syllabus** empties the fields on screen. Your saved file is not changed unless you save afterward.
+- **Instructor photo** — Uploaded photos (PNG, JPEG, or WebP up to 300 KB) are stored inside your syllabus file.
+- **Earlier preview builds** kept an automatic copy in the browser. When this version opens, it erases any such copies.
+- **Saving directly to OneDrive in the cloud** (without the OneDrive folder on your computer) would require Microsoft sign-in registered by SCTCC IT. It is not part of this trial.
+
+The file format is `{ "format": "sctcc-syllabus-data", "schemaVersion", "exportedAt", "contentVersion", "syllabus": { … } }`. The `syllabus` object matches `createEmptySyllabusData()` in `js/syllabus-data.js`.
 
 ## Editing college content (for content owners)
 
@@ -267,14 +274,17 @@ This guidance from the template is for instructors and does not appear in the sy
 
 Phase 2 (tested in headless Chrome on 2026-11-25):
 
+- [x] Nothing is written to browser storage at any point; copies left by earlier preview builds are erased on open (other sites' data untouched)
+- [x] Save opens the Save dialog with the course-based file name; Ctrl+S then updates the same file without asking again; Save as asks every time
+- [x] Open reads a saved file and shows "all changes saved"; status line switches to "unsaved changes" when you type
+- [x] New syllabus / Open / Load sample ask before discarding unsaved work; Cancel keeps the work
+- [x] Leaving the page with unsaved changes triggers the browser's warning (handler verified directly)
+- [x] Firefox/Safari fallback: Save downloads the file; Open uses the file chooser
 - [x] Typing in the editor updates the preview (title, dates, college-content tokens)
-- [x] Autosave, then reload: the syllabus reopens with all fields filled
-- [x] Several syllabi saved separately; Open switches between them; blank syllabi are not saved
 - [x] Class Environment override replaces the college sample; accepted file formats override and blank default
 - [x] Add a tool → focus moves to its name field; legend updates; tool without accessibility statement/VPAT listed in the required sentence; remove → focus returns to "Add a tool"
-- [x] Photo upload shows in the preview and is saved
-- [x] Export → New → Import gives back the same syllabus; export file name follows the course
-- [x] Malformed JSON and newer-version files are refused with a clear message; an older file with wrong types imports with a list of skipped items; text numbers are converted
+- [x] Photo upload shows in the preview
+- [x] Malformed JSON and newer-version files are refused with a clear message; an older file with wrong types opens with a list of skipped items; text numbers are converted
 - [x] Browser Print command (not only the button) switches to student view and suggested file name, then restores the editor
 - [x] 320 px wide: no horizontal page scrolling; no console errors throughout
 
@@ -297,7 +307,8 @@ Still to test by a person: keyboard-only use, a screen reader (NVDA or JAWS), 20
 ## Known limitations
 
 - The assignments table, grading scale, and calendar rows cannot be edited yet (Phases 3 and 4). They are kept when present in an imported file or the sample course.
-- Autosave is per browser. Moving to another computer needs Export and Import.
+- There is no autosave, by design. Save regularly (Ctrl+S); the status line shows when changes are unsaved.
+- Firefox and Safari save by download rather than to a chosen folder.
 - The logo is a placeholder.
 - Arimo font files are not bundled yet (Arial is used).
 - The page footer in the PDF requires Chrome or Edge version 131 or later.
@@ -308,7 +319,7 @@ Still to test by a person: keyboard-only use, a screen reader (NVDA or JAWS), 20
 | Phase | Scope |
 |---|---|
 | 1 (done) | Content files, manifest, loader, sanitizer, rendered preview, print styles, basic Print to PDF |
-| **2 (this version)** | Instructor editing panel, autosave per syllabus in the browser, JSON export/import, clear/delete, vendor table, photo upload, instructor overrides (Class Environment, accepted file formats) |
+| **2 (this version)** | Instructor editing panel, Save / Save as / Open to the instructor's own files or OneDrive (no browser storage), vendor table, photo upload, instructor overrides (Class Environment, accepted file formats) |
 | 3 | Grading editor: points and percentage methods, scale editor with overlap/gap checks |
 | 4 | Course calendar generator (1–4 meetings per week, plus a weekly mode for online courses), holidays, regeneration that keeps entered text |
 | 5 | Validation before printing, guided Print to PDF, GitHub Action to check content files (HTML, links, link text, placeholders) |

@@ -5,8 +5,9 @@
  * fragments loaded by content-loader.js. Instructor-entered text is always
  * inserted as text (textContent / text nodes), never as HTML.
  *
- * Also owns the syllabus data for the page: loading the last-open syllabus,
- * re-rendering after edits, autosaving, and printing to PDF.
+ * Also owns the syllabus data for the page: re-rendering after edits,
+ * tracking unsaved changes, and printing to PDF. The builder never stores a
+ * syllabus; instructors save files to their own computer or OneDrive.
  */
 (function () {
   "use strict";
@@ -20,8 +21,9 @@
     data: null,
     content: { manifest: null, sections: [], errors: [] },
     renderTimer: null,
-    saveTimer: null,
-    printSnapshot: null
+    printSnapshot: null,
+    dirty: false,
+    fileName: ""
   };
 
   /* Friendly names for missing-value markers in college content tokens. */
@@ -659,55 +661,57 @@
     document.body.classList.toggle("print-link-urls", Boolean(config.printLinkUrls));
   }
 
-  /* ---------- Saving ---------- */
+  /* ---------- Unsaved changes ---------- */
+  /*
+   * The builder never stores a syllabus. It only tracks whether the open syllabus
+   * has changes that have not been saved to the instructor's own file.
+   */
 
   function contentVersion() {
     return (state.content.manifest && state.content.manifest.contentVersion) || "";
   }
 
-  /* True when nothing has been entered yet (so a blank syllabus is not listed as saved). */
+  /* True when nothing has been entered yet. */
   function isBlank(data) {
     const blank = SCTCC.createEmptySyllabusData();
     blank.meta.id = data.meta.id;
     return JSON.stringify(blank) === JSON.stringify(data);
   }
 
-  function saveNow() {
-    window.clearTimeout(state.saveTimer);
-    state.saveTimer = null;
-    if (isBlank(state.data)) {
-      SCTCC.storage.remove(state.data.meta.id);
-      SCTCC.editor.setSaveStatus("Nothing to save yet. Start typing and your work saves automatically.");
-      return { ok: true, skipped: true };
-    }
-    const result = SCTCC.storage.save(state.data, contentVersion());
-    if (result.ok) {
-      const time = new Date(result.savedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-      SCTCC.editor.setSaveStatus(`Saved in this browser at ${time}.`);
-    } else {
-      SCTCC.editor.setSaveStatus(result.message);
-    }
-    return result;
+  function hasUnsavedChanges() {
+    return state.dirty && !isBlank(state.data);
+  }
+
+  function updateFileStatus() {
+    SCTCC.editor.setFileStatus(state.fileName, hasUnsavedChanges());
   }
 
   /* Called by the editor after every change. */
   function dataChanged() {
     window.clearTimeout(state.renderTimer);
     state.renderTimer = window.setTimeout(render, config.previewDelayMs);
-    window.clearTimeout(state.saveTimer);
-    state.saveTimer = window.setTimeout(() => {
-      saveNow();
-      SCTCC.editor.refreshSavedList();
-    }, config.autosaveDelayMs);
-    SCTCC.editor.setSaveStatus("Saving…");
+    state.dirty = true;
+    updateFileStatus();
   }
 
-  /* Replace the whole syllabus (open, import, new, reset). */
-  function replaceData(data) {
-    if (state.saveTimer) saveNow(); /* finish saving the previous syllabus first */
+  /*
+   * Replace the whole syllabus (new, open, sample, clear).
+   * options.fileName: the file it came from; options.dirty: whether it still needs saving.
+   */
+  function replaceData(data, options) {
+    const opts = options || {};
     state.data = data;
+    state.fileName = opts.fileName || "";
+    state.dirty = Boolean(opts.dirty);
     render();
-    saveNow();
+    updateFileStatus();
+  }
+
+  /* Called after a successful save. */
+  function markSaved(fileName) {
+    state.fileName = fileName || state.fileName;
+    state.dirty = false;
+    updateFileStatus();
   }
 
   /* ---------- Modes and printing ---------- */
@@ -760,56 +764,44 @@
     document.getElementById("print-pdf").addEventListener("click", printToPdf);
     window.addEventListener("beforeprint", enterPrintMode);
     window.addEventListener("afterprint", exitPrintMode);
-    window.addEventListener("pagehide", () => {
-      if (state.saveTimer) saveNow();
+    /* Warn before leaving the page with unsaved changes. */
+    window.addEventListener("beforeunload", (event) => {
+      if (!hasUnsavedChanges()) return;
+      event.preventDefault();
+      event.returnValue = "";
     });
   }
 
   /* ---------- Startup ---------- */
 
-  function loadInitialData() {
-    const record = SCTCC.storage.loadCurrent();
-    if (record) {
-      const result = SCTCC.validateSyllabusData({
-        format: "sctcc-syllabus-data",
-        contentVersion: record.contentVersion,
-        syllabus: record.syllabus
-      });
-      if (result.ok) return { data: result.data, savedContentVersion: record.contentVersion, restored: true };
-    }
-    return { data: SCTCC.createEmptySyllabusData(), savedContentVersion: "", restored: false };
-  }
-
   const app = Object.freeze({
     getData: () => state.data,
     dataChanged,
     replaceData,
+    markSaved,
+    hasUnsavedChanges,
     contentVersion,
-    suggestedFileName,
-    saveNow
+    suggestedFileName
   });
 
   async function init() {
-    const initial = loadInitialData();
-    state.data = initial.data;
+    /* Remove any syllabus copies left in this browser by earlier preview builds. */
+    const erased = SCTCC.files.eraseBrowserCopies(config.legacyStoragePrefixes || []);
+
+    state.data = SCTCC.createEmptySyllabusData();
     setMode(config.mode);
     bindPageEvents();
     SCTCC.editor.init(app);
-    render(); /* show instructor data immediately while college content loads */
+    render(); /* show the blank syllabus immediately while college content loads */
+    updateFileStatus();
+    if (erased) {
+      SCTCC.editor.showMessages("info", "Removed syllabus copies that an earlier preview of this builder had kept in this browser.",
+        ["The builder no longer stores syllabi. Open your saved file to keep working."]);
+    }
 
     state.content = await SCTCC.contentLoader.loadContent(config);
     render();
     document.body.classList.add("content-ready");
-
-    if (initial.restored) {
-      const messages = [];
-      if (initial.savedContentVersion && contentVersion() && initial.savedContentVersion !== contentVersion()) {
-        messages.push(`College content has been updated since this syllabus was last saved (${initial.savedContentVersion} → ${contentVersion()}). Review it and make a new PDF before posting.`);
-      }
-      SCTCC.editor.showMessages(messages.length ? "warning" : "info",
-        `Reopened “${SCTCC.storage.labelFor(state.data)}” from this browser.`, messages);
-      SCTCC.editor.setSaveStatus("Saved in this browser.");
-    }
 
     announce(state.content.errors.length
       ? `Builder ready, with ${state.content.errors.length} college content problem(s).`

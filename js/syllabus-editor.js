@@ -139,25 +139,23 @@ window.SCTCC = window.SCTCC || {};
       tabindex: "-1",
       "aria-hidden": "true"
     });
-    return group("editor-data", "Save, open, and share", [
-      el("p", { id: "save-status", class: "save-status", role: "status" }, "Not saved yet."),
+    return group("editor-data", "File: save and open", [
+      el("p", { id: "file-status", class: "save-status", role: "status" }, "New syllabus — not saved yet."),
       el("div", { id: "data-messages", class: "data-messages", "aria-live": "polite" }),
-      note("Your work saves automatically in this browser on this computer only. It is not sent anywhere. Export a file to keep a backup or to move a syllabus to another computer."),
-      el("div", { class: "field" },
-        el("label", { for: "saved-list" }, "Syllabi saved in this browser"),
-        el("select", { id: "saved-list" }),
-        el("div", { class: "button-row" },
-          actionButton("open-saved", "Open"),
-          actionButton("delete-saved", "Delete from this browser", "btn-danger"))),
+      el("div", { class: "button-row" },
+        actionButton("save", "Save", "btn-primary", { "aria-keyshortcuts": "Control+S Meta+S" }),
+        actionButton("save-as", "Save as…"),
+        actionButton("open", "Open…")),
       el("div", { class: "button-row" },
         actionButton("new", "New syllabus"),
         actionButton("sample", "Load sample course"),
-        actionButton("export", "Export to file (.json)"),
-        actionButton("import", "Import from file")),
+        actionButton("reset", "Clear this syllabus", "btn-danger")),
       importInput,
-      el("div", { class: "button-row" },
-        actionButton("reset", "Clear this syllabus", "btn-danger"),
-        actionButton("clear-all", "Delete all saved syllabi", "btn-danger"))
+      el("div", { class: "ip-notice" },
+        el("p", null, el("strong", null, "Your syllabus is your intellectual property. "),
+          "This builder never stores it — not in this browser, not on GitHub, and not on any server. ",
+          "Save it as a file to your own computer or your OneDrive folder."),
+        el("p", { id: "save-method-note" }))
     ], true);
   }
 
@@ -424,11 +422,6 @@ window.SCTCC = window.SCTCC || {};
 
   /* ---------- Messages ---------- */
 
-  function setSaveStatus(text) {
-    const status = root && root.querySelector("#save-status");
-    if (status) status.textContent = text;
-  }
-
   function showMessages(kind, title, lines) {
     const box = root.querySelector("#data-messages");
     box.textContent = "";
@@ -438,24 +431,22 @@ window.SCTCC = window.SCTCC || {};
       lines && lines.length ? el("ul", null, lines.map((line) => el("li", null, line))) : null));
   }
 
-  function refreshSavedList() {
-    const select = root.querySelector("#saved-list");
-    const currentId = app.getData().meta.id;
-    select.textContent = "";
-    const saved = SCTCC.storage.list();
-    if (!saved.length) {
-      select.appendChild(el("option", { value: "" }, "No saved syllabi yet"));
-      select.disabled = true;
-      return;
+  function setFileStatus(fileName, unsaved) {
+    const status = root && root.querySelector("#file-status");
+    if (!status) return;
+    if (!fileName) {
+      status.textContent = unsaved ? "Unsaved changes — not saved to a file yet." : "New syllabus — not saved yet.";
+    } else {
+      status.textContent = unsaved ? `${fileName} — unsaved changes` : `${fileName} — all changes saved`;
     }
-    select.disabled = false;
-    saved.forEach((item) => {
-      const when = item.savedAt ? new Date(item.savedAt) : null;
-      const stamp = when && !Number.isNaN(when.getTime()) ? ` — saved ${when.toLocaleDateString()}` : "";
-      const option = el("option", { value: item.id }, `${item.label}${item.id === currentId ? " (open now)" : ""}${stamp}`);
-      if (item.id === currentId) option.selected = true;
-      select.appendChild(option);
-    });
+    status.classList.toggle("is-unsaved", Boolean(unsaved));
+  }
+
+  function describeSaveMethod() {
+    const note = root.querySelector("#save-method-note");
+    note.textContent = SCTCC.files.supportsFilePicker()
+      ? "Save asks where to put the file the first time; after that, Save (or Ctrl+S) updates the same file. To use OneDrive, choose your OneDrive folder in the Save dialog."
+      : "This browser saves by downloading the file to your Downloads folder. Move it to your own folder or OneDrive afterward. Chrome or Edge can save straight to a folder you choose.";
   }
 
   /* ---------- Events ---------- */
@@ -531,102 +522,114 @@ window.SCTCC = window.SCTCC || {};
     reader.readAsDataURL(file);
   }
 
-  function openData(data, title, warnings) {
-    app.replaceData(data);
+  function openData(data, title, warnings, options) {
+    app.replaceData(data, options);
     populate();
-    refreshSavedList();
     showMessages(warnings && warnings.length ? "warning" : "info", title, warnings);
     announce(title);
   }
 
-  async function handleImport(file) {
-    const read = await SCTCC.storage.readImportFile(file);
-    importInput.value = "";
+  /* Ask before throwing away unsaved work. */
+  function okToDiscard(actionText) {
+    if (!app.hasUnsavedChanges()) return true;
+    return window.confirm(`You have unsaved changes. ${actionText} anyway?\n\nChoose Cancel, then Save, to keep your changes.`);
+  }
+
+  function finishOpen(read) {
+    if (read.cancelled) return;
     if (!read.ok) {
-      showMessages("error", "Import failed.", [read.error]);
-      announce("Import failed.");
+      showMessages("error", "The file could not be opened.", [read.error]);
+      announce("The file could not be opened.");
       return;
     }
     const result = SCTCC.validateSyllabusData(read.value, { currentContentVersion: app.contentVersion() });
     if (!result.ok) {
-      showMessages("error", "Import failed.", result.errors);
-      announce("Import failed.");
+      showMessages("error", "The file could not be opened.", result.errors);
+      announce("The file could not be opened.");
       return;
     }
-    openData(result.data, `Imported “${SCTCC.storage.labelFor(result.data)}”.`, result.warnings);
+    SCTCC.files.setCurrentFile(read.handle);
+    openData(result.data, `Opened ${read.fileName}.`, result.warnings, { fileName: read.fileName });
+  }
+
+  async function handleOpen() {
+    if (!okToDiscard("Open another file")) return;
+    if (SCTCC.files.supportsFilePicker()) {
+      finishOpen(await SCTCC.files.openWithPicker());
+    } else {
+      importInput.click();
+    }
+  }
+
+  async function handleSave(saveAs) {
+    if (app.hasUnsavedChanges() === false && !saveAs && SCTCC.files.hasCurrentFile()) {
+      showMessages("info", "All changes are already saved.");
+      announce("All changes are already saved.");
+      return;
+    }
+    const data = app.getData();
+    const result = saveAs
+      ? await SCTCC.files.saveAs(data, app.contentVersion(), app.suggestedFileName())
+      : await SCTCC.files.save(data, app.contentVersion(), app.suggestedFileName());
+    if (result.cancelled) return;
+    if (!result.ok) {
+      showMessages("error", "Not saved.", [result.message]);
+      announce("Not saved.");
+      return;
+    }
+    app.markSaved(result.fileName);
+    if (result.method === "download") {
+      showMessages("info", `Downloaded ${result.fileName}.`,
+        ["Move it from your Downloads folder to your own folder or OneDrive. To keep editing later, use Open… and choose that file."]);
+      announce(`Downloaded ${result.fileName}.`);
+    } else {
+      showMessages("info", `Saved ${result.fileName}.`);
+      announce(`Saved ${result.fileName}.`);
+    }
   }
 
   function handleAction(action, button) {
     const data = app.getData();
     switch (action) {
+      case "save":
+        handleSave(false);
+        break;
+
+      case "save-as":
+        handleSave(true);
+        break;
+
+      case "open":
+        handleOpen();
+        break;
+
       case "new":
-        openData(SCTCC.createEmptySyllabusData(), "Started a new, blank syllabus. Your previous syllabus is still saved in this browser.");
+        if (!okToDiscard("Start a new syllabus")) return;
+        SCTCC.files.setCurrentFile(null);
+        openData(SCTCC.createEmptySyllabusData(), "Started a new, blank syllabus.");
         break;
 
       case "sample": {
+        if (!okToDiscard("Load the sample course")) return;
         const result = SCTCC.validateSyllabusData(window.SCTCC_SAMPLE_DATA || {}, { newId: true });
-        if (result.ok) openData(result.data, "Loaded the sample course as a new syllabus. Your previous syllabus is still saved.");
-        else showMessages("error", "The sample course could not be loaded.", result.errors);
-        break;
-      }
-
-      case "open-saved": {
-        const id = root.querySelector("#saved-list").value;
-        if (!id) return;
-        const record = SCTCC.storage.load(id);
-        if (!record) {
-          showMessages("error", "That saved syllabus could not be opened.");
+        if (!result.ok) {
+          showMessages("error", "The sample course could not be loaded.", result.errors);
           return;
         }
-        const result = SCTCC.validateSyllabusData(
-          { format: "sctcc-syllabus-data", contentVersion: record.contentVersion, syllabus: record.syllabus },
-          { currentContentVersion: app.contentVersion() }
-        );
-        if (result.ok) openData(result.data, `Opened “${SCTCC.storage.labelFor(result.data)}”.`, result.warnings);
-        else showMessages("error", "That saved syllabus could not be opened.", result.errors);
+        SCTCC.files.setCurrentFile(null);
+        openData(result.data, "Loaded the sample course. It is not saved unless you save it.", [], { dirty: true });
         break;
       }
-
-      case "delete-saved": {
-        const select = root.querySelector("#saved-list");
-        const id = select.value;
-        if (!id) return;
-        const label = select.selectedOptions[0] ? select.selectedOptions[0].textContent : "this syllabus";
-        if (!window.confirm(`Delete “${label}” from this browser?\n\nThis cannot be undone. Export it to a file first if you may need it.`)) return;
-        SCTCC.storage.remove(id);
-        if (id === data.meta.id) {
-          openData(SCTCC.createEmptySyllabusData(), "Deleted the open syllabus from this browser and started a new one.");
-        } else {
-          refreshSavedList();
-          showMessages("info", "Deleted from this browser.");
-          announce("Deleted from this browser.");
-        }
-        break;
-      }
-
-      case "export": {
-        const name = SCTCC.storage.exportFile(data, app.contentVersion(), app.suggestedFileName());
-        showMessages("info", `Exported ${name}.`, ["Keep this file somewhere safe. Use Import from file to open it again on any computer."]);
-        announce(`Exported ${name}.`);
-        break;
-      }
-
-      case "import":
-        importInput.click();
-        break;
 
       case "reset": {
-        if (!window.confirm("Clear every field in this syllabus?\n\nThis cannot be undone. Export it to a file first if you may need it.")) return;
+        if (!window.confirm("Clear every field in this syllabus?\n\nYour saved file is not changed unless you save afterward.")) return;
         const blank = SCTCC.createEmptySyllabusData();
         blank.meta.id = data.meta.id;
-        openData(blank, "Cleared this syllabus.");
-        break;
-      }
-
-      case "clear-all": {
-        if (!window.confirm("Delete every syllabus saved in this browser?\n\nThis cannot be undone. Export any you may need first.")) return;
-        SCTCC.storage.clearAll();
-        openData(SCTCC.createEmptySyllabusData(), "Deleted all syllabi saved in this browser and started a new one.");
+        app.replaceData(blank, { fileName: "", dirty: false });
+        SCTCC.files.setCurrentFile(null);
+        populate();
+        showMessages("info", "Cleared this syllabus. Your saved file was not changed.");
+        announce("Cleared this syllabus.");
         break;
       }
 
@@ -694,25 +697,35 @@ window.SCTCC = window.SCTCC || {};
     form.addEventListener("change", (event) => {
       const target = event.target;
       if (target.id === "photo-upload") handlePhotoUpload(target);
-      else if (target.id === "import-file") handleImport(target.files && target.files[0]);
+      else if (target.id === "import-file") {
+        SCTCC.files.readChosenFile(target.files && target.files[0]).then((read) => {
+          importInput.value = "";
+          finishOpen(read);
+        });
+      }
     });
     form.addEventListener("click", (event) => {
       const button = event.target.closest("[data-action]");
       if (button) handleAction(button.getAttribute("data-action"), button);
     });
 
+    /* Ctrl+S / Cmd+S saves to the instructor's file instead of saving the web page. */
+    document.addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === "s") {
+        if (document.body.getAttribute("data-mode") !== "instructor") return;
+        event.preventDefault();
+        handleSave(event.shiftKey);
+      }
+    });
+
     populate();
-    refreshSavedList();
-    if (!SCTCC.storage.isAvailable()) {
-      setSaveStatus("Autosave is not available in this browser. Use Export to file to keep your work.");
-    }
+    describeSaveMethod();
   }
 
   window.SCTCC.editor = Object.freeze({
     init,
     populate: () => populate(),
-    refreshSavedList,
-    setSaveStatus,
+    setFileStatus,
     showMessages
   });
 })();

@@ -20,9 +20,12 @@ window.SCTCC.config = Object.freeze({
   /* Required sections can never be turned off through the normal interface. */
   allowRequiredSectionOverride: false,
 
-  /* Browser storage (autosave). Data stays in this browser on this computer. */
-  storageKeyPrefix: "sctcc-syllabus:",
-  autosaveDelayMs: 800,
+  /*
+   * Syllabi are never stored by the builder. Instructors save files to their own
+   * computer or OneDrive. Earlier preview builds used browser storage under this
+   * prefix; any such copies are erased when the builder opens.
+   */
+  legacyStoragePrefixes: ["sctcc-syllabus:"],
   previewDelayMs: 250,
 
   /* Largest instructor photo file accepted for upload, in bytes (300 KB). */
