@@ -228,6 +228,16 @@ window.SCTCC = window.SCTCC || {};
       return { ok: true, moved, conflicts, outside, closuresAdded, replacedClosures: Boolean(op.replaceClosures && term) };
     },
 
+    /* Class time and room, which can change from one term to the next (shown in Shift dates). */
+    setMeeting(op) {
+      const course = data().course;
+      const time = (value) => (typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : "");
+      if ("startTime" in op) course.meetingPattern.startTime = time(op.startTime);
+      if ("endTime" in op) course.meetingPattern.endTime = time(op.endTime);
+      if ("location" in op) course.location = text(op.location).slice(0, 60);
+      return { ok: true };
+    },
+
     /* Read a syllabus file saved from the builder; only its calendar is returned. */
     readSyllabusFile(op) {
       let raw;
@@ -277,7 +287,11 @@ window.SCTCC = window.SCTCC || {};
     const result = handler(op) || { ok: true };
     if (op.op !== "readSyllabusFile" && result.ok !== false) {
       app.dataChanged();
-      if (SCTCC.editor && SCTCC.editor.refreshCalendar) SCTCC.editor.refreshCalendar();
+      if (op.op === "setMeeting" || op.op === "shiftDates") {
+        if (SCTCC.editor && SCTCC.editor.populate) SCTCC.editor.populate(); /* course fields changed too */
+      } else if (SCTCC.editor && SCTCC.editor.refreshCalendar) {
+        SCTCC.editor.refreshCalendar();
+      }
     }
     return JSON.stringify(result);
   }

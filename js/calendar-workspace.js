@@ -905,9 +905,53 @@
         ? "Otherwise your no-class dates move by the same number of days, which rarely matches the new term’s holidays."
         : "Choose the new term and year under Course in the builder first, so the college’s no-class dates can be used.")));
 
+    body.appendChild(meetingFields());
+
     body.appendChild(el("div", { id: "shift-summary", "aria-live": "polite" }));
     body.appendChild(el("div", { id: "shift-buttons" }));
     renderShiftSummary();
+  }
+
+  function timeRange(start, end) {
+    const from = util.formatTime(start);
+    const to = util.formatTime(end);
+    return from && to ? `${from}–${to}` : (from || "no time set");
+  }
+
+  /* Class time and room often change from one term to the next; dates alone are not enough. */
+  function meetingFields() {
+    const course = state.snap.course;
+    const shift = state.shift;
+    const online = course.modality === "online";
+    const fields = el("fieldset", { class: "field ws-meeting" },
+      el("legend", null, "Class time and room for the new term"),
+      el("p", { class: "ws-hint" }, shift.originalMeeting
+        ? `From the saved syllabus: ${shift.originalMeeting}. Change them here if they are different this term; they are saved to the syllabus as you change them.`
+        : "Change them here if they are different this term; they are saved to the syllabus as you change them."));
+    if (online && !course.startTime && !course.endTime) {
+      fields.appendChild(el("p", { class: "ws-hint" }, "This is an exclusively online course, so it has no class times."));
+      return fields;
+    }
+    const start = el("input", { type: "time", id: "shift-start-time" });
+    const end = el("input", { type: "time", id: "shift-end-time" });
+    const room = el("input", { type: "text", id: "shift-room", autocomplete: "off" });
+    start.value = course.startTime || "";
+    end.value = course.endTime || "";
+    room.value = course.location || "";
+    const status = el("p", { class: "ws-hint", id: "shift-meeting-status", "aria-live": "polite" });
+    const save = () => {
+      const result = send({ op: "setMeeting", startTime: start.value, endTime: end.value, location: room.value.trim() });
+      if (result.ok) status.textContent = `Saved: ${timeRange(start.value, end.value)}${room.value.trim() ? `, room ${room.value.trim()}` : ""}.`;
+    };
+    start.addEventListener("change", save);
+    end.addEventListener("change", save);
+    room.addEventListener("change", save);
+    fields.appendChild(el("div", { class: "ws-meeting-row" },
+      el("div", null, el("label", { for: "shift-start-time" }, "Start time"), start),
+      el("div", null, el("label", { for: "shift-end-time" }, "End time"), end),
+      el("div", null, el("label", { for: "shift-room" }, "Room"), room)));
+    fields.appendChild(status);
+    return fields;
   }
 
   function renderShiftSummary() {
@@ -979,6 +1023,10 @@
     state.month = null;
     renderAll();
     const parts = [`Moved ${result.moved} date${result.moved === 1 ? "" : "s"} ${days > 0 ? "later" : "earlier"} by ${Math.abs(days)} days.`];
+    const course = state.snap.course;
+    if (course.modality !== "online" || course.startTime) {
+      parts.push(`Class time: ${timeRange(course.startTime, course.endTime)}${course.location ? `, room ${course.location}` : ""}.`);
+    }
     if (result.replacedClosures) parts.push(`Added ${result.closuresAdded} college no-class date${result.closuresAdded === 1 ? "" : "s"}.`);
     const warnings = [];
     if (result.conflicts.length) warnings.push(`${result.conflicts.length} class${result.conflicts.length === 1 ? " falls" : "es fall"} on a no-class date: ${result.conflicts.slice(0, 5).map((item) => `${weekdayDate(item.date)} (${item.label})`).join("; ")}${result.conflicts.length > 5 ? "; …" : ""}. Use Generate calendar again or Shift topics later.`);
@@ -989,7 +1037,10 @@
 
   function openShift() {
     if (!state.snap) return;
-    state.shift = Object.assign({ replaceClosures: true }, shiftDefaults());
+    const course = state.snap.course;
+    const savedTime = course.startTime || course.endTime ? timeRange(course.startTime, course.endTime) : "";
+    const originalMeeting = [savedTime, course.location ? `room ${course.location}` : ""].filter(Boolean).join(", ");
+    state.shift = Object.assign({ replaceClosures: true, originalMeeting }, shiftDefaults());
     renderShift();
     const dialog = document.getElementById("shift-dialog");
     if (!dialog.open) dialog.showModal();
