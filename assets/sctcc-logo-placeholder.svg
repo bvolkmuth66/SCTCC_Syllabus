@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="96" viewBox="0 0 240 96" role="img" aria-labelledby="t">
+  <title id="t">Placeholder for the official SCTCC logo</title>
+  <!-- PLACEHOLDER ONLY. This is not the SCTCC logo. Replace with the official file
+       from SCTCC Marketing & Communications (sctcc.edu/media). -->
+  <rect x="1.5" y="1.5" width="237" height="93" rx="6" fill="#ffffff" stroke="#8e8279" stroke-width="3" stroke-dasharray="8 6"/>
+  <text x="120" y="42" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#004d43">Official SCTCC logo</text>
+  <text x="120" y="64" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#4a4a4a">goes here (from Marketing)</text>
+</svg>

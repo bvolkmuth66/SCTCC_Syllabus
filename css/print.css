@@ -1,0 +1,184 @@
+/*
+ * SCTCC Syllabus Builder — print and PDF styles
+ * Loaded with media="print". Designed for US Letter and "Save as PDF" in Chrome/Edge.
+ * Colored accents are borders (which print without "Background graphics");
+ * backgrounds are not relied on to convey anything.
+ */
+
+@page {
+  size: letter;
+  margin: 0.75in 0.75in 0.85in;
+
+  @bottom-left {
+    font-family: "Arimo", Arial, "Liberation Sans", sans-serif;
+    font-size: 8pt;
+    color: #4a4a4a;
+    vertical-align: top;
+    padding-top: 0.15in;
+  }
+
+  @bottom-right {
+    content: "Page " counter(page) " of " counter(pages);
+    font-family: "Arimo", Arial, "Liberation Sans", sans-serif;
+    font-size: 8pt;
+    color: #4a4a4a;
+    vertical-align: top;
+    padding-top: 0.15in;
+  }
+}
+
+html {
+  scroll-behavior: auto;
+}
+
+body {
+  font-size: 10.5pt;
+  line-height: 1.45;
+  color: #000000;
+  background: #ffffff;
+}
+
+.page {
+  max-width: none;
+  padding: 0;
+  margin: 0;
+}
+
+p,
+li,
+dd,
+address {
+  max-width: none;
+}
+
+/* Never print builder controls, notes, status, or disabled content. */
+.screen-only,
+.instructor-only,
+.builder-toolbar,
+.status-panel,
+.skip-link,
+.back-to-top,
+.content-source,
+.instructor-note {
+  display: none !important;
+}
+
+/* Headings stay with the content that follows them. */
+h1,
+h2,
+h3,
+h4,
+caption {
+  break-after: avoid;
+  page-break-after: avoid;
+  break-inside: avoid;
+}
+
+h1 {
+  font-size: 18pt;
+}
+
+h2 {
+  font-size: 14pt;
+  margin-top: 16pt;
+}
+
+h3 {
+  font-size: 12pt;
+  margin-top: 12pt;
+}
+
+h4 {
+  font-size: 11pt;
+  margin-top: 10pt;
+}
+
+p,
+li {
+  orphans: 3;
+  widows: 3;
+}
+
+.major-section {
+  margin-top: 14pt;
+}
+
+/* Tables: repeat headers on each page and keep rows together. */
+.table-wrap {
+  overflow: visible;
+}
+
+.data-table {
+  font-size: 9.5pt;
+}
+
+.data-table thead {
+  display: table-header-group;
+}
+
+.data-table tfoot {
+  display: table-row-group;
+}
+
+.data-table tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.data-table thead th {
+  background: transparent;
+}
+
+.grading-scale,
+.data-table:not(.calendar-table) {
+  break-inside: avoid;
+}
+
+.calendar-table {
+  font-size: 8.5pt;
+}
+
+.calendar-table tr.no-class td,
+.calendar-table tr.no-class th {
+  background: transparent;
+  font-style: italic;
+}
+
+/* Links stay clickable in the PDF. */
+a {
+  color: #004d43;
+  text-decoration: underline;
+}
+
+/* Optional: print full addresses after links (config.printLinkUrls). */
+body.print-link-urls a[href^="http"]::after {
+  content: " (" attr(href) ")";
+  font-size: 8pt;
+  word-break: break-all;
+  color: #4a4a4a;
+}
+
+/* Missing values stay visible so an incomplete syllabus is obvious. */
+.missing-value {
+  border: 1px dashed #000000;
+  background: transparent;
+  color: #000000;
+}
+
+.institutional-content {
+  border-left-width: 2px;
+}
+
+.toc {
+  margin: 10pt 0;
+}
+
+.instructor-photo {
+  max-width: 1.6in;
+}
+
+.institutional-footer {
+  margin-top: 18pt;
+  font-size: 8.5pt;
+  break-inside: avoid;
+}
