@@ -263,7 +263,7 @@ window.SCTCC = window.SCTCC || {};
     return group("editor-description", "Description, outcomes, and requisites", [
       note("Copy these from the official SCTCC Course Outline and eServices."),
       field("textarea", "course.description", "Course description", { rows: 5 }),
-      field("lines", "course.outcomes", "Course outcomes", { rows: 6, hint: "One outcome per line. They are numbered automatically." }),
+      field("lines", "course.outcomes", "Student learning outcomes", { rows: 6, hint: "One outcome per line. They are shown as a bulleted list under the heading Student Learning Outcomes." }),
       field("text", "course.prerequisites.intro", "Prerequisite introduction", {
         optionalLabel: true,
         hint: "For example: This course requires any of these 2 prerequisite categories:"

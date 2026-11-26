@@ -135,7 +135,7 @@ When the builder opens, it asks **How would you like to start?**
 Then:
 
 1. Work through the groups in the **Edit syllabus** panel. The preview updates as you type. Anything still needed is marked in the preview, for example **[Withdrawal date needed]**.
-   - **Course** and **Description, outcomes, and requisites**: copy from the official SCTCC Course Outline.
+   - **Course** and **Description, outcomes, and requisites**: copy from the official SCTCC Course Outline. Outcomes appear under a **Student Learning Outcomes** heading as a bulleted list (the July 2026 template numbers them; changed 2026-11-26 at the project lead's request).
    - **Credits, modality, and dates**: choose the term, then **Fill in these dates**.
    - **Course policies**: your attendance and late-work wording; accepted file formats; optional college statements; your own Class Environment text; and **Additional course sections** such as Exams or Lab Safety.
    - **Course policies** also has an optional **Program Diversity Statement**, shown right after the college Statement of Diversity.

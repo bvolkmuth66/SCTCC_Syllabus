@@ -376,8 +376,10 @@
 
     const outcomes = subsection("Course Description & Outcomes", [
       textBlocks(course.description, "Course description (from the SCTCC Course Outline)"),
-      el("p", null, "Upon completion of this course, students will be able to:"),
-      listOf(course.outcomes, true, "Course outcomes (from the SCTCC Course Outline)")
+      subsection("Student Learning Outcomes", [
+        el("p", null, "Upon completion of this course, students will be able to:"),
+        listOf(course.outcomes, false, "Course outcomes (from the SCTCC Course Outline)")
+      ], 4)
     ]);
 
     const mntc = isOptionalEnabled("mnTransferGoal")
