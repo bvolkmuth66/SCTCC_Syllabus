@@ -337,17 +337,17 @@
 
   function entryButton(entry, index, compact) {
     const selected = state.selected === index;
-    const label = `${rowName(entry)}, ${longDate(entry.date)}${entry.topic ? `: ${entry.topic}` : ", no topic yet"}${entry.due ? `. Due: ${entry.due}` : ""}`;
+    /* The spoken name starts with the visible words (WCAG 2.5.3); the date follows as hidden text. */
     const button = el("button", {
       type: "button",
       class: `ws-entry${entry.noClass ? " is-noclass" : ""}${entry.isFinals ? " is-finals" : ""}${selected ? " is-selected" : ""}`,
       "aria-pressed": selected ? "true" : "false",
-      "aria-label": label,
       "data-focus-key": `entry-${index}`
     },
     el("span", { class: "ws-entry-head" }, entry.noClass ? "No class" : (state.snap.calendar.mode === "weekly" ? `Week ${entry.week}` : `${entry.isFinals ? "Finals · " : ""}Mtg ${entry.meeting}`)),
     el("span", { class: "ws-entry-topic" }, entry.noClass ? (entry.notes || "") : (entry.topic || "No topic yet")),
-    !compact && entry.due && !entry.noClass ? el("span", { class: "ws-entry-due" }, `Due: ${entry.due}`) : null);
+    !compact && entry.due && !entry.noClass ? el("span", { class: "ws-entry-due" }, `Due: ${entry.due}`) : null,
+    el("span", { class: "visually-hidden" }, `, ${longDate(entry.date)}${compact && entry.due && !entry.noClass ? `, due: ${entry.due}` : ""}`));
     button.addEventListener("click", () => selectEntry(index, false));
     button.addEventListener("dblclick", () => selectEntry(index, true));
     return button;
