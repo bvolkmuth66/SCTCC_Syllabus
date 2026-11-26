@@ -940,7 +940,7 @@ body[data-mode="instructor"] .student-only {
   border-bottom: 1px solid var(--sctcc-border);
 }
 
-/* ---------- Checks and the Print to PDF dialog ---------- */
+/* ---------- Checks and the Save as PDF dialog ---------- */
 
 .print-dialog {
   width: min(44rem, calc(100vw - 2rem));
@@ -979,6 +979,8 @@ body[data-mode="instructor"] .student-only {
 .findings li {
   margin: 0.3rem 0;
 }
+
+.field-with-button #revised-today { margin-top: 0.4rem; }
 
 .btn-small {
   min-height: 2rem;

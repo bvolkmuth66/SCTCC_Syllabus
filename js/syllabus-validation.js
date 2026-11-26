@@ -2,7 +2,7 @@
  * SCTCC Syllabus Builder — checks before printing
  *
  * Reports findings at three levels:
- *   errors   — must be fixed before Print to PDF (blocking)
+ *   errors   — must be fixed before Save as PDF (blocking)
  *   warnings — should be reviewed; printing is allowed
  *   notices  — information only
  * Each finding can name the data path of the field to fix, so the editor can

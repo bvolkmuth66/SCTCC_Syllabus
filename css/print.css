@@ -15,10 +15,13 @@
     color: #4a4a4a;
     vertical-align: top;
     padding-top: 0.15in;
+    width: 5.7in; /* leaves room so "Page 10 of 12" stays on one line */
   }
 
   @bottom-right {
     content: "Page " counter(page) " of " counter(pages);
+    white-space: nowrap;
+    width: 1.2in;
     font-family: "Arimo", Arial, "Liberation Sans", sans-serif;
     font-size: 9pt;
     color: #4a4a4a;
