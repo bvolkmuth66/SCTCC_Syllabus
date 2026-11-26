@@ -1,0 +1,46 @@
+# Checks the college content files whenever they change.
+# Errors (for example a <script> tag, a broken date, or a missing file) fail the check,
+# so the pull request should not be merged until they are fixed. Warnings are listed
+# in the pull request but do not block it. The link test only reports.
+name: Check college content
+
+on:
+  pull_request:
+    paths:
+      - "content/**"
+      - "scripts/check-content.mjs"
+      - ".github/workflows/check-content.yml"
+  push:
+    branches: [main]
+    paths:
+      - "content/**"
+  schedule:
+    - cron: "17 13 * * 1"   # Mondays, to catch links that stop working
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Content structure and wording
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check content files
+        run: node scripts/check-content.mjs
+
+  links:
+    name: Links respond (report only)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Test web links
+        run: node scripts/check-content.mjs --check-links || true

@@ -4,63 +4,80 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Course Syllabus | St. Cloud Technical &amp; Community College</title>
-  <meta name="description" content="St. Cloud Technical &amp; Community College course syllabus">
+  <meta name="description" content="St. Cloud Technical &amp; Community College syllabus builder">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/syllabus.css">
   <link rel="stylesheet" href="css/print.css" media="print">
 </head>
-<!-- data-mode="instructor" shows builder controls; data-mode="student" shows the finished syllabus. -->
+<!-- data-mode="instructor" shows the editor; data-mode="student" shows the finished syllabus. -->
 <body data-mode="instructor">
-  <a class="skip-link" href="#main">Skip to main content</a>
+  <a class="skip-link" href="#main">Skip to the syllabus</a>
+  <a class="skip-link instructor-only" href="#editor">Skip to the editor</a>
 
   <div class="builder-toolbar screen-only" role="region" aria-label="Syllabus builder controls">
-    <p class="toolbar-title instructor-only">SCTCC Syllabus Builder <span class="badge">Phase 1 preview</span></p>
+    <p class="toolbar-title">SCTCC Syllabus Builder <span class="badge instructor-only">Phase 5 preview</span></p>
     <div class="toolbar-actions">
+      <a class="toolbar-link instructor-only" href="#editor">Go to editor</a>
       <button type="button" id="toggle-mode" aria-pressed="false">Student preview</button>
       <button type="button" id="print-pdf" class="button-primary">Print to PDF</button>
     </div>
-    <p class="toolbar-tip instructor-only">In the print dialog, choose <strong>Save as PDF</strong> and turn off the browser’s <strong>Headers and footers</strong>.</p>
   </div>
 
   <div id="live-status" class="visually-hidden" aria-live="polite"></div>
 
-  <div class="page">
-    <header id="top" class="syllabus-header">
-      <div class="header-brand">
-        <img id="college-logo" src="assets/sctcc-logo-placeholder.svg" alt="Placeholder for the official SCTCC logo" width="240" height="96">
-        <div class="header-titles">
-          <h1 id="syllabus-title">Course Syllabus</h1>
-          <p id="syllabus-term" class="syllabus-term"></p>
+  <div class="workspace">
+    <div class="page">
+      <header id="top" class="syllabus-header">
+        <div class="header-brand">
+          <img id="college-logo" src="assets/sctcc-logo-placeholder.svg" alt="Placeholder for the official SCTCC logo" width="240" height="96">
+          <div class="header-titles">
+            <h1 id="syllabus-title">Course Syllabus</h1>
+            <p id="syllabus-term" class="syllabus-term"></p>
+          </div>
         </div>
-      </div>
-      <div id="slot-header" class="header-content"></div>
-    </header>
+        <div id="slot-header" class="header-content"></div>
+      </header>
 
-    <aside id="builder-status" class="status-panel instructor-only" aria-labelledby="builder-status-heading">
-      <h2 id="builder-status-heading">Builder status</h2>
-      <div id="builder-status-body">
-        <p>Loading college content…</p>
+      <nav id="toc" class="toc" aria-labelledby="toc-heading">
+        <h2 id="toc-heading">Contents</h2>
+        <ul id="toc-list"></ul>
+      </nav>
+
+      <main id="main" tabindex="-1">
+        <noscript>
+          <p>This syllabus builder needs JavaScript. Students receive the finished syllabus as a PDF in D2L.</p>
+        </noscript>
+      </main>
+
+      <footer id="slot-footer" class="institutional-footer"></footer>
+    </div>
+
+    <aside id="editor" class="editor instructor-only" aria-labelledby="editor-heading" tabindex="-1">
+      <h2 id="editor-heading">Edit syllabus</h2>
+      <p class="editor-intro">Changes appear in the preview as you type. Print tip: in the print dialog choose <strong>Save as PDF</strong> and turn off <strong>Headers and footers</strong>.</p>
+      <div id="editor-body">
+        <p>Loading the editor…</p>
       </div>
     </aside>
-
-    <nav id="toc" class="toc" aria-labelledby="toc-heading">
-      <h2 id="toc-heading">Contents</h2>
-      <ul id="toc-list"></ul>
-    </nav>
-
-    <main id="main" tabindex="-1">
-      <noscript>
-        <p>This syllabus builder needs JavaScript to assemble the syllabus. Students receive the finished syllabus as a PDF in D2L.</p>
-      </noscript>
-    </main>
-
-    <footer id="slot-footer" class="institutional-footer"></footer>
   </div>
 
+  <dialog id="print-dialog" class="print-dialog" aria-labelledby="print-dialog-title">
+    <h2 id="print-dialog-title">Print to PDF</h2>
+    <div id="print-dialog-body"></div>
+    <div id="print-dialog-actions" class="button-row"></div>
+  </dialog>
+
   <script src="js/syllabus-config.js"></script>
+  <script src="js/dom-helpers.js"></script>
   <script src="js/syllabus-data.js"></script>
+  <script src="js/grading.js"></script>
+  <script src="js/calendar-builder.js"></script>
+  <script src="js/syllabus-validation.js"></script>
+  <script src="js/syllabus-files.js"></script>
   <script src="examples/sample-course-data.js"></script>
   <script src="js/content-loader.js"></script>
+  <script src="js/print-check.js"></script>
+  <script src="js/syllabus-editor.js"></script>
   <script src="js/syllabus.js"></script>
 </body>
 </html>

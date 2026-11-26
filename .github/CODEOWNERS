@@ -34,3 +34,6 @@
 /content/accessibility-data-privacy.html  @bvolkmuth66   # Accessibility Services / IT
 /content/class-environment.html           @bvolkmuth66   # Academic Affairs
 /content/institutional-footer.html        @bvolkmuth66   # Marketing & Communications
+
+# College academic calendar dates (semester dates, finals week, deadlines, no-class dates)
+/content/academic-calendar.json           @bvolkmuth66   # Records & Registration

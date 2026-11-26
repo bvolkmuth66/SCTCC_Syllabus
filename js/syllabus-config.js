@@ -14,17 +14,22 @@ window.SCTCC.config = Object.freeze({
   contentBaseUrl: "./content/",
   manifestFile: "content-manifest.json",
 
-  /* "instructor" shows builder controls; "student" shows the finished syllabus. */
+  /* "instructor" shows the editor; "student" shows the finished syllabus. */
   mode: "instructor",
 
   /* Required sections can never be turned off through the normal interface. */
   allowRequiredSectionOverride: false,
 
   /*
-   * Phase 1 preview: show the sample course from examples/sample-course-data.js.
-   * Phase 2 replaces this with the instructor editor, autosave, and JSON import.
+   * Syllabi are never stored by the builder. Instructors save files to their own
+   * computer or OneDrive. Earlier preview builds used browser storage under this
+   * prefix; any such copies are erased when the builder opens.
    */
-  loadSampleData: true,
+  legacyStoragePrefixes: ["sctcc-syllabus:"],
+  previewDelayMs: 250,
+
+  /* Largest instructor photo file accepted for upload, in bytes (300 KB). */
+  maxPhotoBytes: 300 * 1024,
 
   /*
    * College logo. Replace the placeholder with the official file supplied by

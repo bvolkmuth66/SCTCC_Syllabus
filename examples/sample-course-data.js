@@ -53,6 +53,7 @@ window.SCTCC_SAMPLE_DATA = {
     biography: "This sample biography shows where an instructor can introduce themselves.",
     philosophy: "This sample statement shows where an instructor can describe their educational philosophy.",
     photoUrl: "",
+    photoData: "",
     photoAlt: ""
   },
   materials: {
@@ -73,7 +74,9 @@ window.SCTCC_SAMPLE_DATA = {
   },
   policies: {
     attendance: "Please see me or send me an email with any attendance-related issues throughout the semester.",
-    lateWork: "Late work is not accepted. Extra time for illness or similar circumstances must be requested before the due date."
+    lateWork: "Late work is not accepted. Extra time for illness or similar circumstances must be requested before the due date.",
+    acceptedFileFormats: "",
+    classEnvironment: ""
   },
   grading: {
     calculationMethod: "points",
@@ -101,22 +104,44 @@ window.SCTCC_SAMPLE_DATA = {
     timeCommitment: "You should expect to spend two hours outside of class for each hour of lecture and one hour outside of class for each hour of lab. For this course, that means a total expectation of 6 hours per week outside of the classroom. If you do not feel you can fulfill this expectation, you should consider whether this class best fits this term for you."
   },
   calendar: {
-    locationStatement: "The first three weeks are shown below. The complete, current schedule is posted in D2L under Content > Course Schedule.",
-    startDate: "2027-01-11",
-    endDate: "2027-05-14",
+    locationStatement: "The complete, current schedule is also posted in D2L under Content > Course Schedule.",
+    mode: "meetings",
+    startDate: "",
+    endDate: "",
     meetingsPerWeek: 2,
     meetingDays: ["Monday", "Wednesday"],
-    excludedDates: ["2027-01-18"],
+    useFirstWeekSchedule: false,
+    firstWeekDays: [],
+    includeFinalsWeek: true,
+    showExcludedAsRows: true,
+    excludedDates: [
+      { date: "2027-01-18", label: "Martin Luther King - No Classes - College Closed" },
+      { date: "2027-02-15", label: "President's Day - No Classes - College Closed" },
+      { date: "2027-03-08", label: "Spring Break - No Classes" },
+      { date: "2027-03-10", label: "Spring Break - No Classes" }
+    ],
     entries: [
       { week: 1, meeting: 1, date: "2027-01-11", topic: "Course introduction", preparation: "Read the syllabus", due: "", notes: "", noClass: false },
       { week: 1, meeting: 2, date: "2027-01-13", topic: "Sample topic 1", preparation: "Chapter 1", due: "Introduction discussion", notes: "", noClass: false },
-      { week: 2, meeting: 3, date: "2027-01-18", topic: "", preparation: "", due: "", notes: "Martin Luther King Jr. Day (sample closure)", noClass: true },
-      { week: 2, meeting: 4, date: "2027-01-20", topic: "Sample topic 2", preparation: "Chapter 2", due: "Lab 1", notes: "", noClass: false },
-      { week: 3, meeting: 5, date: "2027-01-25", topic: "Sample topic 3", preparation: "Chapter 3", due: "Quiz 1", notes: "", noClass: false },
-      { week: 3, meeting: 6, date: "2027-01-27", topic: "Sample topic 3, continued", preparation: "", due: "Lab 2", notes: "", noClass: false }
+      { week: 2, meeting: 0, date: "2027-01-18", topic: "", preparation: "", due: "", notes: "Martin Luther King - No Classes - College Closed", noClass: true },
+      { week: 2, meeting: 3, date: "2027-01-20", topic: "Sample topic 2", preparation: "Chapter 2", due: "Lab 1", notes: "", noClass: false },
+      { week: 3, meeting: 4, date: "2027-01-25", topic: "Sample topic 3", preparation: "Chapter 3", due: "Quiz 1", notes: "", noClass: false },
+      { week: 3, meeting: 5, date: "2027-01-27", topic: "Sample topic 3, continued", preparation: "", due: "Lab 2", notes: "", noClass: false }
     ]
   },
-  vendors: [],
+  vendors: [
+    {
+      name: "Sample Publisher Lab Platform",
+      purpose: "Weekly virtual lab activities",
+      accessibilityUrl: "https://www.example.com/accessibility",
+      vpatUrl: "",
+      privacyUrl: "https://www.example.com/privacy",
+      accountRequired: "yes",
+      dataCollected: "Name, school email address, and lab scores",
+      alternativeAccess: "Contact the instructor for an alternative lab assignment.",
+      supportUrl: "https://www.example.com/support"
+    }
+  ],
   optionalSections: {
     instructorPhoto: false,
     instructorBiography: true,

@@ -136,6 +136,8 @@ window.SCTCC = window.SCTCC || {};
         target.setAttribute("data-field", field);
         const format = source.getAttribute("data-format");
         if (format === "date" || format === "date-short") target.setAttribute("data-format", format);
+        const fallback = source.getAttribute("data-default");
+        if (fallback) target.setAttribute("data-default", fallback.slice(0, 200));
       }
     }
     if (tag === "OL") {
@@ -193,13 +195,87 @@ window.SCTCC = window.SCTCC || {};
     return result;
   }
 
+  const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+  const TERM_DATE_FIELDS = ["startDate", "endDate", "finalsStart", "finalsEnd", "lastDayToDrop", "lastDayToWithdraw"];
+
+  /*
+   * Check the academic calendar file. Bad entries are skipped and reported;
+   * the rest is kept. Returns { calendar, problems[] }.
+   */
+  function validateAcademicCalendar(raw) {
+    const problems = [];
+    if (!raw || typeof raw !== "object" || !Array.isArray(raw.terms)) {
+      return { calendar: null, problems: ["academic-calendar.json has no \"terms\" list."] };
+    }
+    const terms = [];
+    raw.terms.forEach((term, index) => {
+      const name = term && term.term && term.year ? `${term.term} ${term.year}` : `term #${index + 1}`;
+      if (!term || typeof term.term !== "string" || !String(term.year || "").trim()) {
+        problems.push(`Academic calendar: ${name} needs a "term" and a "year"; it was skipped.`);
+        return;
+      }
+      const clean = { term: term.term.trim(), year: String(term.year).trim(), verified: term.verified === true, noClassDates: [] };
+      let valid = true;
+      TERM_DATE_FIELDS.forEach((fieldName) => {
+        const value = term[fieldName];
+        if (value === undefined || value === null || value === "") {
+          clean[fieldName] = "";
+        } else if (typeof value === "string" && ISO_DATE.test(value)) {
+          clean[fieldName] = value;
+        } else {
+          problems.push(`Academic calendar: ${name} "${fieldName}" should be a date like 2027-01-11.`);
+          clean[fieldName] = "";
+        }
+      });
+      if (!clean.startDate || !clean.endDate) {
+        problems.push(`Academic calendar: ${name} needs a start and end date; it was skipped.`);
+        valid = false;
+      }
+      (Array.isArray(term.noClassDates) ? term.noClassDates : []).forEach((item) => {
+        if (item && typeof item.date === "string" && ISO_DATE.test(item.date)) {
+          clean.noClassDates.push({ date: item.date, label: typeof item.label === "string" ? item.label.trim() : "" });
+        } else {
+          problems.push(`Academic calendar: ${name} has a no-class date that is not a date like 2027-01-18.`);
+        }
+      });
+      if (valid) terms.push(clean);
+    });
+    return {
+      calendar: {
+        status: ["official", "published"].includes(raw.status) ? raw.status : "sample",
+        lastReviewed: typeof raw.lastReviewed === "string" ? raw.lastReviewed : "",
+        owner: typeof raw.owner === "string" ? raw.owner : "",
+        terms
+      },
+      problems
+    };
+  }
+
+  async function loadAcademicCalendar(fileName, baseUrl) {
+    if (typeof fileName !== "string" || !/^[a-z0-9][a-z0-9-]*\.json$/.test(fileName)) {
+      return { calendar: null, problems: ["The manifest lists an invalid academic calendar file name."] };
+    }
+    try {
+      const text = await fetchText(new URL(fileName, baseUrl));
+      let raw;
+      try {
+        raw = JSON.parse(text);
+      } catch (parseError) {
+        return { calendar: null, problems: [`${fileName} is not valid JSON. Check for a missing comma or quotation mark.`] };
+      }
+      return validateAcademicCalendar(raw);
+    } catch (error) {
+      return { calendar: null, problems: [`${fileName}: ${error instanceof ContentLoadError ? error.message : "could not be loaded."}`] };
+    }
+  }
+
   /*
    * Load the manifest and all fragments.
    * Never throws: problems are returned in `errors` so the page can show them
    * to instructors without exposing raw JavaScript errors to students.
    */
   async function loadContent(config) {
-    const outcome = { manifest: null, sections: [], errors: [] };
+    const outcome = { manifest: null, sections: [], errors: [], academicCalendar: null };
     try {
       const { manifest, problems } = await loadManifest(config);
       outcome.manifest = manifest;
@@ -217,20 +293,31 @@ window.SCTCC = window.SCTCC || {};
     outcome.sections.forEach((section) => {
       if (section.error) outcome.errors.push(`${section.definition.title || section.definition.id} (${section.definition.file}): ${section.error}`);
     });
+
+    if (outcome.manifest.academicCalendarFile) {
+      const academic = await loadAcademicCalendar(outcome.manifest.academicCalendarFile, baseUrl);
+      outcome.academicCalendar = academic.calendar;
+      outcome.errors.push(...academic.problems);
+    }
     return outcome;
   }
 
   /*
    * Fill <span data-field="..."> tokens with instructor data.
-   * `resolve(field, format)` returns a string; an empty string marks the value as missing.
-   * Values are inserted with textContent, never as HTML.
+   * `resolve(field, format)` returns a string; an empty string means no value.
+   * With no value, data-default (if present) is used; otherwise the token is
+   * marked as missing. Values are inserted with textContent, never as HTML.
    */
   function applyFieldTokens(root, resolve, describeMissing) {
     root.querySelectorAll("span[data-field]").forEach((span) => {
       const field = span.getAttribute("data-field");
       const value = resolve(field, span.getAttribute("data-format"));
+      const fallback = span.getAttribute("data-default");
       if (value) {
         span.textContent = value;
+        span.classList.remove("missing-value");
+      } else if (fallback) {
+        span.textContent = fallback;
         span.classList.remove("missing-value");
       } else {
         span.textContent = `[${describeMissing(field)} needed]`;
@@ -241,6 +328,7 @@ window.SCTCC = window.SCTCC || {};
 
   window.SCTCC.contentLoader = Object.freeze({
     loadContent,
+    validateAcademicCalendar,
     sanitizeFragmentHtml,
     applyFieldTokens
   });
