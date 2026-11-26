@@ -128,6 +128,10 @@ async function main() {
     await workspace.click("#ws-reuse");
     await workspace.waitForTimeout(200);
     results.push(await runAxe(workspace, axeSource, "Calendar workspace (Reuse dialog)", { include: "#reuse-dialog" }));
+    await workspace.keyboard.press("Escape");
+    await workspace.click("#ws-shift");
+    await workspace.waitForTimeout(200);
+    results.push(await runAxe(workspace, axeSource, "Calendar workspace (Shift dates dialog)", { include: "#shift-dialog" }));
     await workspace.close();
 
     /* 5. Student view, then the PDF made from it. */

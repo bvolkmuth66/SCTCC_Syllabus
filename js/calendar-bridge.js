@@ -22,6 +22,7 @@ window.SCTCC = window.SCTCC || {};
   const listeners = new Set();
   let app = null;
   let workspaceWindow = null;
+  let pendingTool = "";
 
   function data() {
     return app.getData();
@@ -38,6 +39,16 @@ window.SCTCC = window.SCTCC || {};
 
   function renumber() {
     SCTCC.calendar.renumber(data().calendar.entries, SCTCC.calendar.resolveSettings(data()));
+  }
+
+  function isoDate(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  }
+
+  function addDaysISO(value, days) {
+    const date = SCTCC.util.parseISODate(value);
+    if (!date) return value;
+    return isoDate(new Date(date.getFullYear(), date.getMonth(), date.getDate() + days));
   }
 
   function currentTerm() {
@@ -62,7 +73,7 @@ window.SCTCC = window.SCTCC || {};
         meetingDays: course.meetingPattern.days, startTime: course.meetingPattern.startTime, endTime: course.meetingPattern.endTime
       },
       calendar: syllabus.calendar,
-      term: term ? { term: term.term, year: term.year, finalsStart: term.finalsStart, finalsEnd: term.finalsEnd, noClassDates: term.noClassDates || [] } : null,
+      term: term ? { term: term.term, year: term.year, startDate: term.startDate, endDate: term.endDate, finalsStart: term.finalsStart, finalsEnd: term.finalsEnd, noClassDates: term.noClassDates || [] } : null,
       settingsErrors: check.errors,
       settingsWarnings: check.warnings
     });
@@ -171,6 +182,52 @@ window.SCTCC = window.SCTCC || {};
       return { ok: true };
     },
 
+    /*
+     * Move every calendar date by the same number of days (like D2L's date offset).
+     * Old no-class rows without content are dropped (they were the old term's closures);
+     * the college's no-class dates for the chosen term can replace the old ones.
+     */
+    shiftDates(op) {
+      const days = Math.round(Number(op.days));
+      if (!Number.isFinite(days) || days === 0 || Math.abs(days) > 3660) return { ok: false, message: "Enter how many days to move the calendar (up to 10 years)." };
+      const syllabus = data();
+      const calendar = syllabus.calendar;
+      const course = syllabus.course;
+      /* Old no-class rows hold only the old holiday's name in their notes; keep one only if a topic, reading, or due item was put on it. */
+      calendar.entries = calendar.entries.filter((entry) => !(entry.noClass && !["topic", "preparation", "due"].some((field) => String(entry[field] || "").trim())));
+      let moved = 0;
+      calendar.entries.forEach((entry) => {
+        if (entry.date) {
+          entry.date = addDaysISO(entry.date, days);
+          moved += 1;
+        }
+        if (entry.weekEnd) entry.weekEnd = addDaysISO(entry.weekEnd, days);
+      });
+      if (op.shiftCourse) {
+        ["startDate", "endDate", "dropDate", "withdrawalDate"].forEach((key) => {
+          if (course[key]) course[key] = addDaysISO(course[key], days);
+        });
+      }
+      let closuresAdded = 0;
+      const term = currentTerm();
+      if (op.replaceClosures && term) {
+        calendar.excludedDates = [];
+        closuresAdded = SCTCC.calendar.addTermClosures(calendar, term);
+      } else {
+        calendar.excludedDates.forEach((item) => { item.date = addDaysISO(item.date, days); });
+      }
+      renumber();
+      const closed = new Map(calendar.excludedDates.map((item) => [item.date, item.label || "No class"]));
+      const conflicts = [];
+      const outside = [];
+      calendar.entries.forEach((entry, index) => {
+        if (!entry.date || entry.noClass) return;
+        if (closed.has(entry.date)) conflicts.push({ index, date: entry.date, label: closed.get(entry.date) });
+        else if ((course.startDate && entry.date < course.startDate) || (course.endDate && entry.date > course.endDate)) outside.push({ index, date: entry.date });
+      });
+      return { ok: true, moved, conflicts, outside, closuresAdded, replacedClosures: Boolean(op.replaceClosures && term) };
+    },
+
     /* Read a syllabus file saved from the builder; only its calendar is returned. */
     readSyllabusFile(op) {
       let raw;
@@ -248,10 +305,10 @@ window.SCTCC = window.SCTCC || {};
     return document.getElementById("calendar-dialog");
   }
 
-  function openEmbedded() {
+  function openEmbedded(tool) {
     const box = dialog();
     const frame = document.getElementById("calendar-frame");
-    frame.src = `${WORKSPACE_URL}?embedded=1`;
+    frame.src = `${WORKSPACE_URL}?embedded=1${tool ? `&tool=${encodeURIComponent(tool)}` : ""}`;
     if (!box.open) box.showModal();
     frame.focus();
   }
@@ -262,16 +319,19 @@ window.SCTCC = window.SCTCC || {};
   }
 
   /* Returns "window", "embedded" (the browser blocked a new window), or "focused". */
-  function openWindow() {
+  function openWindow(tool) {
+    pendingTool = tool || "";
     if (workspaceWindow && !workspaceWindow.closed) {
       workspaceWindow.focus();
+      notify(); /* the open workspace picks up the requested tool */
       return "focused";
     }
     const width = Math.min(1440, Math.max(900, window.screen.availWidth - 80));
     const height = Math.min(1000, Math.max(700, window.screen.availHeight - 80));
     workspaceWindow = window.open(WORKSPACE_URL, "sctccCalendarWorkspace", `popup,width=${width},height=${height}`);
     if (!workspaceWindow) {
-      openEmbedded();
+      pendingTool = "";
+      openEmbedded(tool);
       return "embedded";
     }
     return "window";
@@ -301,6 +361,12 @@ window.SCTCC = window.SCTCC || {};
     openWindow,
     openEmbedded,
     closeEmbedded,
-    pdfTitle: () => (app && app.pdfTitle ? app.pdfTitle() : "")
+    pdfTitle: () => (app && app.pdfTitle ? app.pdfTitle() : ""),
+    /* A tool the builder asked the workspace window to open ("shift"), taken once. */
+    takePendingTool() {
+      const tool = pendingTool;
+      pendingTool = "";
+      return tool;
+    }
   });
 })();
