@@ -43,7 +43,6 @@ Automated tools find only part of WCAG problems. The manual review is required, 
 ## Known gaps (as of 2026-11-26)
 
 - Manual testing (screen reader, keyboard-only, zoom, Acrobat/PAC on a real PDF) has not been done yet.
-- **PDF title reads like a file name.** Before printing, the builder sets the page title to the suggested file name (for example `ITEC-0000-Spring-2027-Syllabus`) so the save dialog names the file; Chrome also uses it as the PDF title that screen readers announce. A readable title would be better but changes the agreed file naming — a decision for the owner and project lead.
 - Chrome-made PDFs do not claim PDF/UA, and their link annotations have no separate descriptions; the PDF check reports these as warnings.
 - College content files contain some "here" links and `http://` links (listed in the README); their owners need to fix the wording.
 - The PDF footer depends on Chrome or Edge 131+.

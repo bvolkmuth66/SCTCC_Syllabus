@@ -91,7 +91,7 @@ WCAG 2.2 removed 4.1.1 Parsing; it is listed at the end because WCAG 2.1 (the le
 | Tagged PDF with structure tree | Chrome/Edge "Save as PDF" | Auto (`check-pdf.py`) | Pass (automated, 2026-11-26) |
 | Document language and title | From the page `lang` and `title` | Auto | Pass (automated, 2026-11-26) |
 | Title shown in the window (DisplayDocTitle) | Set by Chrome | Auto | Pass (automated, 2026-11-26) |
-| Title is readable, not a file name | Currently the suggested file name (e.g. `ITEC-0000-Spring-2027-Syllabus`) | Auto (warning) | **Known issue** — decision needed |
+| Title is readable, not a file name | "ITEC 0000 Sample Course Syllabus, Spring 2027" (changed 2026-11-26; also the suggested file name) | Auto (warning if it looks like a file name) | Pass (automated, 2026-11-26) |
 | Headings tagged H1–H4 in order | From page headings | Auto | Pass (automated, 2026-11-26) |
 | Tables with header cells; repeated headers | `th` + print CSS | Auto + Manual | Not tested |
 | Links readable and tagged | From page links | Auto + Manual | Not tested |
@@ -110,4 +110,4 @@ WCAG 2.2 removed 4.1.1 Parsing; it is listed at the end because WCAG 2.1 (the le
 
 | Date | Reviewer (title) | Standards version | Summary |
 |---|---|---|---|
-| 2026-11-26 | Builder maintainer | WCAG 2.2 AA target / 2.1 AA minimum | Checklist created; automated checks added. PDF check on the sample: tagged, language, title, headings H1–H4, table headers pass; title reads like a file name (warning). axe page check first runs on GitHub. Manual testing not yet done. |
+| 2026-11-26 | Builder maintainer | WCAG 2.2 AA target / 2.1 AA minimum | Checklist created; automated checks added. PDF check on the sample: tagged, language, title, headings H1–H4, table headers pass; title read like a file name (fixed the same day: readable title, also used as the file name). axe page check first runs on GitHub. Manual testing not yet done. |

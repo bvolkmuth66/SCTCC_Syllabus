@@ -390,7 +390,7 @@ The browser's own Print command (Ctrl+P) cannot be stopped, but it still switche
 ## Printing to PDF
 
 1. Click **Print to PDF** in the builder toolbar. If there are problems to fix, the dialog lists them with **Go to field** buttons. Otherwise it shows anything to review and these steps.
-2. Click **Open print window**. The builder switches to the student view and suggests a file name such as `CPTR-1118-Spring-2027-Syllabus`.
+2. Click **Open print window**. The builder switches to the student view and sets the PDF's title, which is also the suggested file name, for example `CPTR 1118 Cisco II Syllabus, Spring 2027`. A readable title matters because screen readers announce it and PDF viewers show it (WCAG 2.4.2). Characters that file names cannot contain (such as `:` or `/`) are left out. The saved `.json` file and the calendar CSV keep hyphenated names such as `CPTR-1118-Spring-2027-Syllabus.json`.
 3. Set **Destination** to **Save as PDF** (or **Microsoft Print to PDF**).
 4. Under **More settings**, turn **Headers and footers off**. The syllabus prints its own footer (college name, course, term, syllabus version, and page numbers). Leave **Background graphics** off to save ink.
 5. Save to your own folder or OneDrive, and upload the PDF to D2L.
