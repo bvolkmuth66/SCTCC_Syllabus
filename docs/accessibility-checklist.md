@@ -53,7 +53,7 @@ WCAG 2.2 removed 4.1.1 Parsing; it is listed at the end because WCAG 2.1 (the le
 | 2.4.11 Focus Not Obscured (Minimum) | AA | Builder | Scroll padding keeps a focused item out from under the sticky toolbar | Manual | Not tested |
 | 2.5.1 Pointer Gestures | A | Builder | No multipoint or path gestures | Manual | Not tested |
 | 2.5.2 Pointer Cancellation | A | Builder | Native click activation (on release) | Manual | Not tested |
-| 2.5.3 Label in Name | A | Builder | Accessible names start with the visible text | Auto (partly) + Manual | Not tested |
+| 2.5.3 Label in Name | A | Builder | Accessible names start with the visible text (move buttons fixed 2026-11-26: "Move up: Labs") | Auto (partly) + Manual | Fixed after first automated run |
 | 2.5.4 Motion Actuation | A | Builder | No motion input | N/A | — |
 | 2.5.7 Dragging Movements | AA | Builder | No dragging; rows move with Move earlier/later buttons | Manual | Not tested |
 | 2.5.8 Target Size (Minimum) | AA | Builder | Buttons and checkboxes at least 24×24 CSS px or spaced | Auto (partly) + Manual | Not tested |

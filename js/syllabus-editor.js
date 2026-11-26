@@ -400,8 +400,8 @@ window.SCTCC = window.SCTCC || {};
         field("text", `${base}.title`, "Section title"),
         field("textarea", `${base}.text`, "Section text", { rows: 5, hint: "Blank lines start new paragraphs. Web addresses become links." }),
         el("div", { class: "button-row" },
-          actionButton("move-extra", "Move up", null, { "data-index": String(index), "data-direction": "-1", "aria-label": `Move ${name} up`, disabled: index === 0 }),
-          actionButton("move-extra", "Move down", null, { "data-index": String(index), "data-direction": "1", "aria-label": `Move ${name} down`, disabled: index === sections.length - 1 }),
+          actionButton("move-extra", "Move up", null, { "data-index": String(index), "data-direction": "-1", "aria-label": `Move up: ${name}`, disabled: index === 0 }),
+          actionButton("move-extra", "Move down", null, { "data-index": String(index), "data-direction": "1", "aria-label": `Move down: ${name}`, disabled: index === sections.length - 1 }),
           actionButton("remove-extra", "Remove", "btn-danger", { "data-index": String(index), "aria-label": `Remove ${name}` }))));
     });
     populate(container);
@@ -775,8 +775,8 @@ window.SCTCC = window.SCTCC || {};
           "Category total: ", el("output", { id: `category-total-${index}`, for: `${fieldId(`${base}.count`)} ${fieldId(`${base}.pointsEach`)}` }, "0"), " points"),
         field("text", `${base}.notes`, "Note shown under the category", { optionalLabel: true, hint: "For example: Taken during final exam week" }),
         el("div", { class: "button-row" },
-          actionButton("move-category", "Move up", null, { "data-index": String(index), "data-direction": "-1", "aria-label": `Move ${name} up`, disabled: index === 0 }),
-          actionButton("move-category", "Move down", null, { "data-index": String(index), "data-direction": "1", "aria-label": `Move ${name} down`, disabled: index === categories.length - 1 }),
+          actionButton("move-category", "Move up", null, { "data-index": String(index), "data-direction": "-1", "aria-label": `Move up: ${name}`, disabled: index === 0 }),
+          actionButton("move-category", "Move down", null, { "data-index": String(index), "data-direction": "1", "aria-label": `Move down: ${name}`, disabled: index === categories.length - 1 }),
           actionButton("remove-category", "Remove", "btn-danger", { "data-index": String(index), "aria-label": `Remove ${name}` }))));
     });
     populate(container);
