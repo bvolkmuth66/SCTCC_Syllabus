@@ -1,0 +1,73 @@
+# Automated accessibility check of the builder and its PDF output.
+# See ACCESSIBILITY.md for the standards and docs/accessibility-checklist.md for the
+# manual review that automated checks cannot replace.
+#
+# - Page check (axe-core, WCAG 2.0–2.2 A/AA rules): any problem fails the check.
+# - PDF check (tags, language, title, headings, table headers, figure text):
+#   errors fail the check; warnings are listed.
+# - The sample PDF and full results are attached to each run as "accessibility-report".
+name: Check accessibility
+
+on:
+  pull_request:
+    paths:
+      - "index.html"
+      - "css/**"
+      - "js/**"
+      - "content/**"
+      - "examples/**"
+      - "assets/**"
+      - "scripts/check-accessibility.mjs"
+      - "scripts/check-pdf.py"
+      - ".github/workflows/check-accessibility.yml"
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "css/**"
+      - "js/**"
+      - "content/**"
+      - "examples/**"
+      - "assets/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  accessibility:
+    name: Page and PDF accessibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install check tools (not part of the builder)
+        run: |
+          npm install --no-save --no-package-lock playwright@1 axe-core@4
+          npx playwright install --with-deps chromium
+          python -m pip install --quiet pikepdf
+
+      - name: Check the page (axe-core)
+        id: page
+        run: node scripts/check-accessibility.mjs
+
+      - name: Check the PDF
+        if: always() && hashFiles('reports/sample-syllabus.pdf') != ''
+        run: python scripts/check-pdf.py reports/sample-syllabus.pdf
+
+      - name: Keep the sample PDF and results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-report
+          path: reports/
+          if-no-files-found: ignore
+          retention-days: 30

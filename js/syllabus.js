@@ -754,6 +754,7 @@
     renderFooter();
     if (config.numberSections !== false) numberSections(main);
     renderTableOfContents();
+    document.dispatchEvent(new CustomEvent("syllabus:rendered"));
     renderStatusPanel();
     updatePrintFooter();
     document.body.classList.toggle("print-link-urls", Boolean(config.printLinkUrls));
@@ -830,12 +831,26 @@
     return parts.join("-") || "Syllabus";
   }
 
+  /*
+   * Title of the PDF, for example "ITEC 0000 Sample Course Syllabus, Spring 2027".
+   * Chrome uses it both as the PDF's title (announced by screen readers, shown in
+   * PDF viewers) and as the suggested file name, so characters that file names
+   * cannot contain are removed.
+   */
+  function pdfTitle() {
+    const course = state.data.course;
+    const clean = (text) => String(text || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
+    const name = [clean(course.prefix), clean(course.number), clean(course.title), "Syllabus"].filter(Boolean).join(" ");
+    const term = [clean(course.term), clean(course.year)].filter(Boolean).join(" ");
+    return term ? `${name}, ${term}` : name;
+  }
+
   /* Runs for the Print to PDF button and for the browser's own Print command. */
   function enterPrintMode() {
     if (state.printSnapshot) return;
     if (state.renderTimer) render();
     state.printSnapshot = { mode: document.body.getAttribute("data-mode"), title: document.title };
-    document.title = suggestedFileName();
+    document.title = pdfTitle();
     setMode("student");
   }
 
@@ -866,7 +881,7 @@
   function printToPdf() {
     const result = runChecks();
     SCTCC.printCheck.open(result, {
-      fileName: suggestedFileName(),
+      fileName: pdfTitle(),
       onPrint: () => {
         enterPrintMode();
         window.print();
@@ -908,6 +923,7 @@
     hasUnsavedChanges,
     contentVersion,
     suggestedFileName,
+    pdfTitle,
     runChecks,
     showEditor: () => setMode("instructor")
   });

@@ -38,3 +38,11 @@
 
 # College academic calendar dates (semester dates, finals week, deadlines, no-class dates)
 /content/academic-calendar.json           @bvolkmuth66   # Records & Registration
+
+# Accessibility standards, checklist, and checks — intended owner: the SCTCC position
+# named (by title) in ACCESSIBILITY.md. Replace @bvolkmuth66 with that office's team.
+/ACCESSIBILITY.md                         @bvolkmuth66   # Digital accessibility owner (title to be supplied)
+/docs/accessibility-checklist.md          @bvolkmuth66   # Digital accessibility owner (title to be supplied)
+/scripts/check-accessibility.mjs          @bvolkmuth66
+/scripts/check-pdf.py                     @bvolkmuth66
+/.github/workflows/check-accessibility.yml @bvolkmuth66
