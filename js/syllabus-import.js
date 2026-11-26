@@ -19,8 +19,11 @@ window.SCTCC = window.SCTCC || {};
 
   /* ---------- Text helpers ---------- */
 
+  /* Markers from older templates, for example "(SAMPLE)" or "(REQUIRED)". */
+  const TEMPLATE_MARKER = /\((?:SAMPLE|REQUIRED|OPTIONAL|AS APPLICABLE)\)\s*/g;
+
   function clean(text) {
-    return String(text || "").replace(/\t+/g, " ").replace(/[  ]{2,}/g, " ").replace(/\s+\n/g, "\n").trim();
+    return String(text || "").replace(TEMPLATE_MARKER, "").replace(/\t+/g, " ").replace(/[ \u00a0]{2,}/g, " ").replace(/\s+\n/g, "\n").trim();
   }
 
   function normalizeHeading(text) {
@@ -53,6 +56,12 @@ window.SCTCC = window.SCTCC || {};
       listRun = [];
     };
     blocks.forEach((block) => {
+      if (block.type === "table") {
+        flush();
+        const lines = block.rows.map((row) => row.map(clean).filter(Boolean).join(" — ")).filter(Boolean);
+        if (lines.length) out.push(lines.join("\n"));
+        return;
+      }
       const text = clean(block.text);
       if (!text) {
         flush();
@@ -60,7 +69,9 @@ window.SCTCC = window.SCTCC || {};
       }
       if (block.list) listRun.push(`• ${text}`);
       else if (/^\d+[.)]\s/.test(text)) listRun.push(text); /* typed numbering, for example "1. Attendance…" */
-      else {
+      else if (!listRun.length && out.length && !/[.!?:;”")\]]$/.test(out[out.length - 1]) && /^[a-z(]/.test(text)) {
+        out[out.length - 1] = `${out[out.length - 1]} ${text}`; /* a sentence broken across lines */
+      } else {
         flush();
         out.push(text);
       }
@@ -155,8 +166,71 @@ window.SCTCC = window.SCTCC || {};
     "time commitment": "time",
     "course calendar": "calendar",
     "course schedule": "calendar",
-    "calendar": "calendar"
+    "calendar": "calendar",
+
+    /* Older table-form template (label | value rows) */
+    "course prefix and number": "field:courseId",
+    "course number": "field:courseId",
+    "course title": "field:title",
+    "credits": "field:credits",
+    "credit hours": "field:credits",
+    "course start date": "field:dates",
+    "course end date": "field:dates",
+    "course drop and withdrawal dates": "field:dates",
+    "drop and withdrawal dates": "field:dates",
+    "meeting times": "field:meeting",
+    "meeting times and location": "field:meeting",
+    "class meeting times": "field:meeting",
+    "required text": "required",
+    "required texts": "required",
+    "d2l site and support": "techSupport",
+    "name": "field:name",
+    "instructor name": "field:name",
+    "office location": "field:office",
+    "office": "field:office",
+    "office hours": "field:hours",
+    "phone number": "field:phone",
+    "phone": "field:phone",
+    "telephone": "field:phone",
+    "email": "field:email",
+    "e-mail": "field:email",
+    "email address": "field:email",
+    "website": "field:website",
+    "instructor availability": "field:availability",
+    "availability": "field:availability",
+    "goal area": "mntc",
+    "late assignments": "late",
+    "online environment": "classEnvironment",
+    "classroom environment": "classEnvironment",
+    "grading formula": "scale",
+    "statement of diversity": "oldCollege",
+    "diversity statement": "oldCollege"
   };
+
+  /* When a heading is not an exact match, recognize it by its key words. */
+  const HEADING_KEYWORDS = [
+    [/navigating d2l/, "navigatingD2l"],
+    [/course calendar|timeline|course schedule/, "calendar"],
+    [/^late\b/, "late"],
+    [/attendance/, "attendance"],
+    [/grading (formula|scale)/, "scale"],
+    [/time commitment/, "time"],
+    [/class(room)? environment|online environment/, "classEnvironment"],
+    [/accommodation/, "college:accommodations"],
+    [/academic (integrity|honesty)/, "college:academic-integrity"],
+    [/title ix|nondiscrimination/, "college:nondiscrimination-title-ix"],
+    [/technical support|tech support/, "techSupport"],
+    [/learning outcomes|course outcomes/, "description"],
+    [/instructor information/, "instructor"],
+    [/course information/, "courseContainer"]
+  ];
+
+  function headingKey(title) {
+    const normalized = normalizeHeading(title);
+    if (SECTION_ALIASES[normalized]) return SECTION_ALIASES[normalized];
+    const match = HEADING_KEYWORDS.find(([pattern]) => pattern.test(normalized));
+    return match ? match[1] : "";
+  }
 
   const COLLEGE_TITLES = {
     "academic-integrity": "Academic Integrity",
@@ -191,7 +265,8 @@ window.SCTCC = window.SCTCC || {};
     /1540 Northway Drive/i,
     /^Template Updated/i,
     /^Revised:/i,
-    /Higher Learning Commission/i
+    /Higher Learning Commission/i,
+    /adapted from a design by/i
   ];
 
   const COURSE_HEADING = /^([A-Z]{2,5})\s*-?\s*(\d{3,4}[A-Z]?)(?:-\d{1,3})?\s*[:–—-]?\s*(.*)$/;
@@ -217,22 +292,65 @@ window.SCTCC = window.SCTCC || {};
     return "";
   }
 
+  /* ---------- Table-form syllabi ---------- */
+
+  /*
+   * Some older syllabi put everything in one large table: single-cell rows are
+   * section headings and two-cell rows are "label | value". Turn such a table
+   * into headings and paragraphs so it reads like any other syllabus.
+   */
+  function isLayoutTable(table) {
+    if (!table.cells || table.rows.length < 6) return false;
+    let shaped = 0;
+    let known = 0;
+    table.rows.forEach((row) => {
+      if (row.length === 1 || (row.length === 2 && clean(row[0]).length <= 80)) shaped += 1;
+      const label = clean(row[0]).replace(/\n+/g, " ");
+      if (label && headingKey(label)) known += 1;
+    });
+    return shaped / table.rows.length >= 0.7 && known >= 3;
+  }
+
+  function expandLayoutTables(blocks) {
+    const out = [];
+    blocks.forEach((block) => {
+      if (block.type !== "table" || !isLayoutTable(block)) {
+        out.push(block);
+        return;
+      }
+      block.cells.forEach((cells, index) => {
+        const texts = block.rows[index].map(clean);
+        if (cells.length === 1 || (texts.length >= 2 && texts.slice(1).every((text) => !text) && texts[0] && headingKey(texts[0].replace(/\n+/g, " ")) && !/^field:/.test(headingKey(texts[0].replace(/\n+/g, " "))))) {
+          if (texts[0]) out.push({ type: "p", text: texts[0].replace(/\n+/g, " "), level: 1, list: false, images: [] });
+          return;
+        }
+        const label = block.rows[index][0].replace(/\s*\n+\s*/g, " ").trim();
+        if (clean(label)) out.push({ type: "p", text: label, level: 2, list: false, images: [], fromLabel: true });
+        cells.slice(1).forEach((cellBlocks) => out.push(...cellBlocks));
+      });
+    });
+    return out;
+  }
+
   /* ---------- Splitting the document into sections ---------- */
 
   function splitSections(blocks) {
     const sections = [];
     let current = { key: "preamble", title: "", level: 0, blocks: [] };
     let container = "";
+    let seenSection = false;
     blocks.forEach((block) => {
       if (isHeading(block)) {
         const title = clean(block.text);
-        const normalized = normalizeHeading(title);
-        let key = SECTION_ALIASES[normalized];
+        let key = headingKey(title);
         if (!key && block.level === 1 && COURSE_HEADING.test(title) && !sections.some((s) => s.key === "courseTitle")) key = "courseTitle";
+        if (!key && !seenSection && block.level === 1) key = "docTitle"; /* a title without a course number */
+        if (!key && current.key === "calendar") return; /* column labels inside the calendar area */
         if (key && key.endsWith("Container")) container = key;
         if (!key) key = container === "collegeContainer" ? "collegeUnknown" : "additional";
+        if (key !== "docTitle") seenSection = true;
         sections.push(current);
-        current = { key, title, level: block.level, blocks: [], images: block.images || [] };
+        current = { key, title, rawTitle: String(block.text || ""), level: block.level, blocks: [], images: block.images || [] };
         return;
       }
       current.blocks.push(block);
@@ -251,8 +369,15 @@ window.SCTCC = window.SCTCC || {};
     const notes = [];
     let order = 0;
 
+    const OLD_PLACEHOLDERS = /\b(XXX+|COURSE NAME|YOUR NAME|GIVE (?:WITHDRAWAL )?DATE|GIVE TIME|LIST ASSIGNMENT|DATE & TIME)\b/;
+
     function propose(group, label, preview, apply, extra) {
-      items.push(Object.assign({ id: `item-${++order}`, group, label, preview, apply, checked: true, note: "" }, extra || {}));
+      const item = Object.assign({ id: `item-${++order}`, group, label, preview, apply, checked: true, note: "" }, extra || {});
+      const placeholder = OLD_PLACEHOLDERS.exec(String(preview || ""));
+      if (placeholder) {
+        item.note = `${item.note ? `${item.note} ` : ""}It still contains the template placeholder “${placeholder[1]}”; edit it after importing.`.trim();
+      }
+      items.push(item);
     }
 
     function isCollegeText(text) {
@@ -268,10 +393,11 @@ window.SCTCC = window.SCTCC || {};
     }
 
     function ownBlocks(blocks) {
-      return blocks.filter((block) => block.type === "p" && clean(block.text) && !isCollegeText(block.text) && !isFooter(block.text));
+      return blocks.filter((block) => (block.type === "table" && block.rows.length)
+        || (block.type === "p" && clean(block.text) && !isCollegeText(block.text) && !isFooter(block.text)));
     }
 
-    const sections = splitSections(docx.blocks);
+    const sections = splitSections(expandLayoutTables(docx.blocks));
     const byKey = (key) => sections.filter((section) => section.key === key);
     const collegeFound = new Set();
 
@@ -282,6 +408,18 @@ window.SCTCC = window.SCTCC || {};
       const title = match[3].replace(/\s*(course\s+)?syllabus\s*$/i, "").trim();
       propose("Course", "Course prefix", match[1], (d) => { d.course.prefix = match[1]; });
       propose("Course", "Course number", match[2], (d) => { d.course.number = match[2]; });
+      if (title) propose("Course", "Course title", title, (d) => { d.course.title = title; });
+    }
+    const fieldText = (key) => clean(byKey(key).flatMap((section) => section.blocks)
+      .map((block) => (block.type === "table" ? block.rows.map((row) => row.join(" ")).join("\n") : block.text || "")).join("\n"));
+    if (!titleSection) {
+      const id = /^([A-Z]{2,5})\s*-?\s*(\d{3,4}[A-Z]?)/.exec(fieldText("field:courseId"));
+      if (id) {
+        propose("Course", "Course prefix", id[1], (d) => { d.course.prefix = id[1]; });
+        propose("Course", "Course number", id[2], (d) => { d.course.number = id[2]; });
+      }
+      const docTitle = byKey("docTitle")[0];
+      const title = fieldText("field:title") || (docTitle ? clean(docTitle.title).replace(/\s*(course\s+)?syllabus\s*$/i, "") : "");
       if (title) propose("Course", "Course title", title, (d) => { d.course.title = title; });
     }
     notes.push("The term, year, and all dates were not imported, because an old syllabus has last term’s dates. Choose the new term, then use “Fill in these dates.”");
@@ -310,7 +448,18 @@ window.SCTCC = window.SCTCC || {};
       else contact.push(block);
     });
 
+    /* Label | value rows from table-form syllabi */
+    [["field:name", "Name"], ["field:office", "Office"], ["field:hours", "Office hours"], ["field:phone", "Phone"], ["field:email", "Email"]]
+      .forEach(([key, labelText]) => {
+        const value = fieldText(key);
+        if (!value) return;
+        if (key === "field:hours") byKey(key).forEach((section) => office.push(...section.blocks));
+        else contact.push({ type: "p", text: `${labelText}: ${value}`, level: 0, list: false });
+      });
+    contact.push(...byKey("field:availability").flatMap((section) => section.blocks));
+
     const allInstructorText = [...office, ...contact].map((b) => clean(b.text)).join("\n");
+    const officeField = /(?:^|\n)Office:\s*([^\n]{1,60})(?:\n|$)/.exec(allInstructorText);
     let name = "";
     let credentials = "";
     const nameLine = /(?:^|\n)(?:Instructor(?: Name)?|Name)\s*:\s*([^\n]+)/i.exec(allInstructorText);
@@ -345,6 +494,7 @@ window.SCTCC = window.SCTCC || {};
       if (location && !officeLocation && text.length < 80) officeLocation = location[1].trim();
       else hoursBlocks.push(block);
     });
+    if (!officeLocation && officeField) officeLocation = officeField[1].trim();
     if (!officeLocation) {
       const room = /(?:Office|Location|Room)\s*:?\s*(\d-\d{3}\w?)/i.exec(allInstructorText);
       if (room) officeLocation = room[1];
@@ -403,6 +553,37 @@ window.SCTCC = window.SCTCC || {};
     const photoCandidates = Object.entries(docx.images || {})
       .filter(([, image]) => /^image\/(png|jpeg|webp)$/.test(image.mime))
       .map(([id, image]) => ({ id, name: image.name, size: image.size, mime: image.mime, dataUrl: image.dataUrl, suggested: instructorImageIds.has(id) }));
+
+    /* ----- Credits and meeting times from label | value rows ----- */
+    const creditsField = fieldText("field:credits");
+    if (creditsField) {
+      const total = toNumber((/(\d+(?:\.\d+)?|one|two|three|four|five|six)\b/i.exec(creditsField) || [])[1]);
+      const part = (patterns) => {
+        for (const pattern of patterns) {
+          const match = pattern.exec(creditsField);
+          if (match) return toNumber(match[1]);
+        }
+        return 0;
+      };
+      const values = {
+        total,
+        lecture: part([/(\d+(?:\.\d+)?)\s*lec/i, /lec\w*\s*[–—:-]?\s*(\d+(?:\.\d+)?)/i]),
+        laboratory: part([/(\d+(?:\.\d+)?)\s*lab/i, /lab\w*\s*[–—:-]?\s*(\d+(?:\.\d+)?)/i]),
+        soe: part([/(\d+(?:\.\d+)?)\s*soe/i, /soe\s*[–—:-]?\s*(\d+(?:\.\d+)?)/i])
+      };
+      if (Number.isFinite(total) && total > 0) {
+        propose("Credits, modality, and dates", "Credits", `${total} credits: Lecture – ${values.lecture}, Laboratory – ${values.laboratory}, SOE – ${values.soe}`,
+          (d) => { Object.assign(d.course.credits, values); }, { note: `From “${creditsField}”. Check the lecture, lab, and SOE split.` });
+      }
+    }
+    const meetingField = fieldText("field:meeting");
+    if (meetingField) {
+      if (/asynchronous|online|no face-to-face|d2l only/i.test(meetingField)) {
+        propose("Credits, modality, and dates", "Modality", "Exclusively online", (d) => { d.course.modality = "online"; },
+          { note: `From “${meetingField}”. Choose hybrid instead if the course has some class meetings.` });
+      }
+      propose("Credits, modality, and dates", "Additional modality information", meetingField, (d) => { d.course.modalityNote = meetingField; });
+    }
 
     /* ----- General information ----- */
     const generalBlocks = byKey("general").flatMap((section) => section.blocks).filter((b) => b.type === "p" && clean(b.text));
@@ -488,6 +669,13 @@ window.SCTCC = window.SCTCC || {};
       else if (!prereqIntro && /:\s*$/.test(text)) prereqIntro = text;
       else if (!/course outlines? (are|is) found/i.test(text)) prereqItems.push(text);
     });
+    if (prereqItems.length === 1 && !prereqIntro && !coreqs) {
+      const pair = /^([^/]{1,60})\/([^/]{1,60})$/.exec(prereqItems[0]);
+      if (pair) {
+        prereqItems[0] = pair[1].trim();
+        coreqs = pair[2].trim();
+      }
+    }
     if (prereqIntro) propose("Description, outcomes, and requisites", "Prerequisite introduction", prereqIntro, (d) => { d.course.prerequisites.intro = prereqIntro; });
     if (prereqItems.length) propose("Description, outcomes, and requisites", "Prerequisites", prereqItems.join("\n"), (d) => { d.course.prerequisites.items = prereqItems.slice(); });
     if (coreqs) propose("Description, outcomes, and requisites", "Corequisites", coreqs, (d) => { d.course.corequisites = coreqs; });
@@ -513,7 +701,7 @@ window.SCTCC = window.SCTCC || {};
       d.materials.recommended = recommended.slice();
       d.optionalSections.recommendedMaterials = true;
     });
-    const standardTech = /^(active sctcc email account|internet access|microsoft office( suite)?|free download of microsoft office)/i;
+    const standardTech = /^(active sctcc email( account)?|internet access|microsoft (office|word)|free download)/i;
     const tech = listItems("requiredTech").filter((text) => !standardTech.test(text));
     if (tech.length) propose("Materials and technology", "Additional required technology", tech.join("\n"), (d) => { d.materials.requiredTechnologyAdditions = tech.slice(); });
     const skills = listItems("techSkills");
@@ -558,17 +746,20 @@ window.SCTCC = window.SCTCC || {};
     }
 
     /* ----- Instructor-written sections without a place in the template ----- */
-    sections.filter((section) => section.key === "additional" || section.key === "collegeUnknown").forEach((section) => {
+    sections.filter((section) => ["additional", "collegeUnknown", "oldCollege"].includes(section.key)).forEach((section) => {
       const text = blocksToText(ownBlocks(section.blocks));
       if (!text || !section.title) return;
-      const fromCollegeArea = section.key === "collegeUnknown";
+      const fromCollegeArea = section.key !== "additional";
+      const sampleLabel = /\(SAMPLE\)/i.test(section.rawTitle || "");
       propose("Additional course sections", section.title, text, (d) => {
         d.policies.additionalSections.push({ title: section.title, text });
       }, {
-        checked: !fromCollegeArea,
+        checked: !fromCollegeArea && !sampleLabel,
         note: fromCollegeArea
-          ? "This was under College Policies in your old syllabus, but it is not one of the current college sections. Include it only if it is your own statement."
-          : "Shown as its own section under Course Policies & Procedures."
+          ? "This looks like older college wording and is not one of the current college sections. Include it only if it is your own statement."
+          : (sampleLabel
+            ? "This was labeled SAMPLE in the old template. Include it only if you use it."
+            : "Shown as its own section under Course Policies & Procedures.")
       });
     });
 
@@ -619,7 +810,7 @@ window.SCTCC = window.SCTCC || {};
         return;
       }
       const atPattern = /\((\d+)\s*@\s*(\d+(?:\.\d+)?)\s*(?:points?|pts?)?(?:\s*each)?\)/i.exec(nameCell);
-      const name = clean(nameCell.replace(/\(.*?\)/g, ""));
+      const name = clean(nameCell.replace(/\(\s*\d+\s*@[^)]*\)/g, ""));
       if (!name) return;
       if (atPattern) {
         categories.push({ name, count: Number(atPattern[1]), pointsEach: Number(atPattern[2]), weight: percent ? Number(percent[1]) : 0, notes: "" });
@@ -698,7 +889,8 @@ window.SCTCC = window.SCTCC || {};
       if (block.type === "p" && isFooter(block.text)) break;
       calendarBlocks.push(block);
     }
-    const statement = blocksToText(calendarBlocks.filter((b) => b.type === "p" && clean(b.text) && !isCollegeText(b.text)));
+    const statement = blocksToText(calendarBlocks.filter((b) => b.type === "p" && clean(b.text) && !isCollegeText(b.text)
+      && (words(b.text).length >= 4 || /[.!?]$/.test(clean(b.text)))));
     if (statement) propose("Course calendar", "Statement about the course schedule", statement, (d) => { d.calendar.locationStatement = statement; });
 
     const topics = [];

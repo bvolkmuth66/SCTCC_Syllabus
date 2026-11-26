@@ -108,6 +108,7 @@ window.SCTCC = window.SCTCC || {};
   const PLACEHOLDERS = [
     /\bXXX+\b/,
     /\bYOUR (COURSE )?NAME\b/,
+    /\bCOURSE NAME\b/,
     /\bGIVE (WITHDRAWAL )?DATE\b/,
     /\bGIVE TIME\b/,
     /\bLIST ASSIGNMENT\b/,

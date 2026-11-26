@@ -146,7 +146,13 @@ The editor never changes college content. To use different college wording, the 
 
 **Import a previous syllabus (Word)** reads last term's `.docx` file **in the browser**. The file is never uploaded; like Save and Open, nothing leaves the computer.
 
-**What it looks for** (best results with syllabi built on the SCTCC template's headings):
+**Two template layouts are recognized:**
+- The current template, where each part of the syllabus has its own heading.
+- The older **table-form** template, where the whole syllabus is one large table: single-cell rows such as "Course Information" or "Instructor Information" are section headings, and two-cell rows are "label | value" (Course Prefix & Number, Credits, Office Location, Grading Formula, and so on). Tables nested inside a cell, such as an Assignments and Points table, are read too. Rows labeled "(SAMPLE)" and older college statements (for example Statement of Diversity) are offered but left unchecked.
+
+Text still holding a template placeholder such as "COURSE NAME" or "XXX" is flagged in the review screen and again by **Check before printing**.
+
+**What it looks for** (best results with syllabi built on one of the SCTCC templates):
 - Course prefix, number, and title (from the title heading)
 - Instructor name and credentials, email, telephone, office location, office hours, best way to contact, contact expectations, bio, educational philosophy, and photo (pictures in the file are shown so the instructor can pick theirs)
 - Credits, modality, meeting days, class times, room, extra modality information, course log-in text

@@ -24,7 +24,7 @@ const ALLOWED_TAGS = new Set(["p", "strong", "b", "em", "i", "u", "ul", "ol", "l
 const FORBIDDEN_TAGS = new Set(["script", "style", "iframe", "frame", "object", "embed", "form", "input", "button", "textarea", "select", "template", "link", "meta", "noscript", "svg", "math", "img", "picture", "video", "audio", "canvas", "base"]);
 const VOID_TAGS = new Set(["br"]);
 const VAGUE_LINK_TEXT = /^(here|click here|link|this link|more|read more)$/i;
-const PLACEHOLDERS = [/\bXXX+\b/, /\bYOUR (COURSE )?NAME\b/, /\bGIVE (WITHDRAWAL )?DATE\b/, /\bGIVE TIME\b/, /\bLIST ASSIGNMENT\b/, /\bDATE & TIME\b/, /\bTBD\b/];
+const PLACEHOLDERS = [/\bXXX+\b/, /\bYOUR (COURSE )?NAME\b/, /\bCOURSE NAME\b/, /\bGIVE (WITHDRAWAL )?DATE\b/, /\bGIVE TIME\b/, /\bLIST ASSIGNMENT\b/, /\bDATE & TIME\b/, /\bTBD\b/];
 const FIELD_NAME = /^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z][A-Za-z0-9]*)*$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 

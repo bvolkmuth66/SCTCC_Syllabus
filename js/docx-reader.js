@@ -167,15 +167,36 @@ window.SCTCC = window.SCTCC || {};
     return { styleName, level, list };
   }
 
-  function tableRows(table, relationships) {
-    return Array.from(table.childNodes)
+  /* Text of a list of blocks (used for a table cell). */
+  function blocksText(blocks) {
+    return blocks.map((block) => (block.type === "table"
+      ? block.rows.map((row) => row.join("\t")).join("\n")
+      : block.text.trim())).filter(Boolean).join("\n");
+  }
+
+  /*
+   * Rows of a table. `rows` holds each cell's text; `cells` holds each cell's
+   * paragraphs and nested tables, so table-based syllabi keep their structure.
+   */
+  function readTable(table, styles, relationships) {
+    const rows = [];
+    const cells = [];
+    Array.from(table.childNodes)
       .filter((node) => node.localName === "tr")
-      .map((row) => Array.from(row.childNodes)
-        .filter((node) => node.localName === "tc")
-        .map((cell) => Array.from(cell.getElementsByTagNameNS(W, "p"))
-          .map((p) => paragraphContent(p, relationships).text.trim())
-          .filter(Boolean)
-          .join("\n")));
+      .forEach((row) => {
+        const rowCells = Array.from(row.childNodes).filter((node) => node.localName === "tc" || node.localName === "sdt")
+          .flatMap((node) => (node.localName === "sdt"
+            ? Array.from(node.getElementsByTagNameNS(W, "tc"))
+            : [node]));
+        const cellBlocks = rowCells.map((cell) => {
+          const blocks = [];
+          collectBlocks(cell, styles, relationships, blocks);
+          return blocks;
+        });
+        cells.push(cellBlocks);
+        rows.push(cellBlocks.map(blocksText));
+      });
+    return { type: "table", rows, cells };
   }
 
   function collectBlocks(container, styles, relationships, blocks) {
@@ -186,7 +207,7 @@ window.SCTCC = window.SCTCC || {};
         const content = paragraphContent(node, relationships);
         blocks.push({ type: "p", text: content.text, level: info.level, list: info.list, styleName: info.styleName, images: content.images });
       } else if (node.localName === "tbl") {
-        blocks.push({ type: "table", rows: tableRows(node, relationships) });
+        blocks.push(readTable(node, styles, relationships));
       } else if (node.localName === "sdt" || node.localName === "sdtContent" || node.localName === "customXml") {
         collectBlocks(node, styles, relationships, blocks);
       }
