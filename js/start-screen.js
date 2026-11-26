@@ -107,7 +107,7 @@ window.SCTCC = window.SCTCC || {};
     try {
       const docx = isPdf ? await SCTCC.pdf.readPdf(file) : await SCTCC.docx.readDocx(file);
       await app.contentReady();
-      analysis = SCTCC.syllabusImport.analyze(docx, { collegeTexts: app.collegeTexts() });
+      analysis = SCTCC.syllabusImport.analyze(docx, { collegeTexts: app.collegeTexts(), collegeScale: app.collegeGradingScale() });
       if (!analysis.items.length) {
         showProblem("Nothing could be read from that file.", ["It may not be a syllabus, or it may use a layout the importer does not recognize. Start from scratch instead."]);
         return;

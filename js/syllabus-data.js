@@ -32,6 +32,7 @@ window.SCTCC = window.SCTCC || {};
   const ITEM_TEMPLATES = {
     "grading.categories": { name: "", count: 0, pointsEach: 0, weight: 0, notes: "" },
     "grading.scale": { label: "", minPercent: 0, maxPercent: 0 },
+    "grading.customScale": { label: "", minPercent: 0, maxPercent: 0 },
     "calendar.entries": {
       week: 0, meeting: 0, date: "", weekEnd: "", topic: "", preparation: "", due: "", notes: "",
       noClass: false, isFinals: false, manual: false, pending: false
@@ -127,11 +128,13 @@ window.SCTCC = window.SCTCC || {};
         additionalSections: []   /* { title, text } instructor-written sections */
       },
       grading: {
-        calculationMethod: "points",   /* "points" | "weighted" */
+        calculationMethod: "points",   /* "points" | "weighted" | "pointsWeighted" */
         weightOverride: false,         /* instructor confirms weights that do not total 100% */
         intro: "",
         categories: [],
+        scaleSource: "college",        /* "college" = content/grading-scale.json; "custom" = scale below */
         scale: createDefaultGradingScale(),
+        customScale: [],               /* the instructor's own scale, kept while the college scale is chosen */
         gradesNarrative: {
           postedWhere: "",
           turnaround: "",
@@ -282,6 +285,15 @@ window.SCTCC = window.SCTCC || {};
     data.schemaVersion = SCHEMA_VERSION;
     if (!data.meta.id) data.meta.id = createId();
     if (settings.newId) data.meta.id = createId();
+    /* Files saved before the college-scale choice existed keep their own scale. */
+    const rawGrading = isPlainObject(payload.grading) ? payload.grading : null;
+    if (rawGrading && rawGrading.scaleSource === undefined) {
+      const same = JSON.stringify(data.grading.scale.map((row) => [String(row.label).trim(), Number(row.minPercent), Number(row.maxPercent)]))
+        === JSON.stringify(createDefaultGradingScale().map((row) => [row.label, row.minPercent, row.maxPercent]));
+      data.grading.scaleSource = same ? "college" : "custom";
+    }
+    if (!["college", "custom"].includes(data.grading.scaleSource)) data.grading.scaleSource = "custom";
+    if (!["points", "weighted", "pointsWeighted"].includes(data.grading.calculationMethod)) data.grading.calculationMethod = "points";
     if (data.instructor.photoData && !/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(data.instructor.photoData)) {
       data.instructor.photoData = "";
       issues.push("The uploaded photo was not a supported image and was removed.");

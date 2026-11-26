@@ -269,13 +269,39 @@ window.SCTCC = window.SCTCC || {};
     }
   }
 
+  /* The college default grading scale (content/grading-scale.json). */
+  async function loadGradingScale(fileName, baseUrl) {
+    if (typeof fileName !== "string" || !/^[a-z0-9][a-z0-9-]*\.json$/.test(fileName)) {
+      return { scale: null, problems: ["The manifest lists an invalid grading scale file name."] };
+    }
+    try {
+      const text = await fetchText(new URL(fileName, baseUrl));
+      let raw;
+      try {
+        raw = JSON.parse(text);
+      } catch (parseError) {
+        return { scale: null, problems: [`${fileName} is not valid JSON. Check for a missing comma or quotation mark.`] };
+      }
+      const rows = raw && Array.isArray(raw.scale) ? raw.scale : null;
+      const scale = rows && rows.every((row) => row && typeof row.label === "string" && Number.isFinite(row.minPercent) && Number.isFinite(row.maxPercent))
+        ? rows.map((row) => ({ label: row.label.trim(), minPercent: row.minPercent, maxPercent: row.maxPercent }))
+        : null;
+      if (!scale || !scale.length) return { scale: null, problems: [`${fileName} has no usable "scale" list.`] };
+      const check = window.SCTCC.grading ? window.SCTCC.grading.validateScale(scale) : { errors: [] };
+      if (check.errors.length) return { scale: null, problems: check.errors.map((message) => `${fileName}: ${message}`) };
+      return { scale, problems: [] };
+    } catch (error) {
+      return { scale: null, problems: [`${fileName}: ${error instanceof ContentLoadError ? error.message : "could not be loaded."}`] };
+    }
+  }
+
   /*
    * Load the manifest and all fragments.
    * Never throws: problems are returned in `errors` so the page can show them
    * to instructors without exposing raw JavaScript errors to students.
    */
   async function loadContent(config) {
-    const outcome = { manifest: null, sections: [], errors: [], academicCalendar: null };
+    const outcome = { manifest: null, sections: [], errors: [], academicCalendar: null, gradingScale: null };
     try {
       const { manifest, problems } = await loadManifest(config);
       outcome.manifest = manifest;
@@ -298,6 +324,11 @@ window.SCTCC = window.SCTCC || {};
       const academic = await loadAcademicCalendar(outcome.manifest.academicCalendarFile, baseUrl);
       outcome.academicCalendar = academic.calendar;
       outcome.errors.push(...academic.problems);
+    }
+    if (outcome.manifest.gradingScaleFile) {
+      const grades = await loadGradingScale(outcome.manifest.gradingScaleFile, baseUrl);
+      outcome.gradingScale = grades.scale;
+      outcome.errors.push(...grades.problems);
     }
     return outcome;
   }

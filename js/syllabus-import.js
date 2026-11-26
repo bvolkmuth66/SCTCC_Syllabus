@@ -896,18 +896,25 @@ window.SCTCC = window.SCTCC || {};
     const intro = blocksToText(introBlocks.filter((b) => !isCollegeText(b.text)));
     if (intro) propose("Grading", "Assignments & points introduction", intro, (d) => { d.grading.intro = intro; });
     if (categories.length) {
-      const method = weighted ? "weighted" : "points";
+      /* Points and percentages that do not follow from the points: weights the instructor set. */
+      const pointSum = categories.reduce((total, c) => total + c.count * c.pointsEach, 0);
+      const setWeights = !weighted && pointSum > 0 && categories.every((c) => c.weight > 0)
+        && categories.some((c) => Math.abs((c.count * c.pointsEach * 100) / pointSum - c.weight) > 1);
+      const method = weighted ? "weighted" : (setWeights ? "pointsWeighted" : "points");
       const sum = categories.reduce((total, c) => total + c.count * c.pointsEach, 0);
+      const pointsText = (c) => (c.count > 1 ? `${c.count} × ${c.pointsEach} = ${c.count * c.pointsEach} points` : `${c.pointsEach} points`);
       const preview = categories.map((c) => (method === "weighted"
         ? `${c.name}: ${c.weight}%`
-        : (c.count > 1 ? `${c.name}: ${c.count} × ${c.pointsEach} = ${c.count * c.pointsEach} points` : `${c.name}: ${c.pointsEach} points`))).join("\n");
+        : (method === "pointsWeighted" ? `${c.name}: ${pointsText(c)}, weight ${c.weight}%` : `${c.name}: ${pointsText(c)}`))).join("\n");
       let note = method === "points" && categories.every((c) => c.count === 1)
         ? "Each category was imported as one item worth its total points. Change the number of assignments and points each if you want them listed separately."
         : "";
       if (method === "points" && Number.isFinite(statedTotal) && statedTotal !== sum) {
         note += ` Your old syllabus said the total was ${statedTotal}, but the categories add up to ${sum}.`;
       }
-      propose("Grading", `Grading categories (${categories.length}, ${method === "weighted" ? "percentage weights" : `${sum} points`})`, preview, (d) => {
+      if (method === "pointsWeighted") note = `Your old syllabus gave each category points and a weight that does not follow from the points, so “Points with set weights” is used. ${note}`;
+      const methodLabel = method === "weighted" ? "percentage weights" : (method === "pointsWeighted" ? `${sum} points with set weights` : `${sum} points`);
+      propose("Grading", `Grading categories (${categories.length}, ${methodLabel})`, preview, (d) => {
         d.grading.calculationMethod = method;
         d.grading.categories = categories.map((c) => Object.assign({}, c));
       }, { note: note.trim() });
@@ -928,9 +935,20 @@ window.SCTCC = window.SCTCC || {};
       scale.push({ label: lowest[1], minPercent: 0, maxPercent: max });
     }
     if (scale.length >= 2) {
-      propose("Grading", "Grading scale", scale.map((r) => `${r.label}: ${r.minPercent}–${r.maxPercent}%`).join("\n"), (d) => {
-        d.grading.scale = scale.map((r) => Object.assign({}, r));
-      });
+      const college = (options && options.collegeScale) || [];
+      const key = (rows) => JSON.stringify(rows.map((r) => [String(r.label).trim(), Number(r.minPercent), Number(r.maxPercent)])
+        .sort((a, b) => b[1] - a[1]));
+      const sameAsCollege = college.length && key(scale) === key(college);
+      if (sameAsCollege) {
+        propose("Grading", "Grading scale: the college scale", scale.map((r) => `${r.label}: ${r.minPercent}–${r.maxPercent}%`).join("\n"), (d) => {
+          d.grading.scaleSource = "college";
+        }, { note: "Same as the college grading scale, so “Use the college grading scale” is chosen." });
+      } else {
+        propose("Grading", "Grading scale: your own", scale.map((r) => `${r.label}: ${r.minPercent}–${r.maxPercent}%`).join("\n"), (d) => {
+          d.grading.scaleSource = "custom";
+          d.grading.scale = scale.map((r) => Object.assign({}, r));
+        }, { note: "Different from the college grading scale, so it is kept as your own scale. Untick it to use the college scale." });
+      }
     }
 
     const gradeBlocks = ownBlocks(byKey("grades").flatMap((s) => s.blocks));

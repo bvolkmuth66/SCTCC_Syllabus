@@ -75,6 +75,7 @@ SCTCC_Syllabus/
 ├── content/
 │   ├── content-manifest.json       List of college sections and where they go
 │   ├── academic-calendar.json      College semester dates, finals, deadlines, no-class dates
+│   ├── grading-scale.json          College default grading scale (Academic Affairs)
 │   └── *.html                      One file per college section (20 files)
 ├── assets/
 │   ├── sctcc-logo-placeholder.svg  Placeholder until Marketing supplies the logo
@@ -216,11 +217,16 @@ Open **Grading** in the editor.
 
 **How the final grade is calculated**
 - **Points** — each category has a number of assignments and points per assignment. Category total = number × points each; the course total is the sum of the categories. The syllabus table shows each category's total and its share of the course total.
-- **Percentage weights** — each category has a weight. The current total is shown as you type, for example "Total weight: 90% — 10% short of 100%." The builder **never changes your percentages**. If the total is not 100%, Print to PDF is stopped until you fix it or tick **Publish with weights that do not total 100%** (for example, for extra credit — explain it under "Additional grading information"). The number of assessments is optional; the column appears only if you fill it in.
+- **Points with set weights** — each category has a number of assignments, points each, **and a weight you set**, for example Labs 200 points = 40% even though Labs are half the points. The syllabus table shows Number, Points each, Total points, and Weight. Weights must total 100%, with the same rules as below. The grading scale shows percentages only, because points do not convert directly to the final grade.
+- **Percentage weights only** — each category has a weight. The current total is shown as you type, for example "Total weight: 90% — 10% short of 100%." The builder **never changes your percentages**. If the total is not 100%, Print to PDF is stopped until you fix it or tick **Publish with weights that do not total 100%** (for example, for extra credit — explain it under "Additional grading information"). The number of assessments is optional; the column appears only if you fill it in.
 
 **Assessment categories** — **Add a category**, then fill in its name and numbers. Each category has **Move up**, **Move down**, and **Remove** buttons. Fields that do not apply to the chosen method are hidden but kept, so switching methods loses nothing.
 
-**Grading scale** — Starts with A–F (90/80/70/60). Each range includes both ends (A = 90–100%, B = 80–89%). Change labels and percentages, **Add a grade**, or remove one. **Use plus/minus sample** fills in A through F with plus and minus grades; those cutoffs are only a starting point to confirm for your program. **Reset to A–F** restores the default. In the points method, the matching point range for each grade is calculated from the course total: minimum points = course total × minimum % (rounded up); maximum = one less than the next grade's minimum (the top grade's maximum is the course total).
+**Grading scale** — choose one:
+- **Use the college grading scale** (the default): A 90–100, B 80–89, C 70–79, D 60–69, F 0–59, kept in `content/grading-scale.json` and owned by Academic Affairs. The editor shows it read-only, and the syllabus always shows the current version: when the college updates the file, every syllabus using it updates too.
+- **Enter my own grading scale**: the editor rows appear, starting from the college scale. Each range includes both ends (A = 90–100%, B = 80–89%). Change labels and percentages, **Add a grade**, or remove one. **Use plus/minus sample** fills in A through F with plus and minus grades; those cutoffs are only a starting point to confirm for your program. **Start from the college scale** copies the college scale back in.
+
+Switching to the college scale and back during editing restores your own scale. Syllabus files saved before this choice existed open with "my own" scale if theirs differed from the college default, so nothing changes for them. When importing an old syllabus, a scale identical to the college scale is set to the college scale; a different one is kept as the instructor's own. In the points method, the matching point range for each grade is calculated from the course total: minimum points = course total × minimum % (rounded up); maximum = one less than the next grade's minimum (the top grade's maximum is the course total).
 
 The scale is checked as you type:
 

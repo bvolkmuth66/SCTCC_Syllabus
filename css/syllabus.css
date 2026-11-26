@@ -808,9 +808,17 @@ body[data-mode="instructor"] .student-only {
 
 /* ---------- Grading editor ---------- */
 
-#editor-grading[data-method="points"] .weighted-only,
-#editor-grading[data-method="weighted"] .points-only {
+#editor-grading[data-weights="no"] .weighted-only,
+#editor-grading[data-points="no"] .points-only,
+#editor-grading:not([data-method="points"]) .scale-points-only,
+#editor-grading[data-scale="college"] .custom-scale-only,
+#editor-grading[data-scale="custom"] .college-scale-only {
   display: none !important;
+}
+
+.college-scale-list {
+  margin: 0.25rem 0 0.75rem;
+  padding-left: 1.25rem;
 }
 
 .editor-subheading {

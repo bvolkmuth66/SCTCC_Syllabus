@@ -1,0 +1,14 @@
+{
+  "about": "College default grading scale. Instructors choose 'College grading scale' to use it, or enter their own. Each range includes both ends.",
+  "owner": "Academic Affairs (to be confirmed)",
+  "status": "to be confirmed",
+  "lastReviewed": "2026-11-26",
+  "source": "A 90-100, B 80-89, C 70-79, D 60-69, F 0-59, confirmed as the college default by the project lead on 2026-11-26; awaiting Academic Affairs confirmation.",
+  "scale": [
+    { "label": "A", "minPercent": 90, "maxPercent": 100 },
+    { "label": "B", "minPercent": 80, "maxPercent": 89 },
+    { "label": "C", "minPercent": 70, "maxPercent": 79 },
+    { "label": "D", "minPercent": 60, "maxPercent": 69 },
+    { "label": "F", "minPercent": 0, "maxPercent": 59 }
+  ]
+}
