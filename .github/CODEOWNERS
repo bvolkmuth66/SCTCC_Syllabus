@@ -1,0 +1,36 @@
+# CODEOWNERS — who must review changes to each file.
+#
+# TRIAL PERIOD: every file is owned by @bvolkmuth66.
+# AFTER MOVING TO A COLLEGE GITHUB ORGANIZATION: create a team for each office
+# (for example @sctcc/accessibility-services) and replace @bvolkmuth66 on that
+# office's line. Then turn on "Require review from Code Owners" in
+# Settings > Branches (or Rulesets) for the main branch.
+#
+# Later lines take priority over earlier ones.
+
+# Default owner for everything (code, styles, README)
+*                                         @bvolkmuth66
+
+# Content manifest (which sections exist, required/optional, placement)
+/content/content-manifest.json            @bvolkmuth66
+
+# Institutional content — intended owner shown in each comment
+/content/mission-statement.html           @bvolkmuth66   # President's Office
+/content/syllabus-change-notice.html      @bvolkmuth66   # Academic Affairs
+/content/academic-calendar-links.html     @bvolkmuth66   # Records & Registration
+/content/required-technology.html         @bvolkmuth66   # IT / Help Desk
+/content/technical-skills-resources.html  @bvolkmuth66   # IT / Help Desk
+/content/academic-integrity.html          @bvolkmuth66   # Campus Life
+/content/academic-integrity-examples.html @bvolkmuth66   # Campus Life
+/content/accommodations.html              @bvolkmuth66   # Accessibility Services
+/content/nondiscrimination-title-ix.html  @bvolkmuth66   # Community, Culture & Institutional Climate
+/content/turnitin.html                    @bvolkmuth66   # Academic Affairs
+/content/enrollment-requirements.html     @bvolkmuth66   # Financial Aid / Records & Registration
+/content/student-email.html               @bvolkmuth66   # IT / Help Desk
+/content/navigating-d2l.html              @bvolkmuth66   # eLearning
+/content/pulse-app.html                   @bvolkmuth66   # eLearning
+/content/technical-support.html           @bvolkmuth66   # IT / Help Desk
+/content/student-services.html            @bvolkmuth66   # Student Services
+/content/accessibility-data-privacy.html  @bvolkmuth66   # Accessibility Services / IT
+/content/class-environment.html           @bvolkmuth66   # Academic Affairs
+/content/institutional-footer.html        @bvolkmuth66   # Marketing & Communications

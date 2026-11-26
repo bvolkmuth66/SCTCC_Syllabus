@@ -1,0 +1,217 @@
+{
+  "schemaVersion": "1.1",
+  "institution": "St. Cloud Technical & Community College",
+  "contentVersion": "2026.07",
+  "lastUpdated": "2026-07-01",
+  "sourceDocument": "SCTCC Syllabus Template Sample, revised July 2026",
+  "placements": {
+    "header": "Below the course title: mission statement and change notice",
+    "general-information": "Course Information > General Information, after the instructor's dates",
+    "required-technology": "Course Information > Materials > Required Technology",
+    "technical-skills": "Course Information > Materials > Suggested Technical Skills",
+    "college-policies": "College Policies & Procedures",
+    "attendance": "Course Policies & Procedures > Attendance, before the instructor's attendance text",
+    "course-policies": "Course Policies & Procedures, after Attendance and Late Policy",
+    "footer": "End of the syllabus"
+  },
+  "sections": [
+    {
+      "id": "mission-statement",
+      "title": "College Mission Statement",
+      "file": "mission-statement.html",
+      "placement": "header",
+      "showTitle": false,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "President's Office (to be confirmed)"
+    },
+    {
+      "id": "syllabus-change-notice",
+      "title": "Syllabus Change Notice",
+      "file": "syllabus-change-notice.html",
+      "placement": "header",
+      "showTitle": false,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "Academic Affairs (to be confirmed)"
+    },
+    {
+      "id": "academic-calendar-links",
+      "title": "Academic Calendar and eServices",
+      "file": "academic-calendar-links.html",
+      "placement": "general-information",
+      "showTitle": false,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "Records & Registration (to be confirmed)",
+      "instructorNote": "Your course must not begin before the official semester start date and must include final exam week."
+    },
+    {
+      "id": "required-technology",
+      "title": "Required Technology",
+      "file": "required-technology.html",
+      "placement": "required-technology",
+      "showTitle": false,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "IT / Help Desk (to be confirmed)"
+    },
+    {
+      "id": "technical-skills-resources",
+      "title": "Technical Skills Resources",
+      "file": "technical-skills-resources.html",
+      "placement": "technical-skills",
+      "showTitle": false,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "IT / Help Desk (to be confirmed)"
+    },
+    {
+      "id": "academic-integrity",
+      "title": "Academic Integrity",
+      "file": "academic-integrity.html",
+      "placement": "college-policies",
+      "showTitle": true,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "Campus Life (to be confirmed)"
+    },
+    {
+      "id": "academic-integrity-examples",
+      "title": "Examples of Academic Dishonesty",
+      "file": "academic-integrity-examples.html",
+      "placement": "college-policies",
+      "showTitle": false,
+      "required": false,
+      "defaultEnabled": false,
+      "optionalKey": "academicIntegrityExamples",
+      "owner": "Campus Life (to be confirmed)",
+      "instructorNote": "Optional. The last item (zero for a first instance, F for a second) is a course penalty. Include this list only if that penalty is your policy."
+    },
+    {
+      "id": "accommodations",
+      "title": "Accommodations",
+      "file": "accommodations.html",
+      "placement": "college-policies",
+      "showTitle": true,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "Accessibility Services (to be confirmed)"
+    },
+    {
+      "id": "nondiscrimination-title-ix",
+      "title": "Nondiscrimination and Title IX",
+      "file": "nondiscrimination-title-ix.html",
+      "placement": "college-policies",
+      "showTitle": true,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "Office of Community, Culture, and Institutional Climate (to be confirmed)"
+    },
+    {
+      "id": "turnitin",
+      "title": "Turnitin",
+      "file": "turnitin.html",
+      "placement": "college-policies",
+      "showTitle": true,
+      "required": false,
+      "defaultEnabled": false,
+      "optionalKey": "turnitin",
+      "owner": "Academic Affairs (to be confirmed)"
+    },
+    {
+      "id": "enrollment-requirements",
+      "title": "First-Week Attendance and Administrative Withdrawal",
+      "file": "enrollment-requirements.html",
+      "placement": "attendance",
+      "showTitle": false,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "Financial Aid / Records & Registration (to be confirmed)"
+    },
+    {
+      "id": "student-email",
+      "title": "Student Email",
+      "file": "student-email.html",
+      "placement": "attendance",
+      "showTitle": false,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "IT / Help Desk (to be confirmed)"
+    },
+    {
+      "id": "navigating-d2l",
+      "title": "Navigating D2L",
+      "file": "navigating-d2l.html",
+      "placement": "course-policies",
+      "showTitle": true,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "eLearning (to be confirmed)"
+    },
+    {
+      "id": "pulse-app",
+      "title": "Pulse App for D2L",
+      "file": "pulse-app.html",
+      "placement": "course-policies",
+      "showTitle": true,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "eLearning (to be confirmed)"
+    },
+    {
+      "id": "technical-support",
+      "title": "Technical Support",
+      "file": "technical-support.html",
+      "placement": "course-policies",
+      "showTitle": true,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "IT / Help Desk (to be confirmed)",
+      "instructorNote": "Include links to technical support information for any outside vendors used in the course."
+    },
+    {
+      "id": "student-services",
+      "title": "Student Services & Academic Support",
+      "file": "student-services.html",
+      "placement": "course-policies",
+      "showTitle": true,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "Student Services (to be confirmed)"
+    },
+    {
+      "id": "accessibility-data-privacy",
+      "title": "Accessibility & Data Privacy Policies",
+      "file": "accessibility-data-privacy.html",
+      "placement": "course-policies",
+      "showTitle": true,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "Accessibility Services / IT (to be confirmed)",
+      "instructorNote": "If you use technology not listed under the Resources tab in D2L, add its accessibility statement (or VPAT) and data privacy policy. A vendor table editor is planned for Phase 2."
+    },
+    {
+      "id": "class-environment",
+      "title": "Class Environment",
+      "file": "class-environment.html",
+      "placement": "course-policies",
+      "showTitle": true,
+      "required": false,
+      "defaultEnabled": false,
+      "optionalKey": "classEnvironment",
+      "owner": "Academic Affairs (to be confirmed)",
+      "instructorNote": "Sample text from the template. Modify for face-to-face courses as necessary; an instructor override field is planned for Phase 2."
+    },
+    {
+      "id": "institutional-footer",
+      "title": "Institutional Footer",
+      "file": "institutional-footer.html",
+      "placement": "footer",
+      "showTitle": false,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "Marketing & Communications (to be confirmed)"
+    }
+  ]
+}
