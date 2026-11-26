@@ -32,7 +32,11 @@ window.SCTCC = window.SCTCC || {};
   const ITEM_TEMPLATES = {
     "grading.categories": { name: "", count: 0, pointsEach: 0, weight: 0, notes: "" },
     "grading.scale": { label: "", minPercent: 0, maxPercent: 0 },
-    "calendar.entries": { week: 0, meeting: 0, date: "", topic: "", preparation: "", due: "", notes: "", noClass: false },
+    "calendar.entries": {
+      week: 0, meeting: 0, date: "", weekEnd: "", topic: "", preparation: "", due: "", notes: "",
+      noClass: false, isFinals: false, manual: false
+    },
+    "calendar.excludedDates": { date: "", label: "" },
     "vendors": {
       name: "", purpose: "", accessibilityUrl: "", vpatUrl: "", privacyUrl: "",
       accountRequired: "", dataCollected: "", alternativeAccess: "", supportUrl: ""
@@ -49,8 +53,13 @@ window.SCTCC = window.SCTCC || {};
     "materials.requiredTechnologyAdditions",
     "materials.technicalSkills",
     "calendar.meetingDays",
-    "calendar.excludedDates"
+    "calendar.firstWeekDays"
   ]);
+
+  /* Older files stored some lists as plain text; convert them to the current item shape. */
+  const FROM_TEXT = {
+    "calendar.excludedDates": (text) => ({ date: String(text), label: "" })
+  };
 
   function createEmptyVendor() {
     return JSON.parse(JSON.stringify(ITEM_TEMPLATES.vendors));
@@ -130,11 +139,16 @@ window.SCTCC = window.SCTCC || {};
       },
       calendar: {
         locationStatement: "",
-        startDate: "",
-        endDate: "",
+        mode: "meetings",              /* "meetings" (one row per class) | "weekly" (one row per week) */
+        startDate: "",                 /* blank = course begin date */
+        endDate: "",                   /* blank = course end date */
         meetingsPerWeek: 0,
         meetingDays: [],
-        excludedDates: [],
+        useFirstWeekSchedule: false,
+        firstWeekDays: [],
+        includeFinalsWeek: true,
+        showExcludedAsRows: true,
+        excludedDates: [],             /* { date, label } */
         entries: []
       },
       vendors: [],
@@ -179,7 +193,10 @@ window.SCTCC = window.SCTCC || {};
       }
       const template = ITEM_TEMPLATES[path];
       if (template) {
-        return incoming.filter(isPlainObject).map((item) =>
+        const convert = FROM_TEXT[path];
+        return incoming
+          .map((item) => (convert && (typeof item === "string" || typeof item === "number") ? convert(item) : item))
+          .filter(isPlainObject).map((item) =>
           mergeTyped(JSON.parse(JSON.stringify(template)), item, `${path}[]`, issues));
       }
       return base;

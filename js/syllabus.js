@@ -539,28 +539,52 @@
 
   /* ---------- Course Calendar ---------- */
 
+  function weekCell(entry) {
+    if (!entry.week) return "";
+    return entry.isFinals ? `${entry.week} (Finals)` : String(entry.week);
+  }
+
+  function topicCell(entry) {
+    if (!entry.noClass) return entry.topic || "";
+    return [el("strong", null, "No Class"), entry.topic ? ` – ${entry.topic}` : ""];
+  }
+
   function renderCalendar() {
     const calendar = state.data.calendar;
     const entries = calendar.entries || [];
+    const weekly = calendar.mode === "weekly";
     const statement = textBlocks(calendar.locationStatement, entries.length ? null : "Statement of where the course schedule is located");
+    if (!entries.length) return majorSection("course-calendar", "Course Calendar", [statement]);
 
-    const table = entries.length
-      ? tableWrap("Course calendar table", el("table", { class: "data-table calendar-table" },
-        el("caption", null, "Course calendar"),
-        el("thead", null, el("tr", null,
-          ["Week", "Meeting", "Date", "Day", "Topic", "Preparation/Reading", "Assignment Due", "Notes"]
-            .map((label) => el("th", { scope: "col" }, label)))),
-        el("tbody", null, entries.map((entry) => el("tr", { class: entry.noClass ? "no-class" : null },
-          el("td", null, entry.week ? String(entry.week) : ""),
+    const header = weekly
+      ? ["Week", "Dates", "Topic", "Preparation/Reading", "Assignment Due", "Notes"]
+      : ["Week", "Meeting", "Date", "Day", "Topic", "Preparation/Reading", "Assignment Due", "Notes"];
+
+    const rows = entries.map((entry) => {
+      const date = util.formatDate(entry.date, "short");
+      const cells = weekly
+        ? [
+          el("td", null, weekCell(entry)),
+          el("th", { scope: "row" }, date ? `${date}${entry.weekEnd ? `–${util.formatDate(entry.weekEnd, "short")}` : ""}` : "Unscheduled")
+        ]
+        : [
+          el("td", null, weekCell(entry)),
           el("td", null, entry.meeting ? String(entry.meeting) : ""),
-          el("th", { scope: "row" }, util.formatDate(entry.date, "short") || entry.date || ""),
-          el("td", null, util.weekdayName(entry.date, true)),
-          el("td", null, entry.noClass ? el("strong", null, "No Class") : (entry.topic || ""), entry.noClass && entry.topic ? ` – ${entry.topic}` : ""),
-          el("td", null, entry.preparation || ""),
-          el("td", null, entry.due || ""),
-          el("td", null, entry.notes || "")))))
-      )
-      : null;
+          el("th", { scope: "row" }, date || "Unscheduled"),
+          el("td", null, util.weekdayName(entry.date, true))
+        ];
+      return el("tr", { class: entry.noClass ? "no-class" : null },
+        cells,
+        el("td", null, topicCell(entry)),
+        el("td", null, entry.preparation || ""),
+        el("td", null, entry.due || ""),
+        el("td", null, entry.notes || ""));
+    });
+
+    const table = tableWrap("Course calendar table", el("table", { class: `data-table calendar-table${weekly ? " calendar-weekly" : ""}` },
+      el("caption", null, weekly ? "Course calendar by week" : "Course calendar"),
+      el("thead", null, el("tr", null, header.map((label) => el("th", { scope: "col" }, label)))),
+      el("tbody", null, rows)));
 
     return majorSection("course-calendar", "Course Calendar", [statement, table]);
   }

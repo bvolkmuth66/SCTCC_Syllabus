@@ -104,19 +104,28 @@ window.SCTCC_SAMPLE_DATA = {
     timeCommitment: "You should expect to spend two hours outside of class for each hour of lecture and one hour outside of class for each hour of lab. For this course, that means a total expectation of 6 hours per week outside of the classroom. If you do not feel you can fulfill this expectation, you should consider whether this class best fits this term for you."
   },
   calendar: {
-    locationStatement: "The first three weeks are shown below. The complete, current schedule is posted in D2L under Content > Course Schedule.",
-    startDate: "2027-01-11",
-    endDate: "2027-05-14",
+    locationStatement: "The complete, current schedule is also posted in D2L under Content > Course Schedule.",
+    mode: "meetings",
+    startDate: "",
+    endDate: "",
     meetingsPerWeek: 2,
     meetingDays: ["Monday", "Wednesday"],
-    excludedDates: ["2027-01-18"],
+    useFirstWeekSchedule: false,
+    firstWeekDays: [],
+    includeFinalsWeek: true,
+    showExcludedAsRows: true,
+    excludedDates: [
+      { date: "2027-01-18", label: "Martin Luther King Jr. Day (sample closure)" },
+      { date: "2027-03-15", label: "Spring break (sample dates)" },
+      { date: "2027-03-17", label: "Spring break (sample dates)" }
+    ],
     entries: [
       { week: 1, meeting: 1, date: "2027-01-11", topic: "Course introduction", preparation: "Read the syllabus", due: "", notes: "", noClass: false },
       { week: 1, meeting: 2, date: "2027-01-13", topic: "Sample topic 1", preparation: "Chapter 1", due: "Introduction discussion", notes: "", noClass: false },
-      { week: 2, meeting: 3, date: "2027-01-18", topic: "", preparation: "", due: "", notes: "Martin Luther King Jr. Day (sample closure)", noClass: true },
-      { week: 2, meeting: 4, date: "2027-01-20", topic: "Sample topic 2", preparation: "Chapter 2", due: "Lab 1", notes: "", noClass: false },
-      { week: 3, meeting: 5, date: "2027-01-25", topic: "Sample topic 3", preparation: "Chapter 3", due: "Quiz 1", notes: "", noClass: false },
-      { week: 3, meeting: 6, date: "2027-01-27", topic: "Sample topic 3, continued", preparation: "", due: "Lab 2", notes: "", noClass: false }
+      { week: 2, meeting: 0, date: "2027-01-18", topic: "", preparation: "", due: "", notes: "Martin Luther King Jr. Day (sample closure)", noClass: true },
+      { week: 2, meeting: 3, date: "2027-01-20", topic: "Sample topic 2", preparation: "Chapter 2", due: "Lab 1", notes: "", noClass: false },
+      { week: 3, meeting: 4, date: "2027-01-25", topic: "Sample topic 3", preparation: "Chapter 3", due: "Quiz 1", notes: "", noClass: false },
+      { week: 3, meeting: 5, date: "2027-01-27", topic: "Sample topic 3, continued", preparation: "", due: "Lab 2", notes: "", noClass: false }
     ]
   },
   vendors: [

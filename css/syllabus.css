@@ -850,6 +850,41 @@ body[data-mode="instructor"] .student-only {
   cursor: not-allowed;
 }
 
+/* ---------- Calendar editor ---------- */
+
+#editor-calendar[data-mode="weekly"] .meetings-only {
+  display: none !important;
+}
+
+.excluded-row {
+  padding: 0.25rem 0 0.5rem;
+  border-bottom: 1px solid var(--sctcc-border);
+}
+
+.calendar-row {
+  margin: 0.4rem 0;
+  border: 1px solid var(--sctcc-border-strong);
+  border-left: 5px solid var(--sctcc-primary);
+  border-radius: 0.3rem;
+  background: var(--sctcc-background);
+}
+
+.calendar-row.is-no-class {
+  border-left-color: var(--sctcc-orange);
+  background: var(--sctcc-muted);
+}
+
+.calendar-row > summary {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.calendar-row[open] > summary {
+  font-weight: 700;
+  border-bottom: 1px solid var(--sctcc-border);
+}
+
 /* ---------- Instructor-written blocks inside college sections ---------- */
 
 .instructor-content {
