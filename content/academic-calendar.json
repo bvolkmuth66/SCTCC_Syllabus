@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "1.0",
+  "title": "SCTCC Academic Calendar dates for syllabi",
+  "owner": "Records & Registration (to be confirmed)",
+  "status": "sample",
+  "lastReviewed": "",
+  "source": "https://www.sctcc.edu/academic-calendar",
+  "instructions": "Records & Registration: replace every SAMPLE term below with the official dates from the published academic calendar, set each term's \"verified\" to true, set \"status\" to \"official\", and update \"lastReviewed\" (yyyy-mm-dd). Dates use yyyy-mm-dd. lastDayToDrop and lastDayToWithdraw apply to full-semester courses only; courses with other dates use the dates shown in eServices.",
+  "terms": [
+    {
+      "term": "Fall",
+      "year": "2026",
+      "verified": false,
+      "startDate": "2026-08-24",
+      "endDate": "2026-12-18",
+      "finalsStart": "2026-12-14",
+      "finalsEnd": "2026-12-18",
+      "lastDayToDrop": "2026-08-31",
+      "lastDayToWithdraw": "2026-11-13",
+      "noClassDates": [
+        { "date": "2026-09-07", "label": "SAMPLE – Labor Day (replace with official date)" },
+        { "date": "2026-11-26", "label": "SAMPLE – Thanksgiving break (replace with official date)" },
+        { "date": "2026-11-27", "label": "SAMPLE – Thanksgiving break (replace with official date)" }
+      ]
+    },
+    {
+      "term": "Spring",
+      "year": "2027",
+      "verified": false,
+      "startDate": "2027-01-11",
+      "endDate": "2027-05-14",
+      "finalsStart": "2027-05-10",
+      "finalsEnd": "2027-05-14",
+      "lastDayToDrop": "2027-01-15",
+      "lastDayToWithdraw": "2027-04-02",
+      "noClassDates": [
+        { "date": "2027-01-18", "label": "SAMPLE – Martin Luther King Jr. Day (replace with official date)" },
+        { "date": "2027-03-15", "label": "SAMPLE – Spring break (replace with official dates)" },
+        { "date": "2027-03-16", "label": "SAMPLE – Spring break (replace with official dates)" },
+        { "date": "2027-03-17", "label": "SAMPLE – Spring break (replace with official dates)" },
+        { "date": "2027-03-18", "label": "SAMPLE – Spring break (replace with official dates)" },
+        { "date": "2027-03-19", "label": "SAMPLE – Spring break (replace with official dates)" }
+      ]
+    }
+  ]
+}

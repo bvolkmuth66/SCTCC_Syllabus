@@ -349,6 +349,52 @@ window.SCTCC = window.SCTCC || {};
     return `﻿${lines.join("\r\n")}\r\n`; /* byte-order mark so Excel reads accents correctly */
   }
 
+  /* ---------- College academic calendar ---------- */
+
+  function findTerm(academicCalendar, term, year) {
+    if (!academicCalendar || !term || !year) return null;
+    const wantedTerm = String(term).trim().toLowerCase();
+    const wantedYear = String(year).trim();
+    return academicCalendar.terms.find((entry) =>
+      entry.term.toLowerCase() === wantedTerm && entry.year === wantedYear) || null;
+  }
+
+  /* Compare the course dates with the college term. Returns warnings[]. */
+  function termWarnings(termEntry, course) {
+    const warnings = [];
+    if (!termEntry) return warnings;
+    const start = util.parseISODate(course.startDate);
+    const end = util.parseISODate(course.endDate);
+    const termStart = util.parseISODate(termEntry.startDate);
+    const finalsEnd = util.parseISODate(termEntry.finalsEnd || termEntry.endDate);
+    const finalsStart = util.parseISODate(termEntry.finalsStart);
+    if (start && termStart && start < termStart) {
+      warnings.push(`The course begins ${shortDate(course.startDate)}, before the official semester start (${shortDate(termEntry.startDate)}). Courses must not begin before the semester starts.`);
+    }
+    if (end && finalsStart && end < finalsStart) {
+      warnings.push(`The course ends ${shortDate(course.endDate)}, before final exam week (${shortDate(termEntry.finalsStart)}–${shortDate(termEntry.finalsEnd)}). Courses must include final exam week.`);
+    }
+    if (end && finalsEnd && end > finalsEnd) {
+      warnings.push(`The course ends ${shortDate(course.endDate)}, after the semester ends (${shortDate(termEntry.finalsEnd || termEntry.endDate)}).`);
+    }
+    return warnings;
+  }
+
+  /* Add the term's no-class dates that are not already listed. Returns the number added. */
+  function addTermClosures(calendarData, termEntry) {
+    if (!termEntry) return 0;
+    const existing = new Set((calendarData.excludedDates || []).map((item) => item.date));
+    let added = 0;
+    termEntry.noClassDates.forEach((item) => {
+      if (existing.has(item.date)) return;
+      calendarData.excludedDates.push({ date: item.date, label: item.label });
+      existing.add(item.date);
+      added += 1;
+    });
+    calendarData.excludedDates.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    return added;
+  }
+
   window.SCTCC.calendar = Object.freeze({
     DAY_NAMES,
     resolveSettings,
@@ -361,6 +407,9 @@ window.SCTCC = window.SCTCC || {};
     shiftContentLater,
     blankRow,
     toCsv,
-    weekNumber
+    weekNumber,
+    findTerm,
+    termWarnings,
+    addTermClosures
   });
 })();

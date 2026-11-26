@@ -234,6 +234,7 @@ window.SCTCC = window.SCTCC || {};
         hint: "For example (hybrid): The lecture component of this course is online with pre-recorded lectures."
       }),
       note("Use the college’s official dates. The course must not begin before the official semester start date and must include final exam week."),
+      el("div", { id: "college-dates", class: "college-dates" }),
       el("div", { class: "field-row" },
         field("date", "course.startDate", "Begin date", { narrow: true }),
         field("date", "course.endDate", "End date", { narrow: true })),
@@ -414,6 +415,8 @@ window.SCTCC = window.SCTCC || {};
       checkbox("calendar.showExcludedAsRows", "Show no-class dates in the calendar", "Holidays and closures appear as “No Class” rows instead of being left out."),
 
       fieldset("No-class dates (holidays and closures)", [
+        el("div", { class: "button-row" },
+          actionButton("add-college-closures", "Add the college’s no-class dates", "btn-primary", { id: "add-college-closures" })),
         el("div", { id: "excluded-rows" }),
         actionButton("add-excluded", "Add a no-class date", null, { id: "add-excluded" })
       ]),
@@ -523,6 +526,55 @@ window.SCTCC = window.SCTCC || {};
         summary.parentElement.classList.toggle("is-no-class", Boolean(row.noClass));
       }
     });
+  }
+
+  /* ---------- College academic calendar ---------- */
+
+  function currentTerm() {
+    const data = app.getData();
+    return SCTCC.calendar.findTerm(app.academicCalendar(), data.course.term, data.course.year);
+  }
+
+  function refreshCollegeDates() {
+    const box = root && root.querySelector("#college-dates");
+    if (!box) return;
+    box.textContent = "";
+    const academic = app.academicCalendar();
+    const course = app.getData().course;
+    if (!academic) {
+      box.appendChild(note("College dates are not available right now. Enter your dates from the SCTCC Academic Calendar."));
+      return;
+    }
+    if (!course.term || !String(course.year).trim()) {
+      box.appendChild(note("Choose the term and year under Course to fill in the college’s official dates."));
+      return;
+    }
+    const term = currentTerm();
+    if (!term) {
+      box.appendChild(note(`The college calendar has no dates for ${course.term} ${course.year} yet. Enter your dates from the SCTCC Academic Calendar.`));
+      return;
+    }
+
+    const span = (from, to) => (from && to ? `${util.formatDate(from)} – ${util.formatDate(to)}` : util.formatDate(from || to));
+    const sample = academic.status !== "official" || !term.verified;
+    box.appendChild(el("div", { class: "notice notice-info" },
+      el("p", null, el("strong", null, `College dates for ${term.term} ${term.year}`)),
+      sample ? el("p", { class: "sample-flag" }, el("strong", null, "Sample dates: "), "not yet verified by Records & Registration. Check them against the official academic calendar.") : null,
+      el("dl", { class: "vendor-details" },
+        el("dt", null, "Semester"), el("dd", null, span(term.startDate, term.endDate)),
+        term.finalsStart ? [el("dt", null, "Final exam week"), el("dd", null, span(term.finalsStart, term.finalsEnd))] : null,
+        term.lastDayToDrop ? [el("dt", null, "Last day to drop"), el("dd", null, util.formatDate(term.lastDayToDrop))] : null,
+        term.lastDayToWithdraw ? [el("dt", null, "Last day to withdraw"), el("dd", null, util.formatDate(term.lastDayToWithdraw))] : null,
+        el("dt", null, "No-class dates"), el("dd", null, String(term.noClassDates.length))),
+      el("p", { class: "editor-note" }, "Drop and withdrawal dates are for full-semester courses. If your course runs on different dates, use the dates shown in eServices."),
+      el("div", { class: "button-row" }, actionButton("fill-college-dates", "Fill in these dates", "btn-primary", { id: "fill-college-dates" }))));
+
+    const warnings = SCTCC.calendar.termWarnings(term, course);
+    if (warnings.length) {
+      box.appendChild(el("div", { class: "notice notice-warning" },
+        el("p", null, el("strong", null, "Please check:")),
+        el("ul", null, warnings.map((message) => el("li", null, message)))));
+    }
   }
 
   function buildCalendar() {
@@ -712,6 +764,7 @@ window.SCTCC = window.SCTCC || {};
       buildVendorRows();
       buildGrading();
       buildCalendar();
+      refreshCollegeDates();
       updatePhotoStatus();
     }
   }
@@ -818,6 +871,7 @@ window.SCTCC = window.SCTCC || {};
       if (legend) legend.textContent = gradeLegend(Number(gradeLabel[1]), value);
     }
     if (path.startsWith("grading.")) refreshGrading();
+    if (/^course\.(term|year|startDate|endDate)$/.test(path)) refreshCollegeDates();
     if (path === "calendar.meetingsPerWeek") util.setPath(data, path, Number(value) || 0);
     if (path.startsWith("calendar.entries.")) {
       if (/\.(noClass|date)$/.test(path)) {
@@ -1093,6 +1147,54 @@ window.SCTCC = window.SCTCC || {};
         break;
       }
 
+      case "fill-college-dates": {
+        const term = currentTerm();
+        if (!term) return;
+        const course = data.course;
+        const updates = {
+          startDate: term.startDate,
+          endDate: term.endDate,
+          dropDate: term.lastDayToDrop,
+          withdrawalDate: term.lastDayToWithdraw
+        };
+        const changes = Object.entries(updates).filter(([key, value]) => value && course[key] && course[key] !== value);
+        if (changes.length && !window.confirm("Replace the dates you entered with the college dates for this term?")) return;
+        Object.entries(updates).forEach(([key, value]) => { if (value) course[key] = value; });
+        populate(root.querySelector("#editor-schedule"));
+        refreshCollegeDates();
+        refreshCalendarSettings();
+        app.dataChanged();
+        const fill = root.querySelector("#fill-college-dates");
+        if (fill) fill.focus();
+        announce(`Filled in the college dates for ${term.term} ${term.year}.`);
+        break;
+      }
+
+      case "add-college-closures": {
+        const term = currentTerm();
+        const summary = root.querySelector("#calendar-settings-summary");
+        if (!term) {
+          const course = data.course;
+          const message = course.term && course.year
+            ? `The college calendar has no dates for ${course.term} ${course.year} yet.`
+            : "Choose the term and year under Course first.";
+          summary.prepend(el("p", { class: "notice notice-warning" }, message));
+          announce(message);
+          return;
+        }
+        const added = SCTCC.calendar.addTermClosures(data.calendar, term);
+        buildExcludedRows();
+        refreshCalendarSettings();
+        app.dataChanged();
+        const message = added
+          ? `Added ${added} college no-class date${added === 1 ? "" : "s"} for ${term.term} ${term.year}.${data.calendar.entries.length ? " Generate the calendar again to update the rows." : ""}`
+          : `The college no-class dates for ${term.term} ${term.year} are already listed.`;
+        root.querySelector("#calendar-settings-summary").prepend(el("p", { class: "notice notice-info" }, message));
+        root.querySelector("#add-college-closures").focus();
+        announce(message);
+        break;
+      }
+
       case "add-excluded": {
         data.calendar.excludedDates.push({ date: "", label: "" });
         buildExcludedRows();
@@ -1290,6 +1392,7 @@ window.SCTCC = window.SCTCC || {};
     populate: () => populate(),
     setFileStatus,
     showMessages,
-    showGradingProblems
+    showGradingProblems,
+    refreshCollegeDates
   });
 })();

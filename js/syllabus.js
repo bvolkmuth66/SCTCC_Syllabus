@@ -647,6 +647,17 @@
         `. ${state.content.sections.filter((entry) => entry.fragment).length} of ${state.content.sections.length} sections loaded.`));
     }
 
+    const academic = state.content.academicCalendar;
+    if (academic) {
+      const terms = academic.terms.map((term) => `${term.term} ${term.year}`).join(", ") || "none";
+      panel.appendChild(el("p", { class: academic.status === "official" ? null : "notice notice-warning" },
+        academic.status === "official" ? null : el("strong", null, "Sample academic calendar: "),
+        `College dates are available for: ${terms}.`,
+        academic.status === "official"
+          ? (academic.lastReviewed ? ` Last reviewed ${academic.lastReviewed}.` : "")
+          : " These dates are samples until Records & Registration replaces them with the official calendar."));
+    }
+
     if (state.content.errors.length) {
       panel.appendChild(el("div", { class: "notice notice-error" },
         el("p", null, el("strong", null, "Content problems: "), `${state.content.errors.length} found.`),
@@ -818,6 +829,7 @@
 
   const app = Object.freeze({
     getData: () => state.data,
+    academicCalendar: () => state.content.academicCalendar || null,
     dataChanged,
     replaceData,
     markSaved,
@@ -843,6 +855,7 @@
 
     state.content = await SCTCC.contentLoader.loadContent(config);
     render();
+    SCTCC.editor.refreshCollegeDates();
     document.body.classList.add("content-ready");
 
     announce(state.content.errors.length
