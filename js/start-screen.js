@@ -2,7 +2,7 @@
  * SCTCC Syllabus Builder — start screen and import review
  *
  * When the builder opens, the instructor chooses how to begin:
- *   1. Import a previous syllabus (Word .docx), reviewed before anything is used
+ *   1. Import a previous syllabus (Word .docx or PDF), reviewed before anything is used
  *   2. Open a syllabus saved from this builder (.json)
  *   3. Start from scratch
  *   or see the sample course.
@@ -45,8 +45,8 @@ window.SCTCC = window.SCTCC || {};
       el("p", { id: "start-intro" },
         "Your syllabus stays on your computer. Files you open or import are read here in your browser and are never uploaded."),
       el("div", { class: "start-options" },
-        option("import", "Import a previous syllabus (Word)",
-          "Using the builder for the first time? Choose last term’s Word (.docx) syllabus. You will see everything found and choose what to keep. College policies and this term’s dates come from the college.", true),
+        option("import", "Import a previous syllabus (Word or PDF)",
+          "Using the builder for the first time? Choose last term’s syllabus. A Word (.docx) file works best; a PDF works too. You will see everything found and choose what to keep. College policies and this term’s dates come from the college.", true),
         option("open", "Open a syllabus saved from this builder",
           "After your first term: open your saved .json file. Everything comes back exactly as you saved it."),
         option("blank", "Start from scratch",
@@ -101,15 +101,11 @@ window.SCTCC = window.SCTCC || {};
 
   async function importWordFile(file) {
     if (!file) return;
-    if (/\.pdf$/i.test(file.name) || file.type === "application/pdf") {
-      showProblem("PDF files cannot be imported yet.",
-        ["Choose the original Word file. If you only have the PDF, open it in Word (File > Open), then save it as a Word document (.docx) and import that."]);
-      return;
-    }
+    const isPdf = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
     const status = startDialog().open ? startDialog().querySelector("#start-status") : null;
-    if (status) status.textContent = "Reading your syllabus…";
+    if (status) status.textContent = isPdf ? "Reading your PDF syllabus… this can take a few seconds." : "Reading your syllabus…";
     try {
-      const docx = await SCTCC.docx.readDocx(file);
+      const docx = isPdf ? await SCTCC.pdf.readPdf(file) : await SCTCC.docx.readDocx(file);
       await app.contentReady();
       analysis = SCTCC.syllabusImport.analyze(docx, { collegeTexts: app.collegeTexts() });
       if (!analysis.items.length) {
@@ -119,7 +115,8 @@ window.SCTCC = window.SCTCC || {};
       closeStart();
       openReview();
     } catch (error) {
-      const message = error instanceof SCTCC.docx.DocxError ? error.message : "That file could not be read as a Word document.";
+      const known = error instanceof SCTCC.docx.DocxError || error instanceof SCTCC.pdf.PdfError;
+      const message = known ? error.message : `That file could not be read as a ${isPdf ? "PDF" : "Word document"}.`;
       showProblem(message);
     }
   }
@@ -236,7 +233,7 @@ window.SCTCC = window.SCTCC || {};
     wordInput = el("input", {
       type: "file",
       id: "import-word-file",
-      accept: ".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      accept: ".docx,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf",
       class: "visually-hidden",
       tabindex: "-1",
       "aria-hidden": "true"

@@ -175,12 +175,28 @@
     return [wrapper, extra()];
   }
 
+  /* Instructor-written sections that a manifest entry can place right after itself. */
+  const FOLLOWING_SECTIONS = {
+    programDiversity: () => {
+      const text = String(state.data.policies.programDiversity || "").trim();
+      if (!isOptionalEnabled("programDiversity") || !text) return null;
+      return subsection("Program Diversity Statement",
+        el("div", { class: "instructor-content" },
+          el("p", { class: "content-source instructor-only" }, "Your program’s statement"),
+          textBlocks(text)), 3, "instructor-section");
+    }
+  };
+
   function placementBlocks(placement) {
     return state.content.sections
       .filter((entry) => entry.definition.placement === placement && isSectionEnabled(entry.definition))
-      .map((entry) => (entry.definition.showTitle
-        ? subsection(entry.definition.title, fragmentBlock(entry), 3, "institutional-section")
-        : fragmentBlock(entry)));
+      .flatMap((entry) => {
+        const block = entry.definition.showTitle
+          ? subsection(entry.definition.title, fragmentBlock(entry), 3, "institutional-section")
+          : fragmentBlock(entry);
+        const follow = FOLLOWING_SECTIONS[entry.definition.followWith];
+        return follow ? [block, follow()] : [block];
+      });
   }
 
   /* ---------- Header ---------- */

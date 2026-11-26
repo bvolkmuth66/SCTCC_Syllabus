@@ -66,16 +66,19 @@ SCTCC_Syllabus/
 │   ├── content-loader.js           Loads, checks, and sanitizes college content
 │   ├── syllabus-editor.js          The instructor editing panel
 │   ├── docx-reader.js              Reads a Word (.docx) file in the browser (no uploads)
+│   ├── pdf-reader.js               Reads a PDF in the browser with PDF.js (no uploads)
 │   ├── syllabus-import.js          Finds the instructor's information in an old syllabus
 │   ├── start-screen.js             "How would you like to start?" and the import review
 │   └── syllabus.js                 Builds the syllabus, unsaved-changes tracking, Print to PDF
 ├── content/
 │   ├── content-manifest.json       List of college sections and where they go
 │   ├── academic-calendar.json      College semester dates, finals, deadlines, no-class dates
-│   └── *.html                      One file per college section (19 files)
+│   └── *.html                      One file per college section (20 files)
 ├── assets/
 │   ├── sctcc-logo-placeholder.svg  Placeholder until Marketing supplies the logo
 │   └── favicon.svg                 Generic browser-tab icon (not the college logo)
+├── vendor/
+│   └── pdfjs/                      Mozilla PDF.js 6.2.108 (Apache-2.0), used only for PDF import
 ├── examples/
 │   └── sample-course-data.js       Invented sample course ("Load sample course" button)
 ├── scripts/
@@ -92,11 +95,12 @@ SCTCC_Syllabus/
 | Plan | This repository | Why |
 |---|---|---|
 | `college-policies.html` | `academic-integrity.html` (+ optional `academic-integrity-examples.html`) | Each office edits only its own file; "College Policies & Procedures" is the page heading that groups several files. |
-| 10 content files | 19 content files | Mission statement, change notice, academic calendar links, required technology, technical-skills link, first-week drop/FW paragraph, student email, and footer are also college text, so they are maintained the same way instead of being typed into code. |
+| 10 content files | 20 content files | Mission statement, change notice, academic calendar links, required technology, technical-skills link, first-week drop/FW paragraph, student email, and footer are also college text, so they are maintained the same way instead of being typed into code. |
 | Config inside `syllabus-data.js` | Separate `js/syllabus-config.js` | Keeps settings apart from code. |
 | Editor inside `syllabus.js` | Separate `js/syllabus-editor.js`, `js/syllabus-files.js`, `js/dom-helpers.js` | Smaller files with one job each. |
 | `localStorage` autosave allowed | No browser storage at all | Finished syllabi are faculty intellectual property, and copies left in a browser could be seen by the next person on a shared computer. Syllabi are saved only to files the instructor controls. |
 | `assets/sctcc-logo.svg` | `assets/sctcc-logo-placeholder.svg` | The official logo has not been supplied yet. |
+| No outside libraries | Mozilla PDF.js in `vendor/pdfjs/` | Approved 2026-11-26 for PDF import. Kept in the repository (not loaded from another site), loaded only when a PDF is chosen, and run with eval and font loading turned off. |
 | `LICENSE` | Not yet added | The policy text belongs to SCTCC; choose a license with the college before adding one. |
 
 ## Running the builder
@@ -134,7 +138,8 @@ Then:
    - **Course** and **Description, outcomes, and requisites**: copy from the official SCTCC Course Outline.
    - **Credits, modality, and dates**: choose the term, then **Fill in these dates**.
    - **Course policies**: your attendance and late-work wording; accepted file formats; optional college statements; your own Class Environment text; and **Additional course sections** such as Exams or Lab Safety.
-   - **Tools and vendors**: each outside tool's accessibility statement or VPAT, privacy policy, and support link.
+   - **Course policies** also has an optional **Program Diversity Statement**, shown right after the college Statement of Diversity.
+   - **Tools and vendors**: each outside tool's accessibility statement (**required**; if the vendor has none, check "This tool has no accessibility statement" and link its VPAT), privacy policy, and support link.
    - **Grading** and **Course calendar**: see the sections below.
    - Web addresses typed into any text box become working links in the syllabus.
 2. **Save** (Ctrl+S / ⌘S) to a folder on your computer or your OneDrive folder.
@@ -144,11 +149,11 @@ The editor never changes college content. To use different college wording, the 
 
 ## Importing a previous syllabus
 
-**Import a previous syllabus (Word)** reads last term's `.docx` file **in the browser**. The file is never uploaded; like Save and Open, nothing leaves the computer.
+**Import a previous syllabus (Word or PDF)** reads last term's `.docx` or `.pdf` file **in the browser**. The file is never uploaded; like Save and Open, nothing leaves the computer.
 
 **Two template layouts are recognized:**
 - The current template, where each part of the syllabus has its own heading.
-- The older **table-form** template, where the whole syllabus is one large table: single-cell rows such as "Course Information" or "Instructor Information" are section headings, and two-cell rows are "label | value" (Course Prefix & Number, Credits, Office Location, Grading Formula, and so on). Tables nested inside a cell, such as an Assignments and Points table, are read too. Rows labeled "(SAMPLE)" and older college statements (for example Statement of Diversity) are offered but left unchecked.
+- The older **table-form** template, where the whole syllabus is one large table: single-cell rows such as "Course Information" or "Instructor Information" are section headings, and two-cell rows are "label | value" (Course Prefix & Number, Credits, Office Location, Grading Formula, and so on). Tables nested inside a cell, such as an Assignments and Points table, are read too. Rows labeled "(SAMPLE)" are offered but left unchecked.
 
 Text still holding a template placeholder such as "COURSE NAME" or "XXX" is flagged in the review screen and again by **Check before printing**.
 
@@ -168,11 +173,19 @@ Text still holding a template placeholder such as "COURSE NAME" or "XXX" is flag
 - **All college policy text.** Sections such as Academic Integrity, Accommodations, Title IX, Navigating D2L, Pulse, Technical Support, Student Services, and Accessibility & Data Privacy always come from the repository. Paragraphs of college wording inside instructor sections (for example the first-week drop and administrative withdrawal text inside Attendance) are recognized by comparing them with the current college content and are dropped.
 - **The term, year, and all dates.** The instructor chooses the new term and uses **Fill in these dates**. Old calendar dates are dropped; when the new calendar is generated, imported topics are placed in order into the class meetings.
 - Mission statement, change notice, footer, and template instructions.
-- A section that was under College Policies but is not a current college section (for example an old "Statement of Diversity") is offered **unticked**, with a note to include it only if it is the instructor's own statement.
+- A section that was under College Policies but is not a current college section is offered **unticked**, with a note to include it only if it is the instructor's own statement.
+- The old **Statement of Diversity** is recognized as college text (the college statement is always included). A section titled **Program Diversity Statement** is imported into that optional section; other wording found under an old diversity heading is offered unticked as a program statement.
 
 **The review screen** lists every item found, grouped like the editor, with the text it found. Everything is ticked except items that need a decision. **Import selected** fills a new, unsaved syllabus and lists the next steps; **Cancel** (or Escape) changes nothing.
 
-**PDF files** cannot be imported yet. Word can convert one: open the PDF in Word (File > Open), save it as a Word document, and import that. Older `.doc` files need the same Save As step.
+**PDF files** are read with Mozilla PDF.js (in `vendor/pdfjs/`, loaded only when a PDF is chosen). A PDF has no real headings, lists, or tables, only positioned text, so `js/pdf-reader.js` rebuilds them:
+- headings from larger or bold text and from short lines that name a known section (all-capital lines such as "EXAMS" become "Exams");
+- paragraphs by joining wrapped lines (a line that stops well short of the margin ends a paragraph);
+- bullets from bullet characters;
+- tables from text that lines up in columns, including the table-form template's label | value rows;
+- running headers, footers, and page numbers are dropped.
+
+Pictures are not taken from a PDF; the instructor uploads a photo in the editor. A **scanned** PDF (a picture of the pages) has no text to read, and the builder says so. A password-protected or damaged PDF gives a plain message. The review screen notes that the file came from a PDF so the instructor checks each item. Word files remain the better choice when available. Older `.doc` files need Word's Save As `.docx` first.
 
 ## Saving and opening your syllabus
 
@@ -361,7 +374,7 @@ Change `contentVersion` and `lastUpdated` at the top when a set of changes is ap
 
 | Level | Effect | Examples |
 |---|---|---|
-| **Problems to fix before printing** | Print to PDF is stopped | Anything the syllabus still shows as "[… needed]" (course prefix, number, title, term, year, instructor name and email, office and hours, credits, modality, meeting days/times/room, begin/end/drop/withdraw dates, description, outcomes, prerequisites, attendance and late policies, required materials, grading categories and scale, where grades are posted, turnaround, calendar or schedule statement, and any optional section that is turned on but empty); an incomplete email address; end date not after begin date; drop date before the course begins; withdraw date not after the drop date or after the course ends; template placeholders left in your text (XXX, YOUR NAME, GIVE WITHDRAWAL DATE, LIST ASSIGNMENT, DATE & TIME…); grading errors (weights not 100% without the override, overlapping grades, bad percentages, missing or duplicate grade labels); a required college section that failed to load |
+| **Problems to fix before printing** | Print to PDF is stopped | Anything the syllabus still shows as "[… needed]" (course prefix, number, title, term, year, instructor name and email, office and hours, credits, modality, meeting days/times/room, begin/end/drop/withdraw dates, description, outcomes, prerequisites, attendance and late policies, required materials, grading categories and scale, where grades are posted, turnaround, calendar or schedule statement, and any optional section that is turned on but empty); an incomplete email address; end date not after begin date; drop date before the course begins; withdraw date not after the drop date or after the course ends; template placeholders left in your text (XXX, YOUR NAME, COURSE NAME, GIVE WITHDRAWAL DATE, LIST ASSIGNMENT, DATE & TIME…); grading errors (weights not 100% without the override, overlapping grades, bad percentages, missing or duplicate grade labels); a tool with no accessibility statement link and "This tool has no accessibility statement" not checked; a required college section that failed to load |
 | **Please review** | Printing allowed | Course starts before the semester or ends before final exam week; calendar rows outside the course dates; calendar with no topics; gaps in the grading scale; zero-point categories; weights published with the override; "Include my photo" on with no photo; a tool's web address that is not a full https:// address; an optional college section that failed to load |
 | **For your information** | Printing allowed | College dates not yet confirmed by Records & Registration; tools with no privacy policy link; unscheduled calendar rows outside the course dates (allowed as exceptions); "here" link text in college content (for content owners); placeholder logo |
 
@@ -440,6 +453,7 @@ These come from the July 2026 template. The text has **not** been changed; each 
 | `technical-skills-resources.html` | `support.office.com` training link may redirect; confirm current URL. |
 | Template | Header says "Revised: July 2026," footer says "Template Updated February 2026." |
 | `enrollment-requirements.html` | The template gives this text twice with different wording (General Information and Attendance). The General Information wording is used once, under Attendance. Confirm which is official. |
+| `diversity-statement.html` | **Not in the July 2026 template.** Wording copied unchanged from the older table-form SCTCC template ("Statement of Diversity (REQUIRED)") at the request of the project lead (2026-11-26). Its list of protected groups is older than the current Nondiscrimination and Title IX text (it does not name gender identity, familial status, or sex including pregnancy). The Office of Community, Culture, and Institutional Climate should confirm or supply current wording. |
 | `institutional-footer.html` | Now uses Brand Standards 2025 wording (approved 2026-11-25); replaces the outdated "Minnesota State Colleges and Universities System" line and the separate equal-opportunity line. |
 
 ## Instructor guidance from the template
@@ -549,12 +563,12 @@ Still to test by a person: keyboard-only use, a screen reader (NVDA or JAWS), 20
 - The logo is a placeholder.
 - Arimo font files are not bundled yet (Arial is used).
 - The page footer in the PDF requires Chrome or Edge version 131 or later.
-- No pre-print validation yet; an incomplete syllabus can still be printed (missing values are clearly marked).
+- PDF import is best-effort: structure is guessed from layout, pictures are not imported, and scanned PDFs cannot be read.
+- PDF.js needs a current browser (Chrome, Edge, Firefox, or Safari from the last two years).
 
 ## Possible next steps
 
-- PDF import (would add Mozilla's PDF.js library), if faculty mainly have PDFs.
-
+- Test the import with colleagues' syllabi, including PDFs made by Word and by Acrobat.
 - Official logo from Marketing and Arimo font files.
 - Records & Registration confirms the academic calendar and takes ownership in CODEOWNERS; content offices fix the "here" links and other verification items.
 - Move the repository to a college GitHub organization and turn on the ruleset above.
@@ -570,4 +584,4 @@ Still to test by a person: keyboard-only use, a screen reader (NVDA or JAWS), 20
 | 3 (done) | Grading editor: points and percentage methods, category rows with move/remove, live totals, weight check with instructor override, scale editor with overlap/gap/range checks and point ranges, plus/minus sample, print stopped on grading errors |
 | 4 (done) | Course calendar generator: 1–4 meetings per week or one row per week, no-class dates, finals week, first-week schedule, regeneration that keeps entered text, move/shift topics, unscheduled rows, CSV export; college academic calendar file for official dates and no-class dates |
 | 5 (done) | Checks before printing (errors, warnings, notices with Go to field), guided Print to PDF dialog, Check my syllabus panel, GitHub Action that checks content files and links |
-| **6 (this version)** | Start screen (import / open / scratch / example), Word syllabus import with review, additional course sections, toolbar Save and Open, linked web addresses |
+| **6 (this version)** | Start screen (import / open / scratch / example), Word and PDF syllabus import with review (current and older table-form templates), additional course sections, college Statement of Diversity plus optional Program Diversity Statement, required tool accessibility statements, toolbar Save and Open, linked web addresses |

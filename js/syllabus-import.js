@@ -203,8 +203,11 @@ window.SCTCC = window.SCTCC || {};
     "online environment": "classEnvironment",
     "classroom environment": "classEnvironment",
     "grading formula": "scale",
-    "statement of diversity": "oldCollege",
-    "diversity statement": "oldCollege"
+    "statement of diversity": "college:diversity-statement",
+    "diversity statement": "college:diversity-statement",
+    "college diversity statement": "college:diversity-statement",
+    "program diversity statement": "programDiversity",
+    "program statement of diversity": "programDiversity"
   };
 
   /* When a heading is not an exact match, recognize it by its key words. */
@@ -219,6 +222,8 @@ window.SCTCC = window.SCTCC || {};
     [/accommodation/, "college:accommodations"],
     [/academic (integrity|honesty)/, "college:academic-integrity"],
     [/title ix|nondiscrimination/, "college:nondiscrimination-title-ix"],
+    [/program.*(diversity statement|statement (of|on) diversity)/, "programDiversity"],
+    [/^(college |sctcc )?(diversity statement|statement (of|on) diversity)/, "college:diversity-statement"],
     [/technical support|tech support/, "techSupport"],
     [/learning outcomes|course outcomes/, "description"],
     [/instructor information/, "instructor"],
@@ -239,7 +244,8 @@ window.SCTCC = window.SCTCC || {};
     "nondiscrimination-title-ix": "Nondiscrimination and Title IX",
     "pulse-app": "Pulse App for D2L",
     "student-services": "Student Services & Academic Support",
-    "accessibility-data-privacy": "Accessibility & Data Privacy Policies"
+    "accessibility-data-privacy": "Accessibility & Data Privacy Policies",
+    "diversity-statement": "Statement of Diversity"
   };
 
   /* Wording that belongs to college content even when it sits in an instructor section. */
@@ -277,6 +283,8 @@ window.SCTCC = window.SCTCC || {};
     if (!text || text.length > 90) return false;
     if (/^\d+[.)]\s/.test(text)) return false; /* a numbered item styled as a heading */
     if (/\t/.test(block.text)) return false; /* tab-separated table line styled as a heading */
+    if (/^(fall|spring|summer|winter)\s+(semester\s+)?\d{4}$/i.test(text)) return false; /* the term line under the title */
+    if (!block.fromLabel && !COURSE_HEADING.test(text) && /^[^:]{1,40}:\s+\S/.test(text)) return false; /* "Semester: Spring 2022" is a label and value */
     return true;
   }
 
@@ -292,6 +300,30 @@ window.SCTCC = window.SCTCC || {};
     return "";
   }
 
+  /* ---------- PDF syllabi ---------- */
+
+  /* "CLOUD COMPUTING" → "Cloud Computing" (PDFs keep small capitals as capitals). */
+  const SMALL_WORDS = new Set(["a", "an", "and", "as", "at", "by", "for", "in", "of", "on", "or", "the", "to", "with"]);
+  function titleCase(text) {
+    return String(text).toLowerCase().replace(/[a-z][\w']*/g, (word, offset) =>
+      (offset > 0 && SMALL_WORDS.has(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)));
+  }
+
+  /* A PDF has no heading styles. A short line that names a known section is a heading. */
+  function promotePdfHeadings(blocks) {
+    return blocks.map((block) => {
+      if (block.type !== "p" || block.level || block.list) return block;
+      const text = clean(block.text).replace(/:$/, "");
+      if (!text || text.split(/\s+/).length > 8 || /\t/.test(block.text) || /[.,;]$/.test(text)) return block;
+      const key = headingKey(text);
+      if (key && !/^field:/.test(key)) return Object.assign({}, block, { level: 2 });
+      /* An all-capitals line such as "EXAMS" is a heading, unless it is an instructor label. */
+      const capitals = /[A-Z]{3}/.test(text) && text === text.toUpperCase() && text.length <= 60 && !/\d{3}/.test(text);
+      if (!capitals || instructorLabel(block)) return block;
+      return Object.assign({}, block, { level: 2, text: titleCase(clean(block.text)) });
+    });
+  }
+
   /* ---------- Table-form syllabi ---------- */
 
   /*
@@ -300,7 +332,7 @@ window.SCTCC = window.SCTCC || {};
    * into headings and paragraphs so it reads like any other syllabus.
    */
   function isLayoutTable(table) {
-    if (!table.cells || table.rows.length < 6) return false;
+    if (!table.cells || table.rows.length < 4) return false;
     let shaped = 0;
     let known = 0;
     table.rows.forEach((row) => {
@@ -314,7 +346,22 @@ window.SCTCC = window.SCTCC || {};
   function expandLayoutTables(blocks) {
     const out = [];
     blocks.forEach((block) => {
-      if (block.type !== "table" || !isLayoutTable(block)) {
+      if (block.type === "table" && !isLayoutTable(block)) {
+        /* A last row holding only a known heading (for example "Grading Scale") starts the next section. */
+        const trailing = [];
+        let rows = block.rows.length;
+        while (rows > 1) {
+          const texts = block.rows[rows - 1].map(clean);
+          const key = texts[0] ? headingKey(texts[0].replace(/\n+/g, " ")) : "";
+          if (!key || /^field:/.test(key) || texts.slice(1).some(Boolean)) break;
+          trailing.unshift({ type: "p", text: texts[0].replace(/\n+/g, " "), level: 2, list: false, images: [] });
+          rows -= 1;
+        }
+        out.push(rows === block.rows.length ? block : Object.assign({}, block, { rows: block.rows.slice(0, rows), cells: block.cells.slice(0, rows) }));
+        out.push(...trailing);
+        return;
+      }
+      if (block.type !== "table") {
         out.push(block);
         return;
       }
@@ -343,7 +390,7 @@ window.SCTCC = window.SCTCC || {};
       if (isHeading(block)) {
         const title = clean(block.text);
         let key = headingKey(title);
-        if (!key && block.level === 1 && COURSE_HEADING.test(title) && !sections.some((s) => s.key === "courseTitle")) key = "courseTitle";
+        if (!key && (block.level === 1 || !seenSection) && COURSE_HEADING.test(title) && !sections.some((s) => s.key === "courseTitle")) key = "courseTitle";
         if (!key && !seenSection && block.level === 1) key = "docTitle"; /* a title without a course number */
         if (!key && current.key === "calendar") return; /* column labels inside the calendar area */
         if (key && key.endsWith("Container")) container = key;
@@ -397,7 +444,7 @@ window.SCTCC = window.SCTCC || {};
         || (block.type === "p" && clean(block.text) && !isCollegeText(block.text) && !isFooter(block.text)));
     }
 
-    const sections = splitSections(expandLayoutTables(docx.blocks));
+    const sections = splitSections(expandLayoutTables(docx.source === "pdf" ? promotePdfHeadings(docx.blocks) : docx.blocks));
     const byKey = (key) => sections.filter((section) => section.key === key);
     const collegeFound = new Set();
 
@@ -405,7 +452,8 @@ window.SCTCC = window.SCTCC || {};
     const titleSection = byKey("courseTitle")[0];
     if (titleSection) {
       const match = COURSE_HEADING.exec(clean(titleSection.title));
-      const title = match[3].replace(/\s*(course\s+)?syllabus\s*$/i, "").trim();
+      let title = match[3].replace(/\s*(course\s+)?syllabus\s*$/i, "").trim();
+      if (docx.source === "pdf" && /[A-Z]{3}/.test(title) && title === title.toUpperCase()) title = titleCase(title);
       propose("Course", "Course prefix", match[1], (d) => { d.course.prefix = match[1]; });
       propose("Course", "Course number", match[2], (d) => { d.course.number = match[2]; });
       if (title) propose("Course", "Course title", title, (d) => { d.course.title = title; });
@@ -421,6 +469,9 @@ window.SCTCC = window.SCTCC || {};
       const docTitle = byKey("docTitle")[0];
       const title = fieldText("field:title") || (docTitle ? clean(docTitle.title).replace(/\s*(course\s+)?syllabus\s*$/i, "") : "");
       if (title) propose("Course", "Course title", title, (d) => { d.course.title = title; });
+    }
+    if (docx.source === "pdf") {
+      notes.push("This syllabus was read from a PDF, which keeps less structure than a Word file. Check each item carefully, and add your photo under Instructor (pictures cannot be taken from a PDF).");
     }
     notes.push("The term, year, and all dates were not imported, because an old syllabus has last term’s dates. Choose the new term, then use “Fill in these dates.”");
 
@@ -465,13 +516,18 @@ window.SCTCC = window.SCTCC || {};
     const nameLine = /(?:^|\n)(?:Instructor(?: Name)?|Name)\s*:\s*([^\n]+)/i.exec(allInstructorText);
     if (nameLine) name = nameLine[1].trim();
     if (!name) {
-      const booking = /Book time with ([A-Z][\w'-]+),\s*([A-Z][\w'-]+)/.exec(allInstructorText);
-      if (booking) name = `${booking[2]} ${booking[1]}`;
+      const booking = /Book time with ([A-Z][\w'-]+),\s*([A-Z][\w'-]+)/i.exec(allInstructorText);
+      const proper = (word) => (word === word.toUpperCase() ? word.charAt(0) + word.slice(1).toLowerCase() : word);
+      if (booking) name = `${proper(booking[2])} ${proper(booking[1])}`;
     }
     let nameNote = "";
     if (!name && docx.properties && docx.properties.lastModifiedBy) {
       name = docx.properties.lastModifiedBy;
       nameNote = "Taken from the Word file’s “last modified by” name. Check that it is yours.";
+    }
+    if (!name && docx.source === "pdf" && docx.properties && docx.properties.author) {
+      name = docx.properties.author;
+      nameNote = "Taken from the PDF’s author name. Check that it is yours.";
     }
     if (name.includes(",")) {
       [name, credentials] = [name.split(",")[0].trim(), name.split(",").slice(1).join(",").trim()];
@@ -701,7 +757,7 @@ window.SCTCC = window.SCTCC || {};
       d.materials.recommended = recommended.slice();
       d.optionalSections.recommendedMaterials = true;
     });
-    const standardTech = /^(active sctcc email( account)?|internet access|microsoft (office|word)|free download)/i;
+    const standardTech = /^(active sctcc email( account)?|internet access|microsoft (office|word)|free download|(https?:\/\/)?(www\.)?sctcc\.edu\/student-help-desk)/i;
     const tech = listItems("requiredTech").filter((text) => !standardTech.test(text));
     if (tech.length) propose("Materials and technology", "Additional required technology", tech.join("\n"), (d) => { d.materials.requiredTechnologyAdditions = tech.slice(); });
     const skills = listItems("techSkills");
@@ -745,10 +801,26 @@ window.SCTCC = window.SCTCC || {};
       }
     }
 
+    /* ----- Diversity statements ----- */
+    const programText = blocksToText(ownBlocks(byKey("programDiversity").flatMap((s) => s.blocks)));
+    const ownDiversity = blocksToText(ownBlocks(byKey("college:diversity-statement").flatMap((s) => s.blocks)));
+    if (programText || ownDiversity) {
+      propose("Course policies", "Program Diversity Statement", programText || ownDiversity, (d) => {
+        d.policies.programDiversity = programText || ownDiversity;
+        d.optionalSections.programDiversity = true;
+      }, {
+        checked: Boolean(programText),
+        note: programText
+          ? "Shown right after the college Statement of Diversity."
+          : "This was in your old diversity statement but is not the college wording. The college statement is always included; keep this only if it is your program’s own statement."
+      });
+    }
+
     /* ----- Instructor-written sections without a place in the template ----- */
     sections.filter((section) => ["additional", "collegeUnknown", "oldCollege"].includes(section.key)).forEach((section) => {
       const text = blocksToText(ownBlocks(section.blocks));
       if (!text || !section.title) return;
+      if (/^(table of )?contents$/i.test(section.title) || isCollegeText(section.title)) return; /* not the instructor's own section */
       const fromCollegeArea = section.key !== "additional";
       const sampleLabel = /\(SAMPLE\)/i.test(section.rawTitle || "");
       propose("Additional course sections", section.title, text, (d) => {

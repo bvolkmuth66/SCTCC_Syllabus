@@ -39,7 +39,7 @@ window.SCTCC = window.SCTCC || {};
     "policies.additionalSections": { title: "", text: "" },
     "calendar.excludedDates": { date: "", label: "" },
     "vendors": {
-      name: "", purpose: "", accessibilityUrl: "", vpatUrl: "", privacyUrl: "",
+      name: "", purpose: "", accessibilityUrl: "", noAccessibilityStatement: false, vpatUrl: "", privacyUrl: "",
       accountRequired: "", dataCollected: "", alternativeAccess: "", supportUrl: ""
     }
   };
@@ -123,6 +123,7 @@ window.SCTCC = window.SCTCC || {};
         lateWork: "",
         acceptedFileFormats: "", /* blank = college default in navigating-d2l.html */
         classEnvironment: "",    /* blank = college sample text */
+        programDiversity: "",
         additionalSections: []   /* { title, text } instructor-written sections */
       },
       grading: {
@@ -162,6 +163,7 @@ window.SCTCC = window.SCTCC || {};
         mnTransferGoal: false,
         turnitin: false,
         classEnvironment: false,
+        programDiversity: false,
         academicIntegrityExamples: false,
         timeCommitment: true,
         recommendedMaterials: true

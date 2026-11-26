@@ -318,6 +318,11 @@ window.SCTCC = window.SCTCC || {};
           hint: "Leave blank to use the college sample text. Anything you write here replaces it."
         })
       ]),
+      fieldset("Program Diversity Statement", [
+        note("The college Statement of Diversity is always included. Add your program’s own statement here if it has one; it appears right after the college statement."),
+        toggle("programDiversity", "Include a Program Diversity Statement"),
+        field("textarea", "policies.programDiversity", "Program Diversity Statement", { rows: 5 })
+      ]),
       fieldset("Additional course sections", [
         note("Your own sections, such as Exams, Lab Safety, or Student Responsibilities. Each appears under Course Policies & Procedures after the Late Policy."),
         el("div", { id: "extra-rows" }),
@@ -358,7 +363,7 @@ window.SCTCC = window.SCTCC || {};
   function vendorsGroup() {
     return group("editor-vendors", "Tools and vendors (Accessibility & Data Privacy)", [
       note("List technology this course uses that is not already under the Resources tab in D2L: publisher platforms, plagiarism tools, web conferencing, polling, recording tools, social media, mobile apps, and similar."),
-      note("Link each tool’s accessibility statement. If there is none, link its VPAT. If neither exists, leave both blank and the syllabus will say so. Link the data privacy policy of any tool that may collect student data."),
+      note("Every tool needs its accessibility statement. If the vendor has none, check “This tool has no accessibility statement” and link its VPAT; if neither exists, the syllabus says so. Link the data privacy policy of any tool that may collect student data."),
       el("div", { id: "vendor-rows" }),
       actionButton("add-vendor", "Add a tool", "btn-primary", { id: "add-vendor" })
     ]);
@@ -660,8 +665,11 @@ window.SCTCC = window.SCTCC || {};
         el("legend", { id: `vendor-legend-${index}` }, vendorLegend(index, vendor.name)),
         field("text", `${base}.name`, "Tool or vendor name"),
         field("textarea", `${base}.purpose`, "Purpose in this course", { rows: 2 }),
-        field("url", `${base}.accessibilityUrl`, "Accessibility statement web address", { optionalLabel: true }),
-        field("url", `${base}.vpatUrl`, "VPAT web address", { optionalLabel: true }),
+        field("url", `${base}.accessibilityUrl`, "Accessibility statement web address", {
+          hint: "Required. Check the box below only if the vendor has no accessibility statement."
+        }),
+        checkbox(`${base}.noAccessibilityStatement`, "This tool has no accessibility statement"),
+        field("url", `${base}.vpatUrl`, "VPAT web address", { optionalLabel: true, hint: "Use when there is no accessibility statement." }),
         field("url", `${base}.privacyUrl`, "Data privacy policy web address", { optionalLabel: true }),
         field("select", `${base}.accountRequired`, "Student account required?", {
           choices: [["", "Choose"], ["yes", "Yes"], ["no", "No"]],

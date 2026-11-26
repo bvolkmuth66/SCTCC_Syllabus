@@ -76,7 +76,8 @@ window.SCTCC_SAMPLE_DATA = {
     attendance: "Please see me or send me an email with any attendance-related issues throughout the semester.",
     lateWork: "Late work is not accepted. Extra time for illness or similar circumstances must be requested before the due date.",
     acceptedFileFormats: "",
-    classEnvironment: ""
+    classEnvironment: "",
+    programDiversity: ""
   },
   grading: {
     calculationMethod: "points",
@@ -134,6 +135,7 @@ window.SCTCC_SAMPLE_DATA = {
       name: "Sample Publisher Lab Platform",
       purpose: "Weekly virtual lab activities",
       accessibilityUrl: "https://www.example.com/accessibility",
+      noAccessibilityStatement: false,
       vpatUrl: "",
       privacyUrl: "https://www.example.com/privacy",
       accountRequired: "yes",
@@ -150,6 +152,7 @@ window.SCTCC_SAMPLE_DATA = {
     mnTransferGoal: false,
     turnitin: false,
     classEnvironment: false,
+    programDiversity: false,
     academicIntegrityExamples: false,
     timeCommitment: true,
     recommendedMaterials: true
