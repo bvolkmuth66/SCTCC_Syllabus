@@ -148,7 +148,7 @@ window.SCTCC = window.SCTCC || {};
       tabindex: "-1",
       "aria-hidden": "true"
     });
-    return group("editor-data", "File: save and open", [
+    return group("editor-data", "Save and open your syllabus", [
       el("p", { id: "file-status", class: "save-status", role: "status" }, "New syllabus — not saved yet."),
       el("div", { id: "data-messages", class: "data-messages", "aria-live": "polite" }),
       el("div", { class: "button-row" },
@@ -156,8 +156,8 @@ window.SCTCC = window.SCTCC || {};
         actionButton("save-as", "Save as…"),
         actionButton("open", "Open…")),
       el("div", { class: "button-row" },
-        actionButton("new", "New syllabus"),
-        actionButton("sample", "Load sample course"),
+        actionButton("import-docx", "Import a previous syllabus…"),
+        actionButton("start-over", "Start over…"),
         actionButton("reset", "Clear this syllabus", "btn-danger")),
       importInput,
       el("div", { class: "ip-notice" },
@@ -317,8 +317,42 @@ window.SCTCC = window.SCTCC || {};
           optionalLabel: true,
           hint: "Leave blank to use the college sample text. Anything you write here replaces it."
         })
+      ]),
+      fieldset("Additional course sections", [
+        note("Your own sections, such as Exams, Lab Safety, or Student Responsibilities. Each appears under Course Policies & Procedures after the Late Policy."),
+        el("div", { id: "extra-rows" }),
+        actionButton("add-extra", "Add a section", "btn-primary", { id: "add-extra" })
       ])
     ]);
+  }
+
+  /* ---------- Additional course sections ---------- */
+
+  function extraLegend(index, title) {
+    return `Section ${index + 1}${title ? `: ${title}` : ""}`;
+  }
+
+  function buildExtraRows() {
+    const container = root.querySelector("#extra-rows");
+    container.textContent = "";
+    const sections = app.getData().policies.additionalSections;
+    if (!sections.length) {
+      container.appendChild(note("None added."));
+      return;
+    }
+    sections.forEach((section, index) => {
+      const base = `policies.additionalSections.${index}`;
+      const name = section.title.trim() || `section ${index + 1}`;
+      container.appendChild(el("fieldset", { class: "field-group extra-row" },
+        el("legend", { id: `extra-legend-${index}` }, extraLegend(index, section.title.trim())),
+        field("text", `${base}.title`, "Section title"),
+        field("textarea", `${base}.text`, "Section text", { rows: 5, hint: "Blank lines start new paragraphs. Web addresses become links." }),
+        el("div", { class: "button-row" },
+          actionButton("move-extra", "Move up", null, { "data-index": String(index), "data-direction": "-1", "aria-label": `Move ${name} up`, disabled: index === 0 }),
+          actionButton("move-extra", "Move down", null, { "data-index": String(index), "data-direction": "1", "aria-label": `Move ${name} down`, disabled: index === sections.length - 1 }),
+          actionButton("remove-extra", "Remove", "btn-danger", { "data-index": String(index), "aria-label": `Remove ${name}` }))));
+    });
+    populate(container);
   }
 
   function vendorsGroup() {
@@ -779,6 +813,7 @@ window.SCTCC = window.SCTCC || {};
     });
     if (!scope) {
       buildVendorRows();
+      buildExtraRows();
       buildGrading();
       buildCalendar();
       refreshCollegeDates();
@@ -888,6 +923,11 @@ window.SCTCC = window.SCTCC || {};
     if (vendorName) {
       const legend = root.querySelector(`#vendor-legend-${vendorName[1]}`);
       if (legend) legend.textContent = vendorLegend(Number(vendorName[1]), value);
+    }
+    const extraTitle = /^policies\.additionalSections\.(\d+)\.title$/.exec(path);
+    if (extraTitle) {
+      const legend = root.querySelector(`#extra-legend-${extraTitle[1]}`);
+      if (legend) legend.textContent = extraLegend(Number(extraTitle[1]), value.trim());
     }
     const categoryName = /^grading\.categories\.(\d+)\.name$/.exec(path);
     if (categoryName) {
@@ -1023,6 +1063,54 @@ window.SCTCC = window.SCTCC || {};
       case "open":
         handleOpen();
         break;
+
+      case "import-docx":
+        if (!okToDiscard("Import a previous syllabus")) return;
+        SCTCC.startScreen.chooseWordFile();
+        break;
+
+      case "start-over":
+        if (!okToDiscard("Start over")) return;
+        SCTCC.startScreen.show();
+        break;
+
+      case "add-extra": {
+        data.policies.additionalSections.push({ title: "", text: "" });
+        buildExtraRows();
+        app.dataChanged();
+        const index = data.policies.additionalSections.length - 1;
+        root.querySelector(`#${fieldId(`policies.additionalSections.${index}.title`)}`).focus();
+        announce(`Added section ${index + 1}.`);
+        break;
+      }
+
+      case "remove-extra": {
+        const index = Number(button.getAttribute("data-index"));
+        const section = data.policies.additionalSections[index];
+        if (section && (section.title.trim() || section.text.trim()) && !window.confirm(`Remove the section “${section.title.trim() || `section ${index + 1}`}”?`)) return;
+        data.policies.additionalSections.splice(index, 1);
+        buildExtraRows();
+        app.dataChanged();
+        root.querySelector("#add-extra").focus();
+        announce("Section removed.");
+        break;
+      }
+
+      case "move-extra": {
+        const index = Number(button.getAttribute("data-index"));
+        const direction = Number(button.getAttribute("data-direction"));
+        const list = data.policies.additionalSections;
+        const target = index + direction;
+        if (target < 0 || target >= list.length) return;
+        [list[index], list[target]] = [list[target], list[index]];
+        buildExtraRows();
+        app.dataChanged();
+        const same = root.querySelector(`[data-action='move-extra'][data-index='${target}'][data-direction='${direction}']`);
+        const other = root.querySelector(`[data-action='move-extra'][data-index='${target}'][data-direction='${-direction}']`);
+        (same && !same.disabled ? same : other).focus();
+        announce(`Moved to position ${target + 1} of ${list.length}.`);
+        break;
+      }
 
       case "new":
         if (!okToDiscard("Start a new syllabus")) return;
@@ -1432,12 +1520,49 @@ window.SCTCC = window.SCTCC || {};
     SCTCC.printCheck.setGoTo(focusField);
   }
 
+  /* Used by the start screen and the toolbar. */
+  function startBlank() {
+    SCTCC.files.setCurrentFile(null);
+    openData(SCTCC.createEmptySyllabusData(), "Started a new, blank syllabus.");
+  }
+
+  function loadSample() {
+    const result = SCTCC.validateSyllabusData(window.SCTCC_SAMPLE_DATA || {}, { newId: true });
+    if (!result.ok) {
+      showMessages("error", "The sample course could not be loaded.", result.errors);
+      return;
+    }
+    SCTCC.files.setCurrentFile(null);
+    openData(result.data, "Loaded the sample course. It is not saved unless you save it.", [], { dirty: true });
+  }
+
+  function openImported(data, title, lines) {
+    SCTCC.files.setCurrentFile(null);
+    app.replaceData(data, { fileName: "", dirty: true });
+    populate();
+    showMessages("info", title, lines);
+    const notice = root.querySelector("#data-messages .notice");
+    root.querySelector("#editor-data").open = true;
+    if (notice) {
+      notice.setAttribute("tabindex", "-1");
+      notice.scrollIntoView({ block: "start" });
+      notice.focus({ preventScroll: true });
+    }
+    announce(title);
+  }
+
   window.SCTCC.editor = Object.freeze({
     init,
     populate: () => populate(),
     setFileStatus,
     showMessages,
     focusField,
-    refreshCollegeDates
+    refreshCollegeDates,
+    save: (saveAs) => handleSave(Boolean(saveAs)),
+    open: () => handleOpen(),
+    okToDiscard,
+    startBlank,
+    loadSample,
+    openImported
   });
 })();

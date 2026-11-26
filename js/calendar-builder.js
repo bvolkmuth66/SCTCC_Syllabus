@@ -114,7 +114,7 @@ window.SCTCC = window.SCTCC || {};
     return Object.assign({
       week: 0, meeting: 0, date: "", weekEnd: "",
       topic: "", preparation: "", due: "", notes: "",
-      noClass: false, isFinals: false, manual: false
+      noClass: false, isFinals: false, manual: false, pending: false
     }, fields);
   }
 
@@ -256,6 +256,25 @@ window.SCTCC = window.SCTCC || {};
       return next;
     });
 
+    /*
+     * Topics imported from a previous syllabus have no dates yet ("pending").
+     * Place them in order into class rows that are still empty.
+     */
+    const pendingRows = existing.filter((row) => row.manual && row.pending && !util.parseISODate(row.date));
+    const openRows = merged.filter((row) => !row.noClass && !hasContent(row));
+    let placed = 0;
+    pendingRows.forEach((row) => {
+      const target = openRows[placed];
+      if (!target) return;
+      Object.assign(target, takeContent(row));
+      used.add(row);
+      placed += 1;
+    });
+    if (pendingRows.length > placed) {
+      const left = pendingRows.length - placed;
+      warnings.push(`${left} imported topic${left === 1 ? "" : "s"} did not fit into the class meetings and ${left === 1 ? "was" : "were"} kept as unscheduled rows at the end.`);
+    }
+
     let unmatched = 0;
     existing.forEach((row) => {
       if (used.has(row)) return;
@@ -275,13 +294,9 @@ window.SCTCC = window.SCTCC || {};
     const summary = settings.mode === "weekly"
       ? `Generated ${classRows} weekly rows.`
       : `Generated ${classRows} rows (${entries.filter((row) => row.meeting).length} class meetings).`;
-    return {
-      ok: true,
-      entries,
-      errors: [],
-      warnings,
-      summary: kept ? `${summary} Kept the topics and notes from ${kept} existing row${kept === 1 ? "" : "s"}.` : summary
-    };
+    let fullSummary = kept ? `${summary} Kept the topics and notes from ${kept} existing row${kept === 1 ? "" : "s"}.` : summary;
+    if (placed) fullSummary += ` Placed ${placed} imported topic${placed === 1 ? "" : "s"} in order.`;
+    return { ok: true, entries, errors: [], warnings, summary: fullSummary };
   }
 
   /* ---------- Row editing helpers ---------- */

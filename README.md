@@ -6,7 +6,7 @@ Instructors open the builder in a web browser, enter their course information, a
 
 College-wide content (policies, support information, the footer) is **not** typed by instructors. Each piece lives in its own file in the `content/` folder, maintained by the office that owns it. Every syllabus picks up the current approved wording the next time an instructor makes a PDF.
 
-> **Status: Phase 5 (trial, feature-complete).** Instructors can fill in their syllabus, build the grading table, grading scale, and course calendar, check it, save it as a file to their own computer or OneDrive, and print it to PDF. College content changes are checked automatically on GitHub.
+> **Status: Phase 6 (trial).** Instructors can import last term's Word syllabus or start from scratch, build the grading table, grading scale, and course calendar, check the syllabus, save it to their own computer or OneDrive, and print it to PDF. College content changes are checked automatically on GitHub.
 
 ---
 
@@ -14,6 +14,7 @@ College-wide content (policies, support information, the footer) is **not** type
 
 - [How it works](#how-it-works)
 - [Instructor workflow](#instructor-workflow)
+- [Importing a previous syllabus](#importing-a-previous-syllabus)
 - [Saving and opening your syllabus](#saving-and-opening-your-syllabus)
 - [Grading editor](#grading-editor)
 - [Course calendar generator](#course-calendar-generator)
@@ -64,6 +65,9 @@ SCTCC_Syllabus/
 │   ├── syllabus-files.js           Save / Save as / Open with the computer's file dialogs
 │   ├── content-loader.js           Loads, checks, and sanitizes college content
 │   ├── syllabus-editor.js          The instructor editing panel
+│   ├── docx-reader.js              Reads a Word (.docx) file in the browser (no uploads)
+│   ├── syllabus-import.js          Finds the instructor's information in an old syllabus
+│   ├── start-screen.js             "How would you like to start?" and the import review
 │   └── syllabus.js                 Builds the syllabus, unsaved-changes tracking, Print to PDF
 ├── content/
 │   ├── content-manifest.json       List of college sections and where they go
@@ -113,18 +117,56 @@ Browsers block a page opened directly from your disk (`file://...`) from loading
 
 ## Instructor workflow
 
-1. Open the builder (GitHub Pages address, or a local server; see [Running the builder](#running-the-builder)). To keep working on an earlier syllabus, click **Open…** and choose your file. To reuse last term's syllabus, open it, update the term and dates, and use **Save as…** with the new name.
-2. Work through the groups in the **Edit syllabus** panel. The preview updates as you type. Anything still needed is marked in the preview, for example **[Withdrawal date needed]**.
+When the builder opens, it asks **How would you like to start?**
+
+| Choice | For | What happens |
+|---|---|---|
+| **Import a previous syllabus (Word)** | Instructors using the builder for the first time | Their old .docx syllabus is read in the browser. They review everything found, keep or skip each item, and start with most of the syllabus filled in. See below. |
+| **Open a syllabus saved from this builder** | Everyone after their first term | Their saved .json file opens exactly as saved. They update the term and dates, generate the calendar, and print. |
+| **Start from scratch** | New courses | A blank syllabus with hints in every section. |
+| *See an example* | Anyone curious | Opens the sample course. |
+
+**Start over…** in *Save and open your syllabus* (and **Import a previous syllabus…**) bring these choices back at any time. **Save** and **Open…** are also in the green toolbar.
+
+Then:
+
+1. Work through the groups in the **Edit syllabus** panel. The preview updates as you type. Anything still needed is marked in the preview, for example **[Withdrawal date needed]**.
    - **Course** and **Description, outcomes, and requisites**: copy from the official SCTCC Course Outline.
-   - **Credits, modality, and dates**: use the college's official dates.
-   - **Course policies**: your attendance and late-work wording; accepted file formats (blank = "Microsoft Word or PDF"); optional college statements; your own Class Environment text (blank = college sample).
-   - **Tools and vendors**: each outside tool's accessibility statement or VPAT, privacy policy, and support link. Tools with neither an accessibility statement nor a VPAT are listed automatically in the template's required sentence.
-   - Checkboxes such as **Include my photo** or **Include a Time Commitment section** turn optional sections on and off. Turning one off keeps what you wrote.
-3. Click **Save** (or press Ctrl+S / ⌘S) and choose a folder on your computer or your OneDrive folder.
-4. Click **Student preview** to see exactly what students will get.
-5. Click **Print to PDF**, choose **Save as PDF**, turn off **Headers and footers**, and save. Upload the PDF to D2L.
+   - **Credits, modality, and dates**: choose the term, then **Fill in these dates**.
+   - **Course policies**: your attendance and late-work wording; accepted file formats; optional college statements; your own Class Environment text; and **Additional course sections** such as Exams or Lab Safety.
+   - **Tools and vendors**: each outside tool's accessibility statement or VPAT, privacy policy, and support link.
+   - **Grading** and **Course calendar**: see the sections below.
+   - Web addresses typed into any text box become working links in the syllabus.
+2. **Save** (Ctrl+S / ⌘S) to a folder on your computer or your OneDrive folder.
+3. **Check my syllabus**, then **Print to PDF** and upload the PDF to D2L.
 
 The editor never changes college content. To use different college wording, the content owner updates the file in `content/`.
+
+## Importing a previous syllabus
+
+**Import a previous syllabus (Word)** reads last term's `.docx` file **in the browser**. The file is never uploaded; like Save and Open, nothing leaves the computer.
+
+**What it looks for** (best results with syllabi built on the SCTCC template's headings):
+- Course prefix, number, and title (from the title heading)
+- Instructor name and credentials, email, telephone, office location, office hours, best way to contact, contact expectations, bio, educational philosophy, and photo (pictures in the file are shown so the instructor can pick theirs)
+- Credits, modality, meeting days, class times, room, extra modality information, course log-in text
+- Course description, outcomes, prerequisites, corequisites, MnTC goal
+- Required and recommended materials, extra required technology, suggested technical skills
+- Attendance and late policies, accepted D2L file formats, whether Turnitin / academic dishonesty examples / Class Environment were included, the instructor's own Class Environment wording
+- **Instructor-written sections the template doesn't have** (for example Exams or Student Responsibilities), as Additional course sections
+- Tools from the Technical Support list (for example a publisher's support desk)
+- Grading introduction, categories (from a Word table or tab-separated lines, including "Labs (10 @ 20 points each)"), grading scale (including "F = below 60" or "59 and below"), where grades are posted, turnaround, other grading text, time commitment
+- The calendar statement and, if the old syllabus had a calendar table, its topics, readings, and due items
+
+**What it leaves out on purpose:**
+- **All college policy text.** Sections such as Academic Integrity, Accommodations, Title IX, Navigating D2L, Pulse, Technical Support, Student Services, and Accessibility & Data Privacy always come from the repository. Paragraphs of college wording inside instructor sections (for example the first-week drop and administrative withdrawal text inside Attendance) are recognized by comparing them with the current college content and are dropped.
+- **The term, year, and all dates.** The instructor chooses the new term and uses **Fill in these dates**. Old calendar dates are dropped; when the new calendar is generated, imported topics are placed in order into the class meetings.
+- Mission statement, change notice, footer, and template instructions.
+- A section that was under College Policies but is not a current college section (for example an old "Statement of Diversity") is offered **unticked**, with a note to include it only if it is the instructor's own statement.
+
+**The review screen** lists every item found, grouped like the editor, with the text it found. Everything is ticked except items that need a decision. **Import selected** fills a new, unsaved syllabus and lists the next steps; **Cancel** (or Escape) changes nothing.
+
+**PDF files** cannot be imported yet. Word can convert one: open the PDF in Word (File > Open), save it as a Word document, and import that. Older `.doc` files need the same Save As step.
 
 ## Saving and opening your syllabus
 
@@ -405,6 +447,16 @@ This guidance from the template is for instructors and does not appear in the sy
 
 ## Testing checklist
 
+Phase 6 (tested on 2026-11-26 in headless Chrome):
+
+- [x] Start screen opens on load with focus on its heading; three choices and the sample link; Escape gives a blank syllabus
+- [x] Importing a real CSEC 2205 Word syllabus finds 40 items: course, instructor (name, email, phone, office, office hours with Bookings links, contact text, bio), credits, online modality and course notes, log-in text, description, 9 outcomes, prerequisite, materials, skills, attendance and late policies, accepted file format (.docx), Turnitin/integrity/Class Environment choices with the instructor's own wording, Student Responsibilities and Exams as additional sections, Cengage support as a tool, grading (1,830 + 90 = 1,920 points), A–F scale, grades text, time commitment, and calendar statement; the instructor photo is pre-selected and the logo is not
+- [x] College text is left out: first-week/withdrawal/student-email paragraphs inside Attendance, all college sections, the old Statement of Diversity (offered unticked), footer
+- [x] After import plus "Fill in these dates", Check my syllabus reports only the drop and withdrawal dates (which come from eServices)
+- [x] A second layout (residential course with real Word tables, "(10 @ 20 points each)", "F = below 70", class times, MnTC goal, philosophy, recommended materials, a calendar table, and a custom Lab Safety section) imports correctly; its 4 calendar topics are placed in order into the generated Spring 2027 calendar
+- [x] PDF and damaged files give clear messages; Cancel changes nothing; Start over → See an example; toolbar Save; Additional course sections add/rename/link; no console errors
+- [x] Phases 2–5 tests still pass
+
 Phase 5 (tested on 2026-11-25 in headless Chrome and Node):
 
 - [x] Blank syllabus → Print to PDF opens a dialog listing what is missing; focus starts on Close; Escape closes and returns focus to Print to PDF
@@ -495,6 +547,8 @@ Still to test by a person: keyboard-only use, a screen reader (NVDA or JAWS), 20
 
 ## Possible next steps
 
+- PDF import (would add Mozilla's PDF.js library), if faculty mainly have PDFs.
+
 - Official logo from Marketing and Arimo font files.
 - Records & Registration confirms the academic calendar and takes ownership in CODEOWNERS; content offices fix the "here" links and other verification items.
 - Move the repository to a college GitHub organization and turn on the ruleset above.
@@ -509,4 +563,5 @@ Still to test by a person: keyboard-only use, a screen reader (NVDA or JAWS), 20
 | 2 (done) | Instructor editing panel, Save / Save as / Open to the instructor's own files or OneDrive (no browser storage), vendor table, photo upload, instructor overrides (Class Environment, accepted file formats) |
 | 3 (done) | Grading editor: points and percentage methods, category rows with move/remove, live totals, weight check with instructor override, scale editor with overlap/gap/range checks and point ranges, plus/minus sample, print stopped on grading errors |
 | 4 (done) | Course calendar generator: 1–4 meetings per week or one row per week, no-class dates, finals week, first-week schedule, regeneration that keeps entered text, move/shift topics, unscheduled rows, CSV export; college academic calendar file for official dates and no-class dates |
-| **5 (this version)** | Checks before printing (errors, warnings, notices with Go to field), guided Print to PDF dialog, Check my syllabus panel, GitHub Action that checks content files and links |
+| 5 (done) | Checks before printing (errors, warnings, notices with Go to field), guided Print to PDF dialog, Check my syllabus panel, GitHub Action that checks content files and links |
+| **6 (this version)** | Start screen (import / open / scratch / example), Word syllabus import with review, additional course sections, toolbar Save and Open, linked web addresses |

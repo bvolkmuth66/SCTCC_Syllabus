@@ -92,7 +92,9 @@ window.SCTCC = window.SCTCC || {};
     "Where grades are posted": "grading.gradesNarrative.postedWhere",
     "Grading turnaround": "grading.gradesNarrative.turnaround",
     "Time commitment": "grading.timeCommitment",
-    "Statement of where the course schedule is located": "calendar.locationStatement"
+    "Statement of where the course schedule is located": "calendar.locationStatement",
+    "Section title": "policies.additionalSections",
+    "Section text": "policies.additionalSections"
   };
 
   const FRIENDLY_MARKERS = {
