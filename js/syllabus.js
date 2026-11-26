@@ -793,22 +793,31 @@
     setMode(snapshot.mode);
   }
 
+  /* Run every check before printing (see js/syllabus-validation.js). */
+  function runChecks() {
+    if (state.renderTimer) render();
+    return SCTCC.validation.validate({
+      data: state.data,
+      content: state.content,
+      previewRoot: document.querySelector(".page"),
+      config
+    });
+  }
+
   /*
-   * Print to PDF button. Phase 3 checks grading before printing; Phase 5 adds
-   * the full pre-print validation. The browser's own Print command cannot be
-   * stopped, but the problems remain listed in the editor and preview.
+   * Print to PDF button: check first, then guide the instructor through saving.
+   * Problems that must be fixed stop printing. The browser's own Print command
+   * cannot be stopped, but the same problems are shown in the editor.
    */
   function printToPdf() {
-    if (state.renderTimer) render();
-    const check = SCTCC.grading.checkGrading(state.data.grading);
-    if (check.errors.length) {
-      setMode("instructor");
-      SCTCC.editor.showGradingProblems(check.errors);
-      announce(`Not printed. ${check.errors.length} grading problem(s) need fixing first.`);
-      return;
-    }
-    enterPrintMode();
-    window.print();
+    const result = runChecks();
+    SCTCC.printCheck.open(result, {
+      fileName: suggestedFileName(),
+      onPrint: () => {
+        enterPrintMode();
+        window.print();
+      }
+    });
   }
 
   function bindPageEvents() {
@@ -838,7 +847,9 @@
     markSaved,
     hasUnsavedChanges,
     contentVersion,
-    suggestedFileName
+    suggestedFileName,
+    runChecks,
+    showEditor: () => setMode("instructor")
   });
 
   async function init() {

@@ -885,6 +885,56 @@ body[data-mode="instructor"] .student-only {
   border-bottom: 1px solid var(--sctcc-border);
 }
 
+/* ---------- Checks and the Print to PDF dialog ---------- */
+
+.print-dialog {
+  width: min(44rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem;
+  border: 2px solid var(--sctcc-primary);
+  border-radius: 0.4rem;
+  color: var(--sctcc-text);
+  background: var(--sctcc-background);
+}
+
+.print-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.print-dialog h2 {
+  margin-top: 0;
+}
+
+.findings {
+  margin: 0.75rem 0;
+}
+
+.findings-title {
+  font-size: 1rem;
+  margin: 0 0 0.35rem;
+  color: var(--sctcc-text);
+}
+
+.findings ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.findings li {
+  margin: 0.3rem 0;
+}
+
+.btn-small {
+  min-height: 2rem;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.print-steps li {
+  margin: 0.4rem 0;
+}
+
 /* ---------- Instructor-written blocks inside college sections ---------- */
 
 .instructor-content {

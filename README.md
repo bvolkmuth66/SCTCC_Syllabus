@@ -6,7 +6,7 @@ Instructors open the builder in a web browser, enter their course information, a
 
 College-wide content (policies, support information, the footer) is **not** typed by instructors. Each piece lives in its own file in the `content/` folder, maintained by the office that owns it. Every syllabus picks up the current approved wording the next time an instructor makes a PDF.
 
-> **Status: Phase 4 preview (trial).** Instructors can fill in their syllabus, build the grading table, grading scale, and course calendar, save it as a file to their own computer or OneDrive, open it again later, and print it to PDF. Full pre-print validation comes in Phase 5 (see [Roadmap](#roadmap)).
+> **Status: Phase 5 (trial, feature-complete).** Instructors can fill in their syllabus, build the grading table, grading scale, and course calendar, check it, save it as a file to their own computer or OneDrive, and print it to PDF. College content changes are checked automatically on GitHub.
 
 ---
 
@@ -22,7 +22,9 @@ College-wide content (policies, support information, the footer) is **not** type
 - [Editing college content (for content owners)](#editing-college-content-for-content-owners)
 - [The content manifest](#the-content-manifest)
 - [College academic calendar (for Records & Registration)](#college-academic-calendar-for-records--registration)
+- [Checks before printing](#checks-before-printing)
 - [Printing to PDF](#printing-to-pdf)
+- [Automatic content check on GitHub](#automatic-content-check-on-github)
 - [Branding: logo, colors, and font](#branding-logo-colors-and-font)
 - [Accessibility](#accessibility)
 - [Items needing administrative verification](#items-needing-administrative-verification)
@@ -57,6 +59,8 @@ SCTCC_Syllabus/
 │   ├── syllabus-data.js            Data model, import validation, date/time helpers
 │   ├── grading.js                  Grading totals, weight check, scale check, point ranges
 │   ├── calendar-builder.js         Calendar generation, regeneration, shifting topics, CSV
+│   ├── syllabus-validation.js      Checks before printing (errors, warnings, notices)
+│   ├── print-check.js              Guided Print to PDF dialog and the findings list
 │   ├── syllabus-files.js           Save / Save as / Open with the computer's file dialogs
 │   ├── content-loader.js           Loads, checks, and sanitizes college content
 │   ├── syllabus-editor.js          The instructor editing panel
@@ -70,7 +74,11 @@ SCTCC_Syllabus/
 │   └── favicon.svg                 Generic browser-tab icon (not the college logo)
 ├── examples/
 │   └── sample-course-data.js       Invented sample course ("Load sample course" button)
-├── .github/CODEOWNERS              Who reviews changes to each file
+├── scripts/
+│   └── check-content.mjs           Checks the content files (run by GitHub on every change)
+├── .github/
+│   ├── CODEOWNERS                  Who reviews changes to each file
+│   └── workflows/check-content.yml Runs the content check on pull requests
 ├── .nojekyll                       Serve files as-is on GitHub Pages
 └── README.md
 ```
@@ -299,15 +307,41 @@ Change `contentVersion` and `lastUpdated` at the top when a set of changes is ap
 
 **To add a new college section:** create the `.html` file in `content/`, add an entry to the manifest, and add a line for it in `.github/CODEOWNERS`.
 
+## Checks before printing
+
+**Print to PDF** checks the syllabus first. The same checks run whenever the instructor clicks **Check my syllabus** at the top of the editor. Results come in three levels, each with a **Go to field** button that opens the editor at the right place (even from Student preview):
+
+| Level | Effect | Examples |
+|---|---|---|
+| **Problems to fix before printing** | Print to PDF is stopped | Anything the syllabus still shows as "[… needed]" (course prefix, number, title, term, year, instructor name and email, office and hours, credits, modality, meeting days/times/room, begin/end/drop/withdraw dates, description, outcomes, prerequisites, attendance and late policies, required materials, grading categories and scale, where grades are posted, turnaround, calendar or schedule statement, and any optional section that is turned on but empty); an incomplete email address; end date not after begin date; drop date before the course begins; withdraw date not after the drop date or after the course ends; template placeholders left in your text (XXX, YOUR NAME, GIVE WITHDRAWAL DATE, LIST ASSIGNMENT, DATE & TIME…); grading errors (weights not 100% without the override, overlapping grades, bad percentages, missing or duplicate grade labels); a required college section that failed to load |
+| **Please review** | Printing allowed | Course starts before the semester or ends before final exam week; calendar rows outside the course dates; calendar with no topics; gaps in the grading scale; zero-point categories; weights published with the override; "Include my photo" on with no photo; a tool's web address that is not a full https:// address; an optional college section that failed to load |
+| **For your information** | Printing allowed | College dates not yet confirmed by Records & Registration; tools with no privacy policy link; unscheduled calendar rows outside the course dates (allowed as exceptions); "here" link text in college content (for content owners); placeholder logo |
+
+The browser's own Print command (Ctrl+P) cannot be stopped, but it still switches to the student view, and the problems stay listed in the editor.
+
 ## Printing to PDF
 
-1. Click **Print to PDF** in the builder toolbar. The builder switches to the student view and suggests a file name such as `ITEC-0000-Spring-2027-Syllabus`.
-2. In the print dialog, set **Destination** to **Save as PDF** (or **Microsoft Print to PDF**).
-3. Under **More settings**, turn **Headers and footers off**. The syllabus prints its own footer (college name, course, term, syllabus version, and page numbers).
-4. Leave **Background graphics** off to save ink. Nothing important depends on it.
-5. Save and upload the PDF to your D2L course.
+1. Click **Print to PDF** in the builder toolbar. If there are problems to fix, the dialog lists them with **Go to field** buttons. Otherwise it shows anything to review and these steps.
+2. Click **Open print window**. The builder switches to the student view and suggests a file name such as `CPTR-1118-Spring-2027-Syllabus`.
+3. Set **Destination** to **Save as PDF** (or **Microsoft Print to PDF**).
+4. Under **More settings**, turn **Headers and footers off**. The syllabus prints its own footer (college name, course, term, syllabus version, and page numbers). Leave **Background graphics** off to save ink.
+5. Save to your own folder or OneDrive, and upload the PDF to D2L.
 
 Use **Google Chrome or Microsoft Edge**. They create tagged PDFs that screen readers can read, keep links clickable, and support the syllabus's own page footer. Other browsers still produce a usable PDF but may omit the page footer or tagging.
+
+## Automatic content check on GitHub
+
+`scripts/check-content.mjs` checks the `content/` folder, and `.github/workflows/check-content.yml` runs it on every pull request that changes content (and weekly for links). The results appear on the pull request:
+
+- **Errors (the check fails):** a file listed in the manifest is missing; a bad file name or placement; `<script>`, `<style>`, images, forms, or other forbidden tags; `on…` event attributes; `javascript:` links or links that are not https://, mailto:, tel:, or #; template placeholders (XXX, TBD, GIVE DATE…); invalid field tokens; a LAST-REVIEWED that is not a date; academic calendar problems (not real dates, end before start, finals outside the semester, withdraw before drop, duplicate terms).
+- **Warnings (listed, do not fail):** missing OWNER / LAST-REVIEWED / VERSION header lines; `http://` links; link text such as "here"; tags the builder drops; unclosed tags; content files not listed in the manifest; no-class dates outside the semester or without a label.
+- **Links:** a separate job tries every web link and reports any that fail. It never blocks a change.
+
+Run it yourself from the repository folder: `node scripts/check-content.mjs` (add `--check-links` to test links). Node 18 or later; nothing to install.
+
+**Recommended GitHub settings** (Settings → Branches → Add branch ruleset, or Rules → Rulesets, for `main`):
+- Require a pull request before merging, with **Require review from Code Owners** (uses `.github/CODEOWNERS`).
+- Require status checks to pass: **Content structure and wording**.
 
 ## Branding: logo, colors, and font
 
@@ -370,6 +404,18 @@ This guidance from the template is for instructors and does not appear in the sy
 - **Technical support:** include support links for any outside vendors used in the course (the **Technical support web address** field for each tool).
 
 ## Testing checklist
+
+Phase 5 (tested on 2026-11-25 in headless Chrome and Node):
+
+- [x] Blank syllabus → Print to PDF opens a dialog listing what is missing; focus starts on Close; Escape closes and returns focus to Print to PDF
+- [x] Go to field opens the right editor group and focuses the field (also from Student preview, and to "Add a grade" for scale problems)
+- [x] Sample course → no problems; review notices listed; steps shown with the suggested file name; Open print window prints in student view
+- [x] Template placeholder ("XXX") and withdraw-before-drop reported in Check my syllabus, with working Go to field
+- [x] Overlapping grades stop printing; weights below 100% stop printing until the override is ticked
+- [x] Calendar rows outside the course dates reported for review
+- [x] Each Go to field button is described by its message for screen readers; the same field is listed once even if marked in several places
+- [x] Content check script: the real content passes (6 warnings: 3 http:// links, 3 "here" links); a broken copy fails with 7 errors (missing file, bad date, `<script>`, event attribute, `javascript:` link, placeholder, impossible calendar date) and the expected warnings
+- [x] Phases 2–4 tests still pass
 
 Phase 4 (tested on 2026-11-25; generator logic in Node, editor in headless Chrome):
 
@@ -439,13 +485,21 @@ Still to test by a person: keyboard-only use, a screen reader (NVDA or JAWS), 20
 ## Known limitations
 
 - `content/academic-calendar.json` was copied from the published calendar and awaits confirmation by Records & Registration; drop/withdraw deadlines come from eServices.
-- Only grading problems stop Print to PDF so far; Phase 5 adds the full pre-print check (required fields, dates, placeholders).
+- The browser's own Print command (Ctrl+P) cannot be stopped by the checks; use the Print to PDF button.
 - There is no autosave, by design. Save regularly (Ctrl+S); the status line shows when changes are unsaved.
 - Firefox and Safari save by download rather than to a chosen folder.
 - The logo is a placeholder.
 - Arimo font files are not bundled yet (Arial is used).
 - The page footer in the PDF requires Chrome or Edge version 131 or later.
 - No pre-print validation yet; an incomplete syllabus can still be printed (missing values are clearly marked).
+
+## Possible next steps
+
+- Official logo from Marketing and Arimo font files.
+- Records & Registration confirms the academic calendar and takes ownership in CODEOWNERS; content offices fix the "here" links and other verification items.
+- Move the repository to a college GitHub organization and turn on the ruleset above.
+- Testing by people: keyboard only, NVDA/JAWS, 200% zoom, Acrobat accessibility check of a PDF, D2L upload, and a real Save to a OneDrive folder in Chrome and Edge.
+- Optional: direct OneDrive saving (needs an SCTCC Microsoft app registration).
 
 ## Roadmap
 
@@ -454,5 +508,5 @@ Still to test by a person: keyboard-only use, a screen reader (NVDA or JAWS), 20
 | 1 (done) | Content files, manifest, loader, sanitizer, rendered preview, print styles, basic Print to PDF |
 | 2 (done) | Instructor editing panel, Save / Save as / Open to the instructor's own files or OneDrive (no browser storage), vendor table, photo upload, instructor overrides (Class Environment, accepted file formats) |
 | 3 (done) | Grading editor: points and percentage methods, category rows with move/remove, live totals, weight check with instructor override, scale editor with overlap/gap/range checks and point ranges, plus/minus sample, print stopped on grading errors |
-| **4 (this version)** | Course calendar generator: 1–4 meetings per week or one row per week, no-class dates, finals week, first-week schedule, regeneration that keeps entered text, move/shift topics, unscheduled rows, CSV export; college academic calendar file for official dates and no-class dates |
-| 5 | Validation before printing, guided Print to PDF, GitHub Action to check content files (HTML, links, link text, placeholders) |
+| 4 (done) | Course calendar generator: 1–4 meetings per week or one row per week, no-class dates, finals week, first-week schedule, regeneration that keeps entered text, move/shift topics, unscheduled rows, CSV export; college academic calendar file for official dates and no-class dates |
+| **5 (this version)** | Checks before printing (errors, warnings, notices with Go to field), guided Print to PDF dialog, Check my syllabus panel, GitHub Action that checks content files and links |

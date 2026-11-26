@@ -168,6 +168,14 @@ window.SCTCC = window.SCTCC || {};
     ], true);
   }
 
+  function checkGroup() {
+    return group("editor-check", "Check before printing", [
+      note("Print to PDF runs these checks automatically. You can also check at any time."),
+      el("div", { class: "button-row" }, actionButton("run-check", "Check my syllabus", "btn-primary", { id: "run-check" })),
+      el("div", { id: "check-results", "aria-live": "polite" })
+    ], true);
+  }
+
   function courseGroup() {
     return group("editor-course", "Course", [
       note("Use the information from the official SCTCC Course Outline."),
@@ -798,16 +806,28 @@ window.SCTCC = window.SCTCC || {};
       lines && lines.length ? el("ul", null, lines.map((line) => el("li", null, line))) : null));
   }
 
-  /* Called when Print to PDF is stopped by grading problems. */
-  function showGradingProblems(errors) {
-    const groupElement = root.querySelector("#editor-grading");
-    groupElement.open = true;
-    showMessages("error", "Not printed. Fix these grading problems first (see Grading below):", errors);
-    const notice = root.querySelector("#data-messages .notice");
-    if (notice) {
-      notice.setAttribute("tabindex", "-1");
-      notice.focus();
+  /* Open the editor at the field for a data path (used by "Go to field"). */
+  const FOCUS_FALLBACK = {
+    "grading.categories": "add-category",
+    "grading.scale": "add-grade"
+  };
+
+  function focusField(path) {
+    app.showEditor();
+    const groupId = SCTCC.validation.groupForPath(path);
+    if (groupId) root.querySelector(`#${groupId}`).open = true;
+    const row = /^calendar\.entries\.(\d+)\./.exec(path);
+    if (row) {
+      const details = root.querySelector(`details.calendar-row[data-index="${row[1]}"]`);
+      if (details) details.open = true;
     }
+    let target = document.getElementById(fieldId(path))
+      || root.querySelector(`[data-group="${path}"]`)
+      || (FOCUS_FALLBACK[path] ? document.getElementById(FOCUS_FALLBACK[path]) : null);
+    if (!target && groupId) target = root.querySelector(`#${groupId} > summary`);
+    if (!target) return;
+    target.scrollIntoView({ block: "center" });
+    target.focus({ preventScroll: true });
   }
 
   function setFileStatus(fileName, unsaved) {
@@ -1156,6 +1176,15 @@ window.SCTCC = window.SCTCC || {};
         break;
       }
 
+      case "run-check": {
+        const result = app.runChecks();
+        SCTCC.printCheck.renderFindings(root.querySelector("#check-results"), result, 3);
+        announce(result.errors.length
+          ? `${result.errors.length} problem${result.errors.length === 1 ? "" : "s"} to fix, ${result.warnings.length} to review.`
+          : `Ready to print. ${result.warnings.length} item${result.warnings.length === 1 ? "" : "s"} to review.`);
+        break;
+      }
+
       case "fill-college-dates": {
         const term = currentTerm();
         if (!term) return;
@@ -1351,6 +1380,7 @@ window.SCTCC = window.SCTCC || {};
     root.textContent = "";
     root.appendChild(el("form", { id: "syllabus-editor", class: "editor-form", novalidate: true },
       dataGroup(),
+      checkGroup(),
       courseGroup(),
       instructorGroup(),
       scheduleGroup(),
@@ -1379,6 +1409,11 @@ window.SCTCC = window.SCTCC || {};
       }
     });
     form.addEventListener("click", (event) => {
+      const go = event.target.closest("[data-go-path]");
+      if (go) {
+        focusField(go.getAttribute("data-go-path"));
+        return;
+      }
       const button = event.target.closest("[data-action]");
       if (button) handleAction(button.getAttribute("data-action"), button);
     });
@@ -1394,6 +1429,7 @@ window.SCTCC = window.SCTCC || {};
 
     populate();
     describeSaveMethod();
+    SCTCC.printCheck.setGoTo(focusField);
   }
 
   window.SCTCC.editor = Object.freeze({
@@ -1401,7 +1437,7 @@ window.SCTCC = window.SCTCC || {};
     populate: () => populate(),
     setFileStatus,
     showMessages,
-    showGradingProblems,
+    focusField,
     refreshCollegeDates
   });
 })();
