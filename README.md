@@ -425,9 +425,11 @@ The browser's own Print command (Ctrl+P) cannot be stopped, but it still switche
 
 1. Click **Print to PDF** in the builder toolbar. If there are problems to fix, the dialog lists them with **Go to field** buttons. Otherwise it shows anything to review and these steps.
 2. Click **Open print window**. The builder switches to the student view and sets the PDF's title, which is also the suggested file name, for example `CPTR 1118 Cisco II Syllabus, Spring 2027`. A readable title matters because screen readers announce it and PDF viewers show it (WCAG 2.4.2). Characters that file names cannot contain (such as `:` or `/`) are left out. The saved `.json` file and the calendar CSV keep hyphenated names such as `CPTR-1118-Spring-2027-Syllabus.json`.
-3. Set **Destination** to **Save as PDF** (or **Microsoft Print to PDF**).
+3. Set **Destination** to **Save as PDF**. **Do not choose "Adobe PDF" or "Microsoft Print to PDF."** Those print drivers turn the text into shapes: the PDF has no tags (headings, lists, reading order), its text cannot be selected or searched, and screen readers read nonsense. A syllabus made that way fails the accessibility requirements.
 4. Under **More settings**, turn **Headers and footers off**. The syllabus prints its own footer (college name, course, term, syllabus version, and page numbers). Leave **Background graphics** off to save ink.
 5. Save to your own folder or OneDrive, and upload the PDF to D2L.
+
+Print sizes: body text 11 pt, headings 11.5–20 pt, tables 10 pt, the calendar table 9.5 pt, and nothing (footer included) below 9 pt. Long web addresses in instructor text (over 60 characters, such as booking links) are shown as their site and first path part, for example `outlook.office.com/bookwithme/…`, and still link to the full address. Lines in instructor text that start with a bullet (•, -, *) or a number (1.) print as real lists.
 
 Use **Google Chrome or Microsoft Edge**. They create tagged PDFs that screen readers can read, keep links clickable, and support the syllabus's own page footer. Other browsers still produce a usable PDF but may omit the page footer or tagging.
 

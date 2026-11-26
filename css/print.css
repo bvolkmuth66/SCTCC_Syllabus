@@ -11,7 +11,7 @@
 
   @bottom-left {
     font-family: "Arimo", Arial, "Liberation Sans", sans-serif;
-    font-size: 8pt;
+    font-size: 9pt;
     color: #4a4a4a;
     vertical-align: top;
     padding-top: 0.15in;
@@ -20,7 +20,7 @@
   @bottom-right {
     content: "Page " counter(page) " of " counter(pages);
     font-family: "Arimo", Arial, "Liberation Sans", sans-serif;
-    font-size: 8pt;
+    font-size: 9pt;
     color: #4a4a4a;
     vertical-align: top;
     padding-top: 0.15in;
@@ -31,8 +31,9 @@ html {
   scroll-behavior: auto;
 }
 
+/* Body text at 11pt; nothing smaller than 9pt. */
 body {
-  font-size: 10.5pt;
+  font-size: 11pt;
   line-height: 1.45;
   color: #000000;
   background: #ffffff;
@@ -49,6 +50,7 @@ li,
 dd,
 address {
   max-width: none;
+  overflow-wrap: anywhere; /* long words and addresses wrap instead of running under the photo */
 }
 
 /* Never print builder controls, notes, status, or disabled content. */
@@ -77,21 +79,21 @@ caption {
 }
 
 h1 {
-  font-size: 18pt;
+  font-size: 20pt;
 }
 
 h2 {
-  font-size: 14pt;
+  font-size: 15pt;
   margin-top: 16pt;
 }
 
 h3 {
-  font-size: 12pt;
+  font-size: 12.5pt;
   margin-top: 12pt;
 }
 
 h4 {
-  font-size: 11pt;
+  font-size: 11.5pt;
   margin-top: 10pt;
 }
 
@@ -111,7 +113,7 @@ li {
 }
 
 .data-table {
-  font-size: 9.5pt;
+  font-size: 10pt;
 }
 
 .data-table thead {
@@ -137,7 +139,7 @@ li {
 }
 
 .calendar-table {
-  font-size: 8.5pt;
+  font-size: 9.5pt;
 }
 
 .calendar-table tr.no-class td,
@@ -155,9 +157,13 @@ a {
 /* Optional: print full addresses after links (config.printLinkUrls). */
 body.print-link-urls a[href^="http"]::after {
   content: " (" attr(href) ")";
-  font-size: 8pt;
+  font-size: 9pt;
   word-break: break-all;
   color: #4a4a4a;
+}
+
+body.print-link-urls a.long-url::after {
+  content: none; /* too long to read on paper; the link still works in the PDF */
 }
 
 /* Missing values stay visible so an incomplete syllabus is obvious. */
@@ -195,6 +201,6 @@ body.print-link-urls a[href^="http"]::after {
 
 .institutional-footer {
   margin-top: 18pt;
-  font-size: 8.5pt;
+  font-size: 9pt;
   break-inside: avoid;
 }
