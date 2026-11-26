@@ -84,6 +84,37 @@ window.SCTCC = window.SCTCC || {};
     }
   }
 
+  /*
+   * Save another kind of file (for example the calendar as CSV) to a location the
+   * instructor chooses. Does not change which syllabus file Save updates.
+   */
+  async function exportText(text, fileName, description, mimeType, extension) {
+    if (!supportsFilePicker()) {
+      const blob = new Blob([text], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return { ok: true, fileName, method: "download" };
+    }
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: fileName,
+        types: [{ description, accept: { [mimeType]: [extension] } }],
+        startIn: "documents"
+      });
+      await writeToHandle(handle, text);
+      return { ok: true, fileName: handle.name || fileName, method: "file" };
+    } catch (error) {
+      if (isCancel(error)) return { ok: false, cancelled: true };
+      return { ok: false, message: "The file could not be saved there. Try again and choose another folder." };
+    }
+  }
+
   /* Save: updates the current file if there is one, otherwise behaves like Save As. */
   async function save(data, contentVersion, baseName) {
     if (!currentHandle) return saveAs(data, contentVersion, baseName);
@@ -173,6 +204,7 @@ window.SCTCC = window.SCTCC || {};
     readChosenFile,
     setCurrentFile,
     eraseBrowserCopies,
+    exportText,
     hasCurrentFile: () => Boolean(currentHandle)
   });
 })();

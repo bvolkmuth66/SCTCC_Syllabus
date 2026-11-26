@@ -97,6 +97,15 @@ window.SCTCC = window.SCTCC || {};
       hintFor(id, hint));
   }
 
+  /* A checkbox bound to any true/false field. */
+  function checkbox(path, label, hint) {
+    const id = fieldId(path);
+    return el("div", { class: "field field-toggle" },
+      el("input", { type: "checkbox", id, "data-path": path, "data-kind": "boolean", "aria-describedby": hint ? `${id}-hint` : null }),
+      el("label", { for: id }, label),
+      hintFor(id, hint));
+  }
+
   function checkboxGroup(path, legend, values, hint) {
     const groupId = fieldId(path);
     return el("fieldset", { class: "field-group", "aria-describedby": hint ? `${groupId}-hint` : null },
@@ -225,6 +234,7 @@ window.SCTCC = window.SCTCC || {};
         hint: "For example (hybrid): The lecture component of this course is online with pre-recorded lectures."
       }),
       note("Use the college’s official dates. The course must not begin before the official semester start date and must include final exam week."),
+      el("div", { id: "college-dates", class: "college-dates" }),
       el("div", { class: "field-row" },
         field("date", "course.startDate", "Begin date", { narrow: true }),
         field("date", "course.endDate", "End date", { narrow: true })),
@@ -374,11 +384,212 @@ window.SCTCC = window.SCTCC || {};
 
   function calendarGroup() {
     return group("editor-calendar", "Course calendar", [
-      note("The calendar generator arrives in Phase 4. Imported files and the sample course keep their calendar rows."),
-      field("textarea", "calendar.locationStatement", "Where the course schedule is located", {
-        hint: "For example: The complete, current schedule is posted in D2L under Content > Course Schedule."
-      })
+      field("textarea", "calendar.locationStatement", "Statement about the course schedule", {
+        optionalLabel: true,
+        hint: "Shown above the calendar, or by itself if you do not build a calendar. For example: The complete, current schedule is posted in D2L under Content > Course Schedule."
+      }),
+
+      el("h3", { class: "editor-subheading" }, "Calendar settings"),
+      field("select", "calendar.mode", "Calendar layout", {
+        choices: [
+          ["meetings", "One row per class meeting"],
+          ["weekly", "One row per week (online courses)"]
+        ]
+      }),
+      el("div", { class: "button-row" },
+        actionButton("calendar-copy-course", "Use course dates and meeting days")),
+      el("div", { class: "field-row" },
+        field("date", "calendar.startDate", "Calendar start date", { narrow: true, hint: "Blank = course begin date" }),
+        field("date", "calendar.endDate", "Calendar end date", { narrow: true, hint: "Blank = course end date" })),
+      el("div", { class: "meetings-only" },
+        field("select", "calendar.meetingsPerWeek", "Meetings per week", {
+          narrow: true,
+          choices: [["0", "Choose"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"]]
+        }),
+        checkboxGroup("calendar.meetingDays", "Meeting days", DAYS, "Choose exactly as many days as meetings per week."),
+        checkbox("calendar.useFirstWeekSchedule", "The first week has a different schedule"),
+        el("div", { id: "first-week-days" },
+          checkboxGroup("calendar.firstWeekDays", "First-week meeting days", DAYS)),
+        note("Class times come from Credits, modality, and dates.")),
+      checkbox("calendar.includeFinalsWeek", "Include final exam week", "The last week of the course is marked as finals week."),
+      checkbox("calendar.showExcludedAsRows", "Show no-class dates in the calendar", "Holidays and closures appear as “No Class” rows instead of being left out."),
+
+      fieldset("No-class dates (holidays and closures)", [
+        el("div", { class: "button-row" },
+          actionButton("add-college-closures", "Add the college’s no-class dates", "btn-primary", { id: "add-college-closures" })),
+        el("div", { id: "excluded-rows" }),
+        actionButton("add-excluded", "Add a no-class date", null, { id: "add-excluded" })
+      ]),
+
+      el("div", { id: "calendar-settings-summary", class: "grading-summary", "aria-live": "polite" }),
+      el("div", { class: "button-row" },
+        actionButton("calendar-generate", "Generate calendar", "btn-primary", { id: "calendar-generate" }),
+        actionButton("calendar-add-row", "Add an unscheduled row", null, { id: "calendar-add-row" })),
+      el("div", { class: "button-row" },
+        actionButton("calendar-export", "Export calendar (.csv)"),
+        actionButton("calendar-clear", "Remove all calendar rows", "btn-danger")),
+
+      el("h3", { id: "calendar-rows-heading", class: "editor-subheading", tabindex: "-1" }, "Calendar rows"),
+      note("Topics, readings, due items, and notes stay with their dates when you generate the calendar again."),
+      el("div", { id: "calendar-rows" })
     ]);
+  }
+
+  /* ---------- Calendar rows ---------- */
+
+  function calendarRowLabel(row) {
+    const parts = [];
+    if (row.week) parts.push(`Week ${row.week}${row.isFinals ? " (finals)" : ""}`);
+    if (row.manual) parts.push("Unscheduled");
+    if (row.date) {
+      parts.push(row.weekEnd
+        ? `${util.formatDate(row.date, "short")}–${util.formatDate(row.weekEnd, "short")}`
+        : `${util.weekdayName(row.date, true)} ${util.formatDate(row.date, "short")}`);
+    }
+    if (row.noClass) parts.push("No class");
+    const topic = String(row.topic || "").trim();
+    parts.push(topic || "(no topic)");
+    return parts.join(" · ");
+  }
+
+  function buildExcludedRows() {
+    const container = root.querySelector("#excluded-rows");
+    container.textContent = "";
+    const items = app.getData().calendar.excludedDates;
+    if (!items.length) {
+      container.appendChild(note("None added."));
+      return;
+    }
+    items.forEach((item, index) => {
+      const base = `calendar.excludedDates.${index}`;
+      container.appendChild(el("div", { class: "excluded-row" },
+        el("div", { class: "field-row" },
+          field("date", `${base}.date`, "Date", { narrow: true }),
+          field("text", `${base}.label`, "Reason", { hint: "For example: Spring break" })),
+        actionButton("remove-excluded", "Remove", "btn-danger", {
+          "data-index": String(index),
+          "aria-label": `Remove no-class date ${index + 1}${item.label ? ` (${item.label})` : ""}`
+        })));
+    });
+    populate(container);
+  }
+
+  function buildCalendarRows(openIndexes) {
+    const container = root.querySelector("#calendar-rows");
+    const keepOpen = openIndexes || new Set(
+      Array.from(container.querySelectorAll("details.calendar-row[open]")).map((row) => Number(row.getAttribute("data-index"))));
+    container.textContent = "";
+    const rows = app.getData().calendar.entries;
+    root.querySelector("#calendar-rows-heading").textContent = `Calendar rows (${rows.length})`;
+    if (!rows.length) {
+      container.appendChild(note("No rows yet. Choose the settings above and click Generate calendar."));
+      return;
+    }
+    rows.forEach((row, index) => {
+      const base = `calendar.entries.${index}`;
+      container.appendChild(el("details", { class: `calendar-row${row.noClass ? " is-no-class" : ""}`, "data-index": String(index), open: keepOpen.has(index) },
+        el("summary", { id: `calendar-summary-${index}` }, calendarRowLabel(row)),
+        el("div", { class: "group-body" },
+          row.manual
+            ? field("date", `${base}.date`, "Date", { narrow: true, optionalLabel: true, hint: "Unscheduled rows can have any date, or none." })
+            : null,
+          field("text", `${base}.topic`, "Topic"),
+          field("text", `${base}.preparation`, "Preparation/Reading", { optionalLabel: true }),
+          field("text", `${base}.due`, "Assignment due", { optionalLabel: true }),
+          field("text", `${base}.notes`, "Notes", { optionalLabel: true }),
+          checkbox(`${base}.noClass`, "No class (holiday or closure)"),
+          el("div", { class: "button-row" },
+            actionButton("calendar-move", "Move topic earlier", null, { "data-index": String(index), "data-direction": "-1", disabled: index === 0 }),
+            actionButton("calendar-move", "Move topic later", null, { "data-index": String(index), "data-direction": "1", disabled: index === rows.length - 1 })),
+          el("div", { class: "button-row" },
+            actionButton("calendar-shift", "Shift topics later from here", null, { "data-index": String(index) }),
+            actionButton("calendar-remove", "Remove row", "btn-danger", { "data-index": String(index) })))));
+    });
+    populate(container);
+  }
+
+  function refreshCalendarSettings() {
+    const data = app.getData();
+    const groupElement = root.querySelector("#editor-calendar");
+    groupElement.setAttribute("data-mode", data.calendar.mode === "weekly" ? "weekly" : "meetings");
+    root.querySelector("#first-week-days").hidden = !data.calendar.useFirstWeekSchedule;
+    const settings = SCTCC.calendar.resolveSettings(data);
+    const check = SCTCC.calendar.checkSettings(settings);
+    summaryBlock(root.querySelector("#calendar-settings-summary"), "", check.errors, check.warnings, "Fix before generating the calendar:");
+  }
+
+  function refreshCalendarLabels() {
+    app.getData().calendar.entries.forEach((row, index) => {
+      const summary = root.querySelector(`#calendar-summary-${index}`);
+      if (summary) {
+        summary.textContent = calendarRowLabel(row);
+        summary.parentElement.classList.toggle("is-no-class", Boolean(row.noClass));
+      }
+    });
+  }
+
+  /* ---------- College academic calendar ---------- */
+
+  function currentTerm() {
+    const data = app.getData();
+    return SCTCC.calendar.findTerm(app.academicCalendar(), data.course.term, data.course.year);
+  }
+
+  function refreshCollegeDates() {
+    const box = root && root.querySelector("#college-dates");
+    if (!box) return;
+    box.textContent = "";
+    const academic = app.academicCalendar();
+    const course = app.getData().course;
+    if (!academic) {
+      box.appendChild(note("College dates are not available right now. Enter your dates from the SCTCC Academic Calendar."));
+      return;
+    }
+    if (!course.term || !String(course.year).trim()) {
+      box.appendChild(note("Choose the term and year under Course to fill in the college’s official dates."));
+      return;
+    }
+    const term = currentTerm();
+    if (!term) {
+      box.appendChild(note(`The college calendar has no dates for ${course.term} ${course.year} yet. Enter your dates from the SCTCC Academic Calendar.`));
+      return;
+    }
+
+    const span = (from, to) => (from && to ? `${util.formatDate(from)} – ${util.formatDate(to)}` : util.formatDate(from || to));
+    const flag = academic.status === "sample"
+      ? ["Sample dates: ", "not the college calendar. Check them against the official academic calendar."]
+      : (academic.status !== "official" || !term.verified
+        ? ["From the published academic calendar: ", "not yet confirmed by Records & Registration."]
+        : null);
+    box.appendChild(el("div", { class: "notice notice-info" },
+      el("p", null, el("strong", null, `College dates for ${term.term} ${term.year}`)),
+      flag ? el("p", { class: "sample-flag" }, el("strong", null, flag[0]), flag[1]) : null,
+      el("dl", { class: "vendor-details" },
+        el("dt", null, "Semester"), el("dd", null, span(term.startDate, term.endDate)),
+        term.finalsStart ? [el("dt", null, "Final exam week"), el("dd", null, span(term.finalsStart, term.finalsEnd))] : null,
+        term.lastDayToDrop ? [el("dt", null, "Last day to drop"), el("dd", null, util.formatDate(term.lastDayToDrop))] : null,
+        term.lastDayToWithdraw ? [el("dt", null, "Last day to withdraw"), el("dd", null, util.formatDate(term.lastDayToWithdraw))] : null,
+        !term.lastDayToDrop && !term.lastDayToWithdraw
+          ? [el("dt", null, "Drop and withdraw"), el("dd", null, "Deadlines vary by course; use the dates for your course in eServices.")]
+          : null,
+        el("dt", null, "No-class dates"), el("dd", null, String(term.noClassDates.length))),
+      term.lastDayToDrop || term.lastDayToWithdraw
+        ? el("p", { class: "editor-note" }, "Drop and withdrawal dates are for full-semester courses. If your course runs on different dates, use the dates shown in eServices.")
+        : null,
+      el("div", { class: "button-row" }, actionButton("fill-college-dates", "Fill in these dates", "btn-primary", { id: "fill-college-dates" }))));
+
+    const warnings = SCTCC.calendar.termWarnings(term, course);
+    if (warnings.length) {
+      box.appendChild(el("div", { class: "notice notice-warning" },
+        el("p", null, el("strong", null, "Please check:")),
+        el("ul", null, warnings.map((message) => el("li", null, message)))));
+    }
+  }
+
+  function buildCalendar() {
+    buildExcludedRows();
+    buildCalendarRows(new Set());
+    refreshCalendarSettings();
   }
 
   function statusGroup() {
@@ -490,12 +701,12 @@ window.SCTCC = window.SCTCC || {};
     populate(container);
   }
 
-  function summaryBlock(container, label, errors, warnings) {
+  function summaryBlock(container, label, errors, warnings, errorTitle) {
     container.textContent = "";
     if (label) container.appendChild(el("p", { class: "grading-total" }, label));
     if (errors.length) {
       container.appendChild(el("div", { class: "notice notice-error" },
-        el("p", null, el("strong", null, errors.length === 1 ? "Fix before printing:" : `Fix these ${errors.length} problems before printing:`)),
+        el("p", null, el("strong", null, errorTitle || (errors.length === 1 ? "Fix before printing:" : `Fix these ${errors.length} problems before printing:`))),
         el("ul", null, errors.map((message) => el("li", null, message)))));
     }
     if (warnings.length) {
@@ -561,6 +772,8 @@ window.SCTCC = window.SCTCC || {};
     if (!scope) {
       buildVendorRows();
       buildGrading();
+      buildCalendar();
+      refreshCollegeDates();
       updatePhotoStatus();
     }
   }
@@ -640,6 +853,7 @@ window.SCTCC = window.SCTCC || {};
         .map((box) => box.value);
       util.setPath(data, path, chosen);
       if (path === "course.meetingPattern.days") data.course.meetingPattern.meetingsPerWeek = chosen.length;
+      if (path.startsWith("calendar.")) refreshCalendarSettings();
       app.dataChanged();
       return;
     }
@@ -666,6 +880,16 @@ window.SCTCC = window.SCTCC || {};
       if (legend) legend.textContent = gradeLegend(Number(gradeLabel[1]), value);
     }
     if (path.startsWith("grading.")) refreshGrading();
+    if (/^course\.(term|year|startDate|endDate)$/.test(path)) refreshCollegeDates();
+    if (path === "calendar.meetingsPerWeek") util.setPath(data, path, Number(value) || 0);
+    if (path.startsWith("calendar.entries.")) {
+      if (/\.(noClass|date)$/.test(path)) {
+        SCTCC.calendar.renumber(data.calendar.entries, SCTCC.calendar.resolveSettings(data));
+      }
+      refreshCalendarLabels();
+    } else if (path.startsWith("calendar.")) {
+      refreshCalendarSettings();
+    }
     app.dataChanged();
   }
 
@@ -916,6 +1140,196 @@ window.SCTCC = window.SCTCC || {};
         break;
       }
 
+      case "calendar-copy-course": {
+        const course = data.course;
+        data.calendar.startDate = course.startDate;
+        data.calendar.endDate = course.endDate;
+        if (course.meetingPattern.days.length) {
+          data.calendar.meetingDays = course.meetingPattern.days.slice();
+          data.calendar.meetingsPerWeek = Math.min(4, course.meetingPattern.days.length);
+        }
+        if (course.modality === "online") data.calendar.mode = "weekly";
+        populate(root.querySelector("#editor-calendar"));
+        refreshCalendarSettings();
+        app.dataChanged();
+        announce("Copied the course dates and meeting days into the calendar settings.");
+        break;
+      }
+
+      case "fill-college-dates": {
+        const term = currentTerm();
+        if (!term) return;
+        const course = data.course;
+        const updates = {
+          startDate: term.startDate,
+          endDate: term.endDate,
+          dropDate: term.lastDayToDrop,
+          withdrawalDate: term.lastDayToWithdraw
+        };
+        const changes = Object.entries(updates).filter(([key, value]) => value && course[key] && course[key] !== value);
+        if (changes.length && !window.confirm("Replace the dates you entered with the college dates for this term?")) return;
+        Object.entries(updates).forEach(([key, value]) => { if (value) course[key] = value; });
+        populate(root.querySelector("#editor-schedule"));
+        refreshCollegeDates();
+        refreshCalendarSettings();
+        app.dataChanged();
+        const fill = root.querySelector("#fill-college-dates");
+        if (fill) fill.focus();
+        announce(`Filled in the college dates for ${term.term} ${term.year}.`);
+        break;
+      }
+
+      case "add-college-closures": {
+        const term = currentTerm();
+        const summary = root.querySelector("#calendar-settings-summary");
+        if (!term) {
+          const course = data.course;
+          const message = course.term && course.year
+            ? `The college calendar has no dates for ${course.term} ${course.year} yet.`
+            : "Choose the term and year under Course first.";
+          summary.prepend(el("p", { class: "notice notice-warning" }, message));
+          announce(message);
+          return;
+        }
+        const added = SCTCC.calendar.addTermClosures(data.calendar, term);
+        buildExcludedRows();
+        refreshCalendarSettings();
+        app.dataChanged();
+        const message = added
+          ? `Added ${added} college no-class date${added === 1 ? "" : "s"} for ${term.term} ${term.year}.${data.calendar.entries.length ? " Generate the calendar again to update the rows." : ""}`
+          : `The college no-class dates for ${term.term} ${term.year} are already listed.`;
+        root.querySelector("#calendar-settings-summary").prepend(el("p", { class: "notice notice-info" }, message));
+        root.querySelector("#add-college-closures").focus();
+        announce(message);
+        break;
+      }
+
+      case "add-excluded": {
+        data.calendar.excludedDates.push({ date: "", label: "" });
+        buildExcludedRows();
+        app.dataChanged();
+        const index = data.calendar.excludedDates.length - 1;
+        root.querySelector(`#${fieldId(`calendar.excludedDates.${index}.date`)}`).focus();
+        announce(`Added no-class date ${index + 1}.`);
+        break;
+      }
+
+      case "remove-excluded": {
+        const index = Number(button.getAttribute("data-index"));
+        data.calendar.excludedDates.splice(index, 1);
+        buildExcludedRows();
+        refreshCalendarSettings();
+        app.dataChanged();
+        root.querySelector("#add-excluded").focus();
+        announce("Removed the no-class date. Generate the calendar again to update the rows.");
+        break;
+      }
+
+      case "calendar-generate": {
+        const settingsCheck = SCTCC.calendar.checkSettings(SCTCC.calendar.resolveSettings(data));
+        if (settingsCheck.errors.length) {
+          refreshCalendarSettings();
+          const box = root.querySelector("#calendar-settings-summary .notice");
+          if (box) {
+            box.setAttribute("tabindex", "-1");
+            box.focus();
+          }
+          announce("The calendar was not generated. Fix the settings first.");
+          return;
+        }
+        if (data.calendar.entries.length && !window.confirm("Generate the calendar again?\n\nTopics, readings, due items, and notes stay with their dates. Rows whose dates are no longer class days are kept as unscheduled rows if they have content.")) return;
+        const result = SCTCC.calendar.generate(data);
+        data.calendar.entries = result.entries;
+        buildCalendarRows(new Set());
+        refreshCalendarSettings();
+        app.dataChanged();
+        summaryBlock(root.querySelector("#calendar-settings-summary"), result.summary, [], result.warnings);
+        root.querySelector("#calendar-rows-heading").focus();
+        announce(result.summary);
+        break;
+      }
+
+      case "calendar-add-row": {
+        data.calendar.entries.push(SCTCC.calendar.blankRow({ manual: true }));
+        SCTCC.calendar.renumber(data.calendar.entries, SCTCC.calendar.resolveSettings(data));
+        const index = data.calendar.entries.length - 1;
+        buildCalendarRows(new Set([index]));
+        app.dataChanged();
+        root.querySelector(`#${fieldId(`calendar.entries.${index}.date`)}`).focus();
+        announce("Added an unscheduled row at the end of the calendar.");
+        break;
+      }
+
+      case "calendar-move": {
+        const index = Number(button.getAttribute("data-index"));
+        const direction = Number(button.getAttribute("data-direction"));
+        const target = index + direction;
+        if (!SCTCC.calendar.swapContent(data.calendar.entries, index, target)) return;
+        buildCalendarRows(new Set([target]));
+        app.dataChanged();
+        const same = root.querySelector(`[data-action='calendar-move'][data-index='${target}'][data-direction='${direction}']`);
+        const other = root.querySelector(`[data-action='calendar-move'][data-index='${target}'][data-direction='${-direction}']`);
+        (same && !same.disabled ? same : other).focus();
+        announce(`Moved the topic to ${calendarRowLabel(data.calendar.entries[target])}.`);
+        break;
+      }
+
+      case "calendar-shift": {
+        const index = Number(button.getAttribute("data-index"));
+        const result = SCTCC.calendar.shiftContentLater(data.calendar.entries, index);
+        SCTCC.calendar.renumber(data.calendar.entries, SCTCC.calendar.resolveSettings(data));
+        buildCalendarRows(new Set([index]));
+        app.dataChanged();
+        const again = root.querySelector(`[data-action='calendar-shift'][data-index='${index}']`);
+        if (again) again.focus();
+        announce(result.overflow
+          ? "Topics shifted one class later. The last topic moved to a new unscheduled row at the end."
+          : "Topics shifted one class later. This row is now empty.");
+        break;
+      }
+
+      case "calendar-remove": {
+        const index = Number(button.getAttribute("data-index"));
+        const row = data.calendar.entries[index];
+        if (SCTCC.calendar.hasContent(row) && !window.confirm(`Remove the row “${calendarRowLabel(row)}”?`)) return;
+        data.calendar.entries.splice(index, 1);
+        SCTCC.calendar.renumber(data.calendar.entries, SCTCC.calendar.resolveSettings(data));
+        buildCalendarRows();
+        app.dataChanged();
+        const next = root.querySelector(`#calendar-summary-${Math.min(index, data.calendar.entries.length - 1)}`);
+        (next || root.querySelector("#calendar-generate")).focus();
+        announce("Removed the calendar row.");
+        break;
+      }
+
+      case "calendar-clear": {
+        if (!data.calendar.entries.length) return;
+        if (!window.confirm("Remove every calendar row, including topics and notes?")) return;
+        data.calendar.entries = [];
+        buildCalendarRows(new Set());
+        app.dataChanged();
+        root.querySelector("#calendar-generate").focus();
+        announce("Removed all calendar rows.");
+        break;
+      }
+
+      case "calendar-export": {
+        if (!data.calendar.entries.length) {
+          announce("There are no calendar rows to export.");
+          return;
+        }
+        SCTCC.files.exportText(SCTCC.calendar.toCsv(data), `${app.suggestedFileName().replace(/-Syllabus$/, "")}-Calendar.csv`,
+          "Spreadsheet (CSV)", "text/csv", ".csv").then((result) => {
+          if (result.ok) {
+            showMessages("info", `Exported ${result.fileName}.`, ["It opens in Excel or Google Sheets."]);
+            announce(`Exported ${result.fileName}.`);
+          } else if (!result.cancelled) {
+            showMessages("error", "The calendar was not exported.", [result.message]);
+          }
+        });
+        break;
+      }
+
       case "remove-photo":
         data.instructor.photoData = "";
         updatePhotoStatus();
@@ -987,6 +1401,7 @@ window.SCTCC = window.SCTCC || {};
     populate: () => populate(),
     setFileStatus,
     showMessages,
-    showGradingProblems
+    showGradingProblems,
+    refreshCollegeDates
   });
 })();

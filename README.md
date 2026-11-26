@@ -6,7 +6,7 @@ Instructors open the builder in a web browser, enter their course information, a
 
 College-wide content (policies, support information, the footer) is **not** typed by instructors. Each piece lives in its own file in the `content/` folder, maintained by the office that owns it. Every syllabus picks up the current approved wording the next time an instructor makes a PDF.
 
-> **Status: Phase 3 preview (trial).** Instructors can fill in their syllabus, build the grading table and grading scale, save it as a file to their own computer or OneDrive, open it again later, and print it to PDF. The calendar generator and full pre-print validation come in later phases (see [Roadmap](#roadmap)).
+> **Status: Phase 4 preview (trial).** Instructors can fill in their syllabus, build the grading table, grading scale, and course calendar, save it as a file to their own computer or OneDrive, open it again later, and print it to PDF. Full pre-print validation comes in Phase 5 (see [Roadmap](#roadmap)).
 
 ---
 
@@ -16,10 +16,12 @@ College-wide content (policies, support information, the footer) is **not** type
 - [Instructor workflow](#instructor-workflow)
 - [Saving and opening your syllabus](#saving-and-opening-your-syllabus)
 - [Grading editor](#grading-editor)
+- [Course calendar generator](#course-calendar-generator)
 - [Repository structure](#repository-structure)
 - [Running the builder](#running-the-builder)
 - [Editing college content (for content owners)](#editing-college-content-for-content-owners)
 - [The content manifest](#the-content-manifest)
+- [College academic calendar (for Records & Registration)](#college-academic-calendar-for-records--registration)
 - [Printing to PDF](#printing-to-pdf)
 - [Branding: logo, colors, and font](#branding-logo-colors-and-font)
 - [Accessibility](#accessibility)
@@ -54,12 +56,14 @@ SCTCC_Syllabus/
 │   ├── dom-helpers.js              Small shared helpers for building page elements
 │   ├── syllabus-data.js            Data model, import validation, date/time helpers
 │   ├── grading.js                  Grading totals, weight check, scale check, point ranges
+│   ├── calendar-builder.js         Calendar generation, regeneration, shifting topics, CSV
 │   ├── syllabus-files.js           Save / Save as / Open with the computer's file dialogs
 │   ├── content-loader.js           Loads, checks, and sanitizes college content
 │   ├── syllabus-editor.js          The instructor editing panel
 │   └── syllabus.js                 Builds the syllabus, unsaved-changes tracking, Print to PDF
 ├── content/
 │   ├── content-manifest.json       List of college sections and where they go
+│   ├── academic-calendar.json      College semester dates, finals, deadlines, no-class dates
 │   └── *.html                      One file per college section (19 files)
 ├── assets/
 │   ├── sctcc-logo-placeholder.svg  Placeholder until Marketing supplies the logo
@@ -81,7 +85,6 @@ SCTCC_Syllabus/
 | Editor inside `syllabus.js` | Separate `js/syllabus-editor.js`, `js/syllabus-files.js`, `js/dom-helpers.js` | Smaller files with one job each. |
 | `localStorage` autosave allowed | No browser storage at all | Finished syllabi are faculty intellectual property, and copies left in a browser could be seen by the next person on a shared computer. Syllabi are saved only to files the instructor controls. |
 | `assets/sctcc-logo.svg` | `assets/sctcc-logo-placeholder.svg` | The official logo has not been supplied yet. |
-| `js/calendar-builder.js` | Not yet created | Added in Phase 4. |
 | `LICENSE` | Not yet added | The policy text belongs to SCTCC; choose a license with the college before adding one. |
 
 ## Running the builder
@@ -155,6 +158,75 @@ The scale is checked as you type:
 | A maximum above 100% | Warning (fine for extra credit) |
 
 Problems are listed under the categories and the scale in the editor, and in the instructor preview under the grading tables (never in the PDF). **Print to PDF** is stopped while any "must fix" problem remains, and the list of problems appears at the top of the editor. The browser's own Print command cannot be stopped, so watch for those messages.
+
+## Course calendar generator
+
+Open **Course calendar** in the editor.
+
+1. **Statement about the course schedule** — optional text shown above the calendar (or by itself if you do not build one), for example where the live schedule is posted in D2L.
+2. **Calendar layout**
+   - **One row per class meeting** — for courses that meet 1, 2, 3, or 4 times a week. Columns: Week, Meeting, Date, Day, Topic, Preparation/Reading, Assignment Due, Notes.
+   - **One row per week** — for asynchronous online courses. Columns: Week, Dates, Topic, Preparation/Reading, Assignment Due, Notes.
+3. **Add the college’s no-class dates** copies the holidays and breaks for the syllabus's term from the college academic calendar (see below) into the no-class dates list, without duplicates. **Use course dates and meeting days** copies the begin/end dates and meeting days from *Credits, modality, and dates* (and picks the weekly layout for online courses). Calendar dates left blank also fall back to the course dates. Class times come from the course meeting information.
+4. **Meetings per week** and **Meeting days** — choose exactly as many days as meetings (2 meetings → 2 days). A mismatch is shown immediately and the calendar is not generated until it is fixed.
+5. Options: **The first week has a different schedule** (choose first-week days), **Include final exam week** (the last week is marked "Finals"; turn off to leave it out), and **Show no-class dates in the calendar** (holidays appear as "No Class" rows instead of being left out).
+6. **No-class dates** — add each holiday or closure with a reason. In the weekly layout they are listed in that week's notes.
+7. **Generate calendar** creates one row for every scheduled meeting (or week) between the dates. Weeks run Monday–Sunday; week 1 is the week the course starts. No table cells are merged.
+
+**Editing rows.** Each row opens to show Topic, Preparation/Reading, Assignment due, Notes, and **No class**. Marking a row No class renumbers the meetings. Buttons on each row:
+- **Move topic earlier / later** — swaps the row's topic, reading, due item, and notes with the neighboring row; dates stay put.
+- **Shift topics later from here** — for an unplanned closure: this row is emptied and every later topic moves to the next class row (skipping No class rows). If the last row had a topic, it moves to a new unscheduled row at the end.
+- **Remove row** — asks first if the row has content.
+
+**Add an unscheduled row** adds a row at the end with an optional date (for example a make-up session or a topic still to be scheduled).
+
+**Generating again keeps your work.** Topics, readings, due items, and notes stay with their dates. If a date became a no-class date, its content is kept and you are told so. If you change meeting days and some content no longer falls on a class day, it is kept as unscheduled rows at the end so nothing is lost. Unscheduled rows are always kept.
+
+**Export calendar (.csv)** saves the calendar as a spreadsheet file (opens in Excel or Google Sheets) to a folder you choose, named like `CPTR-1118-Spring-2027-Calendar.csv`.
+
+In the PDF, the calendar table's column headings repeat at the top of each page, and rows are not split across pages.
+
+## College academic calendar (for Records & Registration)
+
+`content/academic-calendar.json` holds the official dates every syllabus needs, so instructors do not have to look them up or type them:
+
+```json
+{
+  "status": "official",
+  "lastReviewed": "2026-12-01",
+  "terms": [
+    {
+      "term": "Spring",
+      "year": "2027",
+      "verified": true,
+      "startDate": "2027-01-11",
+      "endDate": "2027-05-14",
+      "finalsStart": "2027-05-10",
+      "finalsEnd": "2027-05-14",
+      "lastDayToDrop": "2027-01-15",
+      "lastDayToWithdraw": "2027-04-02",
+      "noClassDates": [
+        { "date": "2027-01-18", "label": "Martin Luther King Jr. Day" }
+      ]
+    }
+  ]
+}
+```
+
+- Dates are written `yyyy-mm-dd`. `term` is `Fall`, `Spring`, or `Summer`, matching the editor's term list.
+- `lastDayToDrop` and `lastDayToWithdraw` are for full-semester courses. Instructors of shorter courses are told to use the dates shown in eServices.
+- Add next year's terms before instructors start building those syllabi; older terms can stay.
+- Until `status` is `"official"` and a term's `verified` is `true`, the builder labels that term's dates as sample or not yet confirmed.
+- Entries with missing or badly formatted dates are skipped and listed in the builder's College content status, so one typo does not break the rest.
+
+**Current state:** the file holds Fall 2026, Spring 2027, and Summer 2027, copied on 2026-11-25 from the published [2026/2027 Academic Calendar](https://sctcc.edu/student-stuff/academic/academic-calendar/20262027-academic-calendar) (`"status": "published"`). Records & Registration should confirm each term, set `"verified": true`, and change `status` to `"official"`. The published calendar does not list add/drop/withdrawal deadlines (they vary by course and are shown in eServices), so those fields are blank and instructors are pointed to eServices. Summer 2027 has no final exam week listed.
+
+`status` can be `"sample"` (placeholder dates, labeled **Sample dates**), `"published"` (copied from the published calendar, labeled *not yet confirmed*), or `"official"` (confirmed).
+
+**In the editor**, once the instructor picks the term and year:
+- *Credits, modality, and dates* shows the college dates for that term, with **Fill in these dates** (begin, end, last day to drop, last day to withdraw; asks before replacing dates already entered).
+- It warns if the course begins before the semester starts or ends before final exam week ("must include final exam week").
+- *Course calendar* has **Add the college’s no-class dates**.
 
 ## Editing college content (for content owners)
 
@@ -299,7 +371,26 @@ This guidance from the template is for instructors and does not appear in the sy
 
 ## Testing checklist
 
-Phase 3 (tested in headless Chrome on 2026-11-25):
+Phase 4 (tested on 2026-11-25; generator logic in Node, editor in headless Chrome):
+
+- [x] College academic calendar: status panel lists Fall 2026, Spring 2027, Summer 2027 and that they are not yet confirmed; choosing Spring 2027 shows its dates, the "not yet confirmed" flag, and the eServices note for drop/withdraw; Fill in these dates fills begin/end; warnings for starting before the semester and ending before finals week; a term not in the file (Spring 2028) says so
+- [x] Add the college’s no-class dates: adds Spring 2027's 8 dates, a second click adds none; generating then gives 36 Monday/Wednesday rows with 32 class meetings
+- [x] Bad entries in academic-calendar.json are listed and skipped while good terms still work; a missing file is reported without breaking the builder
+
+- [x] 1, 2, 3, and 4 meetings per week over a 17-week semester plus finals week: 18, 36, 54, and 72 rows, every row on a chosen weekday
+- [x] Meetings-per-week and meeting-day mismatch → message as you change settings; Generate stopped with the message focused
+- [x] Holidays: "No Class" rows with the reason and no meeting number (36 rows, 33 meetings with 3 closures); left out when that option is off
+- [x] Finals week marked "(Finals)"; left out when "Include final exam week" is off
+- [x] First-week special schedule (Wednesday only in week 1)
+- [x] Generating again keeps topics by date; a topic on a new holiday is kept with a warning; content that no longer falls on a class day is kept as unscheduled rows; unscheduled rows kept
+- [x] Weekly layout: 18 week rows with date ranges, closures listed in notes, first row starts on a mid-week start date
+- [x] End date before start date and spans over 30 weeks are refused; older files with plain-text no-class dates are converted
+- [x] Editor: typing updates the row label and preview; No class renumbers meetings; Shift topics later; Move topic later (focus follows); add/remove unscheduled row; Use course dates and meeting days
+- [x] CSV export: file name follows the course; quotes and commas escaped; opens with a byte-order mark for Excel
+- [x] PDF: calendar spanning two pages repeats its column headings
+- [x] Phase 2 and Phase 3 checks still pass; no console errors
+
+Phase 3:
 
 - [x] New syllabus starts with the A–F scale and no categories ("Add at least one assessment category")
 - [x] Add a category → focus moves to its name; row totals (10 × 20 = 200) and course total update as you type; legend shows the name
@@ -341,13 +432,13 @@ Phase 1:
 - [x] Field token fills in the withdrawal date
 - [x] 320 px wide: no horizontal page scrolling
 - [x] PDF: US Letter, page footer with course, version, and page numbers on every page, headings kept with their content
-- [ ] PDF: table headers repeating across pages (styled to repeat; not yet tested with a calendar long enough to span pages)
+- [x] PDF: table headers repeating across pages (verified in Phase 4 with a two-page calendar)
 
 Still to test by a person: keyboard-only use, a screen reader (NVDA or JAWS), 200% zoom, and the PDF in Adobe Acrobat's accessibility checker and D2L.
 
 ## Known limitations
 
-- Calendar rows cannot be edited yet (Phase 4). They are kept when present in an opened file or the sample course.
+- `content/academic-calendar.json` was copied from the published calendar and awaits confirmation by Records & Registration; drop/withdraw deadlines come from eServices.
 - Only grading problems stop Print to PDF so far; Phase 5 adds the full pre-print check (required fields, dates, placeholders).
 - There is no autosave, by design. Save regularly (Ctrl+S); the status line shows when changes are unsaved.
 - Firefox and Safari save by download rather than to a chosen folder.
@@ -362,6 +453,6 @@ Still to test by a person: keyboard-only use, a screen reader (NVDA or JAWS), 20
 |---|---|
 | 1 (done) | Content files, manifest, loader, sanitizer, rendered preview, print styles, basic Print to PDF |
 | 2 (done) | Instructor editing panel, Save / Save as / Open to the instructor's own files or OneDrive (no browser storage), vendor table, photo upload, instructor overrides (Class Environment, accepted file formats) |
-| **3 (this version)** | Grading editor: points and percentage methods, category rows with move/remove, live totals, weight check with instructor override, scale editor with overlap/gap/range checks and point ranges, plus/minus sample, print stopped on grading errors |
-| 4 | Course calendar generator (1–4 meetings per week, plus a weekly mode for online courses), holidays, regeneration that keeps entered text |
+| 3 (done) | Grading editor: points and percentage methods, category rows with move/remove, live totals, weight check with instructor override, scale editor with overlap/gap/range checks and point ranges, plus/minus sample, print stopped on grading errors |
+| **4 (this version)** | Course calendar generator: 1–4 meetings per week or one row per week, no-class dates, finals week, first-week schedule, regeneration that keeps entered text, move/shift topics, unscheduled rows, CSV export; college academic calendar file for official dates and no-class dates |
 | 5 | Validation before printing, guided Print to PDF, GitHub Action to check content files (HTML, links, link text, placeholders) |
