@@ -57,8 +57,10 @@ SCTCC_Syllabus/
 ├── index.html                      The builder page
 ├── calendar.html                   The course calendar workspace (opened from the builder)
 ├── faq.html                        The searchable FAQs window (opened from the builder)
+├── content-editor.html             College Content Editor: content owners edit their section as plain text
 ├── css/
 │   ├── faq.css                     FAQs window styles
+│   ├── content-editor.css          College Content Editor styles
 │   ├── syllabus.css                Screen styles (brand colors, layout)
 │   └── print.css                   PDF / print styles (US Letter)
 ├── js/
@@ -80,6 +82,8 @@ SCTCC_Syllabus/
 │   ├── calendar-workspace.js       The calendar workspace: month and list views, details, reuse
 │   ├── faq.js                      The FAQs window: reads content/faq.html, search, highlighting
 │   ├── faq-link.js                 Opens the FAQs in their own window from any FAQs link
+│   ├── content-text.js             Plain text <-> college content HTML (the editor's rules and checks)
+│   ├── content-editor.js           The College Content Editor page
 │   └── syllabus.js                 Builds the syllabus, unsaved-changes tracking, Save as PDF
 ├── content/
 │   ├── content-manifest.json       List of college sections and where they go
@@ -366,6 +370,20 @@ Instructor directions live **in the builder**, not in this README: the hints bes
 ## Editing college content (for content owners)
 
 Each college section is one small file in `content/`. You only ever need to open your own file.
+
+### The easy way: the College Content Editor (no GitHub or HTML needed)
+
+Open **[content-editor.html](https://bvolkmuth66.github.io/SCTCC_Syllabus/content-editor.html)** on the builder site.
+
+1. **Choose your section.** The page shows its owner, when it was last reviewed, and where it appears in the syllabus.
+2. **Edit the wording as plain text.** Each line is a paragraph; `- ` starts a bullet (four spaces first for a sub-bullet) and `1. ` a numbered item; `**bold**`, `*italic*`, and `[link words](https://address)`. Buttons insert these for you. Words in curly brackets, such as `{Withdrawal date}`, are filled in from each instructor's syllabus and are protected. A preview shows the section as it will look in the syllabus, and checks flag problems as you type (unfinished links or bold, missing fill-ins, "here" link text, http:// addresses, template placeholders).
+3. **Review and send.** "Your changes" shows added words underlined and removed words struck through. Type your name and title, then **Send to the reviewer**: your email program opens a message to the reviewer (`contentReviewer` in `js/syllabus-config.js`) with the change in it. A long change is copied, ready to paste. **Save a copy of my change** saves it as a text file.
+
+Nothing on that page changes the live syllabus. **For the reviewer:** open the same page, expand **For the reviewer**, paste the whole emailed change, and choose **Open this change**. It loads with its changes shown and checked; edit it if needed, then **Download the updated file** (the header keeps the owner and source, with LAST-REVIEWED set to today and an EDITED line naming the sender) and upload it to `content/` on GitHub as a pull request, or send the email to Claude to make the pull request. A section marked `"pending"` (the AI policy) also needs `"pending": true` removed from the manifest.
+
+The plain text converts back to exactly the same HTML for every current college file (tested), so a section opened and sent without changes produces an identical file.
+
+### Editing directly on GitHub
 
 **To change your section on GitHub:**
 1. Open the `content` folder and click your file (for example `accommodations.html`).
