@@ -52,6 +52,12 @@ window.SCTCC.config = Object.freeze({
     officialAlt: "St. Cloud Technical & Community College, a member of Minnesota State"
   },
 
+  /*
+   * Beta test feedback form (Microsoft Forms, SCTCC sign-in). Shown as "Report a problem
+   * or idea" in the toolbar. Set to "" after the beta test to remove the button.
+   */
+  feedbackFormUrl: "https://forms.cloud.microsoft/r/NgnJYyNESx",
+
   /* Print the full web address after each link in the PDF. Off keeps the PDF compact. */
   printLinkUrls: false,
 
