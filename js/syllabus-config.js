@@ -40,9 +40,15 @@ window.SCTCC.config = Object.freeze({
    * The preferred version is the 3-color logo with "A member of Minnesota State".
    */
   logo: {
-    src: "assets/sctcc-logo-placeholder.svg",
+    /*
+     * INTERIM (2026-11-26): the logo image from the SCTCC Word syllabus template
+     * (262 x 215 pixels). Replace it with Marketing's file (SVG preferred), then set
+     * isInterim to false. The placeholder file is kept in assets/ for reference.
+     */
+    src: "assets/sctcc-logo-interim.jpg",
     alt: "Placeholder for the official SCTCC logo",
-    isPlaceholder: true,
+    isPlaceholder: false,
+    isInterim: true,
     officialAlt: "St. Cloud Technical & Community College, a member of Minnesota State"
   },
 

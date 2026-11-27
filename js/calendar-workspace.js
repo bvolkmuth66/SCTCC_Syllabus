@@ -259,22 +259,80 @@
       region.appendChild(el("p", { class: "ws-count" },
         all.length ? `${classes} class ${calendar.mode === "weekly" ? "weeks" : "meetings"} · ${withTopics} with topics` : "No calendar yet."));
       const generate = el("button", { type: "button", class: "btn btn-primary", id: "ws-generate", "data-focus-key": "generate" }, all.length ? "Generate calendar again" : "Generate calendar");
-      generate.addEventListener("click", () => {
-        if (all.length && !window.confirm("Generate the calendar again?\n\nTopics, readings, due items, and notes stay with their dates. Rows whose dates are no longer class days are kept as unscheduled topics if they have content.")) return;
-        const result = send({ op: "generate" });
-        if (result.ok) {
-          state.selected = null;
-          announce(result.summary || "Calendar generated.");
-          flash(result.summary, result.warnings);
-        } else {
-          announce("The calendar was not generated. Fix the settings first.");
-        }
-      });
+      generate.addEventListener("click", () => generateCalendar(all.length > 0));
       region.appendChild(generate);
       region.appendChild(el("p", { class: "ws-hint" }, "First-week schedules and other options are in the builder’s Course calendar section."));
       region.appendChild(el("div", { id: "ws-flash" }));
       showMessage();
     });
+  }
+
+  function generateCalendar(again) {
+    if (again && !window.confirm("Generate the calendar again?\n\nTopics, readings, due items, and notes stay with their dates. Rows whose dates are no longer class days are kept as unscheduled topics if they have content.")) return;
+    const result = send({ op: "generate" });
+    if (result.ok) {
+      state.selected = null;
+      announce(result.summary || "Calendar generated.");
+      flash(result.summary, result.warnings);
+    } else {
+      announce("The calendar was not generated. Fix the settings first.");
+    }
+  }
+
+  /*
+   * Shown in the month and list views until the calendar has dated rows: says what will
+   * be made and puts the buttons right there, so nobody has to find them in Settings.
+   */
+  function emptyState() {
+    const snap = state.snap;
+    const days = (snap.course.meetingDays || []).map((day) => `${day}s`);
+    const dayText = days.length > 1 ? `${days.slice(0, -1).join(", ")} and ${days[days.length - 1]}` : days[0] || "";
+    const panel = el("div", { class: "ws-empty", role: "region", "aria-labelledby": "ws-empty-title" },
+      el("h2", { id: "ws-empty-title" }, "No calendar yet"));
+    if (snap.settingsErrors.length) {
+      panel.append(el("p", null, "Before the calendar can be made:"),
+        el("ul", null, snap.settingsErrors.map((message) => el("li", null, message))));
+      return panel;
+    }
+    panel.append(el("p", null, snap.calendar.mode === "weekly"
+      ? `Generate calendar makes one row for each week, ${longDate(snap.course.startDate)} – ${longDate(snap.course.endDate)}.`
+      : `Generate calendar makes one row for each class meeting: ${dayText}, ${longDate(snap.course.startDate)} – ${longDate(snap.course.endDate)}.`));
+    const buttons = el("div", { class: "ws-empty-actions" });
+    if (!(snap.calendar.excludedDates || []).length && !snap.term) {
+      const termName = [snap.course.term, snap.course.year].filter(Boolean).join(" ") || "this term";
+      panel.append(el("p", null, `The college calendar doesn’t have ${termName} dates yet, so holidays and breaks can’t be added for you. Add them under No-class dates on the left before you generate, or add them later and choose Generate calendar again.`));
+    } else if (!(snap.calendar.excludedDates || []).length) {
+      panel.append(el("p", null, "Add the college’s no-class dates first so holidays and breaks are skipped."));
+      const college = el("button", { type: "button", class: "btn", "data-focus-key": "empty-add-college" }, "Add the college’s no-class dates");
+      college.addEventListener("click", () => {
+        const result = send({ op: "addCollegeClosures" });
+        report(result, result.added ? `Added ${result.added} college no-class date${result.added === 1 ? "" : "s"}. Now choose Generate calendar.` : "The college no-class dates are already listed.");
+        /* This button disappears once dates are listed, so move focus to Generate. */
+        focusSoon('[data-focus-key="empty-generate"]');
+      });
+      buttons.append(college);
+    }
+    const generate = el("button", { type: "button", class: "btn btn-primary", "data-focus-key": "empty-generate" }, "Generate calendar");
+    generate.addEventListener("click", () => {
+      generateCalendar(false);
+      /* The panel disappears once there is a calendar: go to the first class. */
+      focusSoon(".ws-month .ws-entry:not(.is-noclass)", ".ws-list tbody button");
+    });
+    buttons.prepend(generate);
+    panel.append(buttons);
+    return panel;
+  }
+
+  /* The views redraw after the builder updates, so wait (up to about 1.5 s) for the target. */
+  function focusSoon(...selectors) {
+    let tries = 0;
+    const attempt = () => {
+      const lost = !document.activeElement || document.activeElement === document.body || !document.activeElement.isConnected;
+      const target = selectors.map((selector) => document.querySelector(selector)).find(Boolean);
+      if (lost && target) target.focus();
+      if (++tries < 25) window.setTimeout(attempt, 60); /* keep watching: a later redraw may drop it */
+    };
+    window.setTimeout(attempt, 60);
   }
 
   /* The latest result stays visible until the next change; screen readers hear it through announce(). */
@@ -320,6 +378,12 @@
     const { start, end } = monthRange();
     const min = start.getFullYear() * 12 + start.getMonth();
     const max = end.getFullYear() * 12 + end.getMonth();
+    /* New course dates: start again at the first month. */
+    const datesKey = `${state.snap.course.startDate}|${state.snap.course.endDate}`;
+    if (state.monthDatesKey !== datesKey) {
+      if (state.monthDatesKey !== undefined) state.month = null;
+      state.monthDatesKey = datesKey;
+    }
     if (!state.month) {
       const selected = state.selected !== null && entries()[state.selected] && util.parseISODate(entries()[state.selected].date);
       const base = selected || start;
@@ -413,9 +477,7 @@
         el("caption", { class: "visually-hidden" }, `${title}. Class meetings are buttons; choose one to see its details.`),
         el("thead", null, el("tr", null, DAYS.map((day, index) => el("th", { scope: "col", abbr: day }, SHORT_DAYS[index])))),
         el("tbody", null, rows))));
-    if (!entries().some((entry) => entry.date)) {
-      view.appendChild(el("p", { class: "notice notice-info" }, "No calendar yet. Check the settings on the left, then choose Generate calendar."));
-    }
+    if (!entries().some((entry) => entry.date)) view.prepend(emptyState());
   }
 
   /* ---------- List view ---------- */
@@ -424,7 +486,7 @@
     const weekly = state.snap.calendar.mode === "weekly";
     const rows = entries().map((entry, index) => ({ entry, index })).filter(({ entry }) => entry.date);
     if (!rows.length) {
-      view.appendChild(el("p", { class: "notice notice-info" }, "No calendar yet. Check the settings on the left, then choose Generate calendar."));
+      view.appendChild(emptyState());
       return;
     }
     view.appendChild(el("div", { class: "ws-table-wrap", role: "region", "aria-label": "All calendar rows", tabindex: "0" },

@@ -87,7 +87,8 @@ SCTCC_Syllabus/
 │   ├── faq.html                    The instructor FAQs (questions and answers)
 │   └── *.html                      One file per college section (20 files)
 ├── assets/
-│   ├── sctcc-logo-placeholder.svg  Placeholder until Marketing supplies the logo
+│   ├── sctcc-logo-interim.jpg      Interim logo from the Word syllabus template (until Marketing's file)
+│   ├── sctcc-logo-placeholder.svg  The earlier placeholder (kept for reference)
 │   └── favicon.svg                 Generic browser-tab icon (not the college logo)
 ├── vendor/
 │   └── pdfjs/                      Mozilla PDF.js 6.2.108 (Apache-2.0), used only for PDF import
@@ -116,7 +117,7 @@ SCTCC_Syllabus/
 | Config inside `syllabus-data.js` | Separate `js/syllabus-config.js` | Keeps settings apart from code. |
 | Editor inside `syllabus.js` | Separate `js/syllabus-editor.js`, `js/syllabus-files.js`, `js/dom-helpers.js` | Smaller files with one job each. |
 | `localStorage` autosave allowed | No browser storage at all | Finished syllabi are faculty intellectual property, and copies left in a browser could be seen by the next person on a shared computer. Syllabi are saved only to files the instructor controls. |
-| `assets/sctcc-logo.svg` | `assets/sctcc-logo-placeholder.svg` | The official logo has not been supplied yet. |
+| `assets/sctcc-logo.svg` | `assets/sctcc-logo-interim.jpg` | Marketing's file has not been supplied yet; the logo from the Word syllabus template is used until then. |
 | No outside libraries | Mozilla PDF.js in `vendor/pdfjs/` | Approved 2026-11-26 for PDF import. Kept in the repository (not loaded from another site), loaded only when a PDF is chosen, and run with eval and font loading turned off. |
 | `LICENSE` | Not yet added | The policy text belongs to SCTCC; choose a license with the college before adding one. |
 
@@ -477,10 +478,10 @@ Source: *SCTCC Brand Standards 2025* (Marketing & Communications). Printed hex v
 
 Note for Marketing: the brand guide's printed hex values do not match its listed RGB values for PMS 576, PMS 153, and PMS 144.
 
-**Logo.** The brand guide allows the logo only from Marketing's files (sctcc.edu/media). To install it:
+**Logo.** Until Marketing's file arrives, the builder uses the logo image from the SCTCC Word syllabus template (`assets/sctcc-logo-interim.jpg`, 262 × 215 pixels, approved as an interim logo on 2026-11-26). It prints about 1.9 inches wide; at that size it is slightly soft. The status panel notes that it is interim. The brand guide allows the logo only from Marketing's files (sctcc.edu/media). To replace it:
 1. Get the preferred 3-color logo with "A member of Minnesota State" from Marketing (SVG preferred; otherwise a high-resolution PNG).
 2. Add it to `assets/` (for example `assets/sctcc-logo.svg`).
-3. In `js/syllabus-config.js`, set `logo.src` to the file and `logo.isPlaceholder` to `false`.
+3. In `js/syllabus-config.js`, set `logo.src` to the file and `logo.isInterim` to `false`, then delete `assets/sctcc-logo-interim.jpg`.
 
 **Font.** Arimo is an approved SCTCC font with no license required, and it has the same letter widths as Arial, so the layout does not change if it is missing. To include it, download Arimo from Google Fonts, convert or obtain `.woff2` files, place them in `assets/fonts/`, and remove the comment markers around the `@font-face` rules at the top of `css/syllabus.css`. The builder does not load fonts from Google's servers.
 
