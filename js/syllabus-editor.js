@@ -126,7 +126,7 @@ window.SCTCC = window.SCTCC || {};
   function group(id, title, children, open) {
     const summary = el("summary", null, el("span", { class: "group-number" }), el("span", { class: "group-title" }, title));
     /* At the end of each section: close it and go back to its heading, so the editor stays short. */
-    const collapse = el("button", { type: "button", class: "btn btn-small group-collapse" },
+    const collapse = el("button", { type: "button", class: "btn btn-small btn-primary group-collapse" },
       "Collapse this section", el("span", { class: "visually-hidden" }, `: ${title}`));
     const details = el("details", { class: "editor-group", id, open: Boolean(open) },
       summary,
