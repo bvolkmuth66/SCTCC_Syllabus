@@ -614,6 +614,14 @@ body[data-mode="instructor"] .student-only {
   border-bottom: 1px solid var(--sctcc-border);
 }
 
+.group-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--sctcc-border);
+}
+
 .group-body {
   padding: 0.5rem 1rem 1rem;
 }
