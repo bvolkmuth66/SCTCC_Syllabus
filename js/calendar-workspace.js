@@ -203,7 +203,7 @@
             });
             return el("span", { class: "ws-day" }, input, el("label", { for: id }, SHORT_DAYS[index]));
           }));
-        days.appendChild(el("p", { class: "ws-hint" }, "The course meeting days, the same as under Credits, modality, and dates. Changing them here changes them there."));
+        days.appendChild(el("p", { class: "ws-hint" }, "The course meeting days, the same as under Credits, modality, dates, and requisites. Changing them here changes them there."));
         region.appendChild(days);
       }
 
@@ -211,7 +211,7 @@
         el("p", { class: "field-label" }, "Dates"),
         el("p", null, snap.course.startDate && snap.course.endDate
           ? `${longDate(snap.course.startDate)} – ${longDate(snap.course.endDate)}`
-          : "Enter the begin and end dates under Credits, modality, and dates in the builder."),
+          : "Enter the begin and end dates under Credits, modality, dates, and requisites in the builder."),
         el("p", { class: "ws-hint" }, "The calendar always uses the course dates.")));
 
       region.appendChild(checkbox("set-finals", "Include final exam week", calendar.includeFinalsWeek !== false,
@@ -909,7 +909,7 @@
     const shift = state.shift;
     const snap = state.snap;
     body.textContent = "";
-    body.appendChild(el("p", null, "Moves every date in the calendar by the same number of days, the way D2L offsets dates when a course is copied. Topics, readings, due items, and notes stay with their classes. Class times are set once for the course, under Credits, modality, and dates, so only dates move."));
+    body.appendChild(el("p", null, "Moves every date in the calendar by the same number of days, the way D2L offsets dates when a course is copied. Topics, readings, due items, and notes stay with their classes. Class times are set once for the course, under Credits, modality, dates, and requisites, so only dates move."));
 
     if (!entries().some((entry) => entry.date)) {
       body.appendChild(el("p", { class: "notice notice-warning" }, "There are no calendar dates to move yet."));

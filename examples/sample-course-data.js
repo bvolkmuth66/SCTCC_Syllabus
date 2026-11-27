@@ -77,7 +77,8 @@ window.SCTCC_SAMPLE_DATA = {
     lateWork: "Late work is not accepted. Extra time for illness or similar circumstances must be requested before the due date.",
     acceptedFileFormats: "",
     classEnvironment: "",
-    programDiversity: ""
+    programDiversity: "",
+    aiPolicy: "This sample shows where an instructor states the course's AI rules, for example: AI tools may be used to brainstorm and to check grammar. Work you submit must be your own, and any AI use must be described in a note with the assignment."
   },
   grading: {
     calculationMethod: "points",

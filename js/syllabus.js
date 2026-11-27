@@ -244,10 +244,31 @@
     }
   };
 
+  /*
+   * Sections that combine a college statement with the instructor's own text under one
+   * heading (manifest "instructorAddition"). Either part may be empty; with neither, the
+   * section is left out so there is no empty heading.
+   */
+  const INSTRUCTOR_ADDITIONS = {
+    aiPolicy: (entry) => {
+      const text = String(state.data.policies.aiPolicy || "").trim();
+      const college = entry.pending ? null : fragmentBlock(entry);
+      if (!college && !text) return null;
+      return subsection(entry.definition.title, [
+        college,
+        text ? el("div", { class: "instructor-content" },
+          el("p", { class: "content-source instructor-only" }, "Your course’s AI rules"),
+          textBlocks(text)) : null
+      ], 3, college ? "institutional-section" : "instructor-section");
+    }
+  };
+
   function placementBlocks(placement) {
     return state.content.sections
       .filter((entry) => entry.definition.placement === placement && isSectionEnabled(entry.definition))
       .flatMap((entry) => {
+        const addition = INSTRUCTOR_ADDITIONS[entry.definition.instructorAddition];
+        if (addition) return [addition(entry)];
         const block = entry.definition.showTitle
           ? subsection(entry.definition.title, fragmentBlock(entry), 3, "institutional-section")
           : fragmentBlock(entry);
@@ -402,12 +423,17 @@
       el("p", null, "Last day to drop and receive full refund is ",
         el("strong", null, dateOrMissing(course.dropDate, "Drop date")), "."),
       el("p", null, "Last day to withdraw with a grade of “W” is ",
-        el("strong", null, dateOrMissing(course.withdrawalDate, "Withdrawal date")), ".")
+        el("strong", null, dateOrMissing(course.withdrawalDate, "Withdrawal date")), "."),
+      prerequisiteBlock()
     ]);
 
-    const login = isOptionalEnabled("courseLogin")
-      ? subsection("Course Log-In", textBlocks(course.courseLogin, "Course log-in requirement"))
-      : null;
+    /* 2.3: the college first-week note, then the instructor's optional online log-in requirement. */
+    const firstWeek = subsection("First Week Course Attendance Requirements", [
+      placementBlocks("first-week"),
+      isOptionalEnabled("courseLogin")
+        ? subsection("Course Log-In", textBlocks(course.courseLogin, "Course log-in requirement"), 4)
+        : null
+    ]);
 
     const materialsSection = subsection("Materials", [
       subsection("Required", listOf(materials.required, false, "Required materials"), 4),
@@ -426,30 +452,34 @@
       ], 4)
     ]);
 
-    const prerequisites = course.prerequisites || { intro: "", items: [] };
-    const hasPrereqs = prerequisites.intro.trim() || prerequisites.items.length;
-    const prereqSection = subsection("Pre/Co-Requisites", [
-      hasPrereqs ? textBlocks(prerequisites.intro) : el("p", null, missing("Prerequisites (from the SCTCC Course Outline)")),
-      listOf(prerequisites.items, true),
-      course.corequisites.trim() ? textBlocks(`Corequisites: ${course.corequisites.trim()}`) : null
-    ]);
-
     const outcomes = subsection("Course Description & Outcomes", [
       textBlocks(course.description, "Course description (from the SCTCC Course Outline)"),
       subsection("Student Learning Outcomes", [
         el("p", null, "Upon completion of this course, students will be able to:"),
         listOf(course.outcomes, false, "Course outcomes (from the SCTCC Course Outline)")
-      ], 4)
+      ], 4),
+      isOptionalEnabled("mnTransferGoal")
+        ? subsection("MN Transfer Curriculum Goal Area", el("p", null,
+          "This course fulfills Goal ", el("strong", null, valueOr(course.mnTransferGoal, "Goal number")),
+          " of the Minnesota General Education Transfer Curriculum."), 4)
+        : null
     ]);
 
-    const mntc = isOptionalEnabled("mnTransferGoal")
-      ? subsection("MN Transfer Curriculum Goal Area", el("p", null,
-        "This course fulfills Goal ", el("strong", null, valueOr(course.mnTransferGoal, "Goal number")),
-        " of the Minnesota General Education Transfer Curriculum."))
-      : null;
-
+    /* 2.1 General Information, 2.2 Description & Outcomes, 2.3 First Week, 2.4 Materials. */
     return majorSection("course-information", "Course Information",
-      [general, login, materialsSection, prereqSection, outcomes, mntc]);
+      [general, outcomes, firstWeek, materialsSection]);
+  }
+
+  /* Pre/Co-Requisites, shown as part of 2.1 General Information. */
+  function prerequisiteBlock() {
+    const course = state.data.course;
+    const prerequisites = course.prerequisites || { intro: "", items: [] };
+    const hasPrereqs = prerequisites.intro.trim() || prerequisites.items.length;
+    return subsection("Pre/Co-Requisites", [
+      hasPrereqs ? textBlocks(prerequisites.intro) : el("p", null, missing("Prerequisites (from the SCTCC Course Outline)")),
+      listOf(prerequisites.items, true),
+      course.corequisites.trim() ? textBlocks(`Corequisites: ${course.corequisites.trim()}`) : null
+    ], 4);
   }
 
   /* ---------- Policies ---------- */
@@ -786,7 +816,7 @@
       panel.appendChild(el("p", null,
         "College content version ", el("strong", null, manifest.contentVersion || "unknown"),
         ", last updated ", el("strong", null, manifest.lastUpdated || "unknown"),
-        `. ${state.content.sections.filter((entry) => entry.fragment).length} of ${state.content.sections.length} sections loaded.`));
+        `. ${state.content.sections.filter((entry) => entry.fragment).length} of ${state.content.sections.filter((entry) => !entry.pending).length} sections loaded.`));
     }
 
     const academic = state.content.academicCalendar;
@@ -820,7 +850,7 @@
           el("td", null, entry.meta["last-reviewed"] || ""),
           el("td", null, entry.fragment
             ? (isSectionEnabled(entry.definition) ? "Shown" : "Off")
-            : el("strong", null, "Error"))))))));
+            : entry.pending ? "Pending: college text not written yet" : el("strong", null, "Error"))))))));
     }
   }
 

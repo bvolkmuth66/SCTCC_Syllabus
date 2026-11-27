@@ -123,7 +123,7 @@ window.SCTCC = window.SCTCC || {};
       return { ok: true, summary: result.summary, warnings: result.warnings || [] };
     },
 
-    /* The course meeting days (Credits, modality, and dates), which the calendar follows. */
+    /* The course meeting days (Credits, modality, dates, and requisites), which the calendar follows. */
     setMeetingDays(op) {
       const days = (Array.isArray(op.days) ? op.days : []).filter((day) => SCTCC.calendar.DAY_NAMES.includes(day));
       const pattern = data().course.meetingPattern;

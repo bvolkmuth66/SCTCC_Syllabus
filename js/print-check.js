@@ -75,7 +75,7 @@ window.SCTCC = window.SCTCC || {};
     actions.textContent = "";
 
     if (result.errors.length) {
-      body.appendChild(el("p", null, "Your syllabus is not ready to print yet. Fix the problems below, then choose Save as PDF again."));
+      body.appendChild(el("p", null, "Your syllabus is not ready to save as a PDF yet. Fix the problems below, then choose Save as PDF again."));
       const findings = el("div");
       renderFindings(findings, result, 3);
       body.appendChild(findings);

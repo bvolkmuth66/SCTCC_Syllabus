@@ -125,6 +125,7 @@ window.SCTCC = window.SCTCC || {};
         acceptedFileFormats: "", /* blank = college default in navigating-d2l.html */
         classEnvironment: "",    /* blank = college sample text */
         programDiversity: "",
+        aiPolicy: "",            /* the instructor's own AI rules; shown after the college AI statement */
         additionalSections: []   /* { title, text } instructor-written sections */
       },
       grading: {

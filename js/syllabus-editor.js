@@ -148,8 +148,9 @@ window.SCTCC = window.SCTCC || {};
   const GROUP_SECTIONS = {
     "editor-course": [], /* the title block at the top of the syllabus */
     "editor-instructor": ["#instructor-information"],
-    "editor-schedule": ["general-information-3", "course-log-in-3"],
-    "editor-description": ["pre-co-requisites-3", "course-description-and-outcomes-3", "mn-transfer-curriculum-goal-area-3"],
+    "editor-schedule": ["general-information-3"],
+    "editor-description": ["course-description-and-outcomes-3"],
+    "editor-first-week": ["first-week-course-attendance-requirements-3"],
     "editor-materials": ["materials-3"],
     "editor-policies": ["#college-policies", "#course-policies"],
     "editor-vendors": ["accessibility-and-data-privacy-policies-3"],
@@ -320,7 +321,7 @@ window.SCTCC = window.SCTCC || {};
   }
 
   function scheduleGroup() {
-    return group("editor-schedule", "Credits, modality, and dates", [
+    return group("editor-schedule", "Credits, modality, dates, and requisites", [
       fieldset("Credits", el("div", { class: "field-row field-row-4" },
         field("number", "course.credits.total", "Total", { narrow: true }),
         field("number", "course.credits.lecture", "Lecture", { narrow: true }),
@@ -344,27 +345,36 @@ window.SCTCC = window.SCTCC || {};
       el("div", { class: "field-row" },
         field("date", "course.dropDate", "Last day to drop (full refund)", { narrow: true }),
         field("date", "course.withdrawalDate", "Last day to withdraw (“W”)", { narrow: true })),
+      fieldset("Pre/Co-Requisites", [
+        note("From the official SCTCC Course Outline. Shown as part of General Information."),
+        field("text", "course.prerequisites.intro", "Prerequisite introduction", {
+          optionalLabel: true,
+          hint: "For example: This course requires any of these 2 prerequisite categories:"
+        }),
+        field("lines", "course.prerequisites.items", "Prerequisites", { hint: "One per line (Accuplacer scores, courses, etc.). Numbered automatically." }),
+        field("textarea", "course.corequisites", "Corequisites", { optionalLabel: true, rows: 2 })
+      ])
+    ]);
+  }
+
+  function firstWeekGroup() {
+    return group("editor-first-week", "First week attendance", [
+      note("The college’s first-week attendance note is always included and can’t be edited here."),
       fieldset("Course log-in (online courses)", [
         toggle("courseLogin", "Include course log-in requirements"),
         field("textarea", "course.courseLogin", "Log-in requirement", {
           rows: 4,
-          hint: "Sample: If you have not logged in to the course and participated in the Discussions by [date and time], you will be dropped from the course during the first week."
+          hint: "Appears after the college’s first-week note. Sample: If you have not logged in to the course and participated in the Discussions by [date and time], you will be dropped from the course during the first week."
         })
       ])
     ]);
   }
 
   function descriptionGroup() {
-    return group("editor-description", "Description, outcomes, and requisites", [
+    return group("editor-description", "Description and outcomes", [
       note("Copy these from the official SCTCC Course Outline and eServices."),
       field("textarea", "course.description", "Course description", { rows: 5 }),
       field("lines", "course.outcomes", "Student learning outcomes", { rows: 6, hint: "One outcome per line. They are shown as a bulleted list under the heading Student Learning Outcomes." }),
-      field("text", "course.prerequisites.intro", "Prerequisite introduction", {
-        optionalLabel: true,
-        hint: "For example: This course requires any of these 2 prerequisite categories:"
-      }),
-      field("lines", "course.prerequisites.items", "Prerequisites", { hint: "One per line (Accuplacer scores, courses, etc.). Numbered automatically." }),
-      field("textarea", "course.corequisites", "Corequisites", { optionalLabel: true, rows: 2 }),
       fieldset("Minnesota Transfer Curriculum", [
         toggle("mnTransferGoal", "This course fulfills a MnTC goal area"),
         field("text", "course.mnTransferGoal", "Goal area number", { narrow: true })
@@ -413,8 +423,16 @@ window.SCTCC = window.SCTCC || {};
           hint: "Leave blank to use the college sample text. Anything you write here replaces it."
         })
       ]),
+      fieldset("Artificial Intelligence (AI) Policy", [
+        note("A college AI statement is being written and will appear here automatically when it is added. Write your course’s own AI rules below; they appear after the college statement in section 3.5. Until the college statement is added, the section shows only your rules, and it is left out if you write none."),
+        field("textarea", "policies.aiPolicy", "Your course’s AI rules", {
+          rows: 5,
+          optionalLabel: true,
+          hint: "For example: which AI tools students may use, for which assignments, and how to cite or disclose AI use."
+        })
+      ]),
       fieldset("Program Diversity Statement", [
-        note("The College Diversity Statement is always included. Add your program’s own statement here if it has one; it appears right after the college statement."),
+        note("The SCTCC Diversity Statement is always included. Add your program’s own statement here if it has one; it appears right after the college statement."),
         toggle("programDiversity", "Include a Program Diversity Statement"),
         field("textarea", "policies.programDiversity", "Program Diversity Statement", { rows: 5 })
       ]),
@@ -563,7 +581,7 @@ window.SCTCC = window.SCTCC || {};
         checkbox("calendar.useFirstWeekSchedule", "The first week has a different schedule"),
         el("div", { id: "first-week-days" },
           checkboxGroup("calendar.firstWeekDays", "First-week meeting days", DAYS)),
-        note("Class times come from Credits, modality, and dates.")),
+        note("Class times come from Credits, modality, dates, and requisites.")),
       checkbox("calendar.includeFinalsWeek", "Include final exam week", "The last week of the course is marked as finals week."),
       checkbox("calendar.showExcludedAsRows", "Show no-class dates in the calendar", "Holidays and closures appear as “No Class” rows instead of being left out."),
 
@@ -699,7 +717,7 @@ window.SCTCC = window.SCTCC || {};
       ? `The calendar runs from the course begin date (${fmt(course.startDate)}) to the course end date (${fmt(course.endDate)})`
       : "The calendar uses the course begin and end dates (not entered yet)";
     const meets = days.length ? `meets on the course meeting days (${util.joinWords(days)})` : "meets on the course meeting days (none chosen yet)";
-    note.textContent = `${dates} and ${meets}. Change these under Credits, modality, and dates.`;
+    note.textContent = `${dates} and ${meets}. Change these under Credits, modality, dates, and requisites.`;
   }
 
   function refreshCollegeDates() {
@@ -1674,8 +1692,9 @@ window.SCTCC = window.SCTCC || {};
       courseGroup(),
       instructorGroup(),
       scheduleGroup(),
-      materialsGroup(),
       descriptionGroup(),
+      firstWeekGroup(),
+      materialsGroup(),
       policiesGroup(),
       vendorsGroup(),
       gradingGroup(),
