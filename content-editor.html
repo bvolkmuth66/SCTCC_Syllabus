@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>College Content Editor | SCTCC Syllabus Builder</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/content-editor.css">
+</head>
+<body>
+  <a class="skip-link" href="#ce-main">Skip to the editor</a>
+
+  <header class="ce-header">
+    <h1>College Content Editor</h1>
+    <p>For the SCTCC offices that own the college wording in every syllabus</p>
+  </header>
+
+  <main id="ce-main" class="ce-main" tabindex="-1">
+    <section class="ce-intro" aria-labelledby="ce-intro-title">
+      <h2 id="ce-intro-title" class="visually-hidden">About this editor</h2>
+      <p><strong>Nothing you do here changes anyone’s syllabus.</strong> You edit a copy of your section as plain text. When you send it, your change goes by email to the reviewer, <span id="ce-reviewer-name">the syllabus builder reviewer</span>, who checks it and then publishes it. Until then the current wording stays in place.</p>
+      <p>You can’t break anything: if you lose your way, choose <strong>Start over</strong> to bring back the current version.</p>
+    </section>
+
+    <div id="ce-load-error" class="ce-notice ce-error" role="alert" hidden></div>
+
+    <!-- Step 1 -->
+    <section class="ce-step" aria-labelledby="ce-step1-title">
+      <h2 id="ce-step1-title"><span class="ce-step-number">1</span> Choose your section</h2>
+      <label for="ce-section">Section to edit</label>
+      <select id="ce-section" aria-describedby="ce-section-info">
+        <option value="">Loading sections…</option>
+      </select>
+      <div id="ce-section-info" class="ce-section-info"></div>
+    </section>
+
+    <!-- Step 2 -->
+    <section class="ce-step" id="ce-step2" aria-labelledby="ce-step2-title" hidden>
+      <h2 id="ce-step2-title"><span class="ce-step-number">2</span> Edit the wording</h2>
+
+      <div class="ce-columns">
+        <div class="ce-edit-column">
+          <div class="ce-toolbar" role="toolbar" aria-label="Formatting" aria-controls="ce-text">
+            <button type="button" data-format="bold" aria-keyshortcuts="Control+B"><strong>Bold</strong></button>
+            <button type="button" data-format="italic" aria-keyshortcuts="Control+I"><em>Italic</em></button>
+            <button type="button" data-format="bullet">Bullet list</button>
+            <button type="button" data-format="subbullet">Sub-bullet</button>
+            <button type="button" data-format="numbered">Numbered list</button>
+            <button type="button" data-format="link" aria-keyshortcuts="Control+K">Link…</button>
+            <button type="button" id="ce-start-over" class="ce-quiet">Start over</button>
+          </div>
+
+          <label for="ce-text" class="ce-text-label">Wording of <span id="ce-text-title">the section</span></label>
+          <textarea id="ce-text" rows="18" spellcheck="true" aria-describedby="ce-format-help"></textarea>
+
+          <details class="ce-help" id="ce-format-help-box">
+            <summary>How to format</summary>
+            <div id="ce-format-help">
+              <ul>
+                <li>Each line is its own paragraph. Press Enter for a new paragraph.</li>
+                <li>A line starting with <code>- </code> is a bullet. Four spaces before it make a sub-bullet. <code>1. </code> starts a numbered list.</li>
+                <li><code>**words**</code> are bold, <code>*words*</code> are italic. Select words and use the buttons.</li>
+                <li>Links are written <code>[words people click](https://address)</code>. Use the Link button.</li>
+                <li>Words in curly brackets, like <code>{Withdrawal date}</code>, are filled in from each instructor’s syllabus. Keep them as they are.</li>
+              </ul>
+            </div>
+          </details>
+
+          <div class="ce-checks" aria-labelledby="ce-checks-title">
+            <h3 id="ce-checks-title">Checks</h3>
+            <div id="ce-checks" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div class="ce-preview-column">
+          <h3 id="ce-preview-title">Preview: how it looks in the syllabus</h3>
+          <div id="ce-preview" class="ce-preview" aria-labelledby="ce-preview-title" role="region"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 3 -->
+    <section class="ce-step" id="ce-step3" aria-labelledby="ce-step3-title" hidden>
+      <h2 id="ce-step3-title"><span class="ce-step-number">3</span> Review and send</h2>
+
+      <h3 id="ce-diff-title">Your changes</h3>
+      <p id="ce-diff-summary" class="ce-diff-summary"></p>
+      <div id="ce-diff" class="ce-diff" role="region" aria-labelledby="ce-diff-title"></div>
+
+      <div class="ce-sender">
+        <div class="ce-field">
+          <label for="ce-name">Your name</label>
+          <input type="text" id="ce-name" autocomplete="name" required>
+        </div>
+        <div class="ce-field">
+          <label for="ce-title">Your title or office</label>
+          <input type="text" id="ce-title" autocomplete="organization-title" required>
+        </div>
+        <div class="ce-field ce-field-wide">
+          <label for="ce-reason">What changed, and why <span class="ce-optional">(optional)</span></label>
+          <textarea id="ce-reason" rows="3"></textarea>
+        </div>
+      </div>
+
+      <div class="ce-actions">
+        <button type="button" id="ce-send" class="ce-primary">Send to the reviewer</button>
+        <button type="button" id="ce-download-copy">Save a copy of my change (.txt)</button>
+      </div>
+      <div id="ce-send-result" class="ce-notice" role="status" hidden></div>
+    </section>
+
+    <!-- Reviewer -->
+    <details class="ce-reviewer" id="ce-reviewer">
+      <summary>For the reviewer: open a change that was sent to you</summary>
+      <p>Paste the whole change from the email, from “SCTCC college content change” to “END OF CHANGE”, then choose <strong>Open this change</strong>. It opens above with its changes shown. Then download the updated file and upload it to the <code>content</code> folder on GitHub as a pull request.</p>
+      <label for="ce-submission">Change from the email</label>
+      <textarea id="ce-submission" rows="8"></textarea>
+      <div class="ce-actions">
+        <button type="button" id="ce-open-submission">Open this change</button>
+        <button type="button" id="ce-download-file" hidden>Download the updated file</button>
+      </div>
+      <div id="ce-reviewer-result" class="ce-notice" role="status" hidden></div>
+    </details>
+  </main>
+
+  <script src="js/syllabus-config.js"></script>
+  <script src="js/content-loader.js"></script>
+  <script src="js/content-text.js"></script>
+  <script src="js/content-editor.js"></script>
+</body>
+</html>

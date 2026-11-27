@@ -53,6 +53,15 @@ window.SCTCC.config = Object.freeze({
   },
 
   /*
+   * College Content Editor (content-editor.html): who receives the changes that content
+   * owners send. The editor opens an email to this address.
+   */
+  contentReviewer: {
+    name: "Brian Volkmuth",
+    email: "bvolkmuth@sctcc.edu"
+  },
+
+  /*
    * Beta test feedback form (Microsoft Forms, SCTCC sign-in). Shown as "Report a problem
    * or idea" in the toolbar. Set to "" after the beta test to remove the button.
    */

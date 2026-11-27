@@ -147,7 +147,19 @@ async function main() {
     results.push(await runAxe(faq, axeSource, "FAQs window (search with answers open)"));
     await faq.close();
 
-    /* 6. Student view, then the PDF made from it. */
+    /* 6. The College Content Editor, with a section open and a change made. */
+    const editor = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+    editor.on("pageerror", (error) => pageErrors.push(`Content editor: ${error}`));
+    await editor.goto(new URL("content-editor.html", base).href);
+    await editor.waitForFunction(() => document.querySelectorAll("#ce-section option").length > 5, null, { timeout: 15000 });
+    await editor.selectOption("#ce-section", "navigating-d2l");
+    await editor.waitForSelector("#ce-step2:not([hidden])");
+    await editor.evaluate(() => { const t = document.getElementById("ce-text"); t.value += "\nA new sentence with **bold** words."; t.dispatchEvent(new Event("input")); });
+    await editor.waitForTimeout(900);
+    results.push(await runAxe(editor, axeSource, "College Content Editor (section open, change made)"));
+    await editor.close();
+
+    /* 7. Student view, then the PDF made from it. */
     await page.click("#toggle-mode");
     await page.waitForTimeout(500);
     results.push(await runAxe(page, axeSource, "Student view (sample course)"));
