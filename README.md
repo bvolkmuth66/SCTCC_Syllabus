@@ -441,7 +441,7 @@ The browser's own Print command (Ctrl+P) cannot be stopped, but it still switche
 ## Printing to PDF
 
 1. Click **Save as PDF** in the builder toolbar. If there are problems to fix, the dialog lists them with **Go to field** buttons. Otherwise it shows anything to review and these steps.
-2. Click **Open print window**. The builder switches to the student view and sets the PDF's title, which is also the suggested file name, for example `CPTR 1118 Cisco II Syllabus, Spring 2027`. A readable title matters because screen readers announce it and PDF viewers show it (WCAG 2.4.2). Characters that file names cannot contain (such as `:` or `/`) are left out. The saved `.json` file and the calendar CSV keep hyphenated names such as `CPTR-1118-Spring-2027-Syllabus.json`.
+2. Click **Continue to Save as PDF**. The browser opens its own window, which it titles Print. The builder switches to the student view and sets the PDF's title, which is also the suggested file name, for example `CPTR 1118 Cisco II Syllabus, Spring 2027`. A readable title matters because screen readers announce it and PDF viewers show it (WCAG 2.4.2). Characters that file names cannot contain (such as `:` or `/`) are left out. The saved `.json` file and the calendar CSV keep hyphenated names such as `CPTR-1118-Spring-2027-Syllabus.json`.
 3. Set **Destination** to **Save as PDF**. **Do not choose "Adobe PDF" or "Microsoft Print to PDF."** Those print drivers turn the text into shapes: the PDF has no tags (headings, lists, reading order), its text cannot be selected or searched, and screen readers read nonsense. A syllabus made that way fails the accessibility requirements.
 4. Under **More settings**, turn **Headers and footers off**. The syllabus prints its own footer (college name, course, term, syllabus version, and page numbers). Leave **Background graphics** off to save ink.
 5. Save to your own folder or OneDrive, and upload the PDF to D2L.
@@ -552,7 +552,7 @@ Phase 5 (tested on 2026-11-25 in headless Chrome and Node):
 
 - [x] Blank syllabus → Save as PDF opens a dialog listing what is missing; focus starts on Close; Escape closes and returns focus to Save as PDF
 - [x] Go to field opens the right editor group and focuses the field (also from Student preview, and to "Add a grade" for scale problems)
-- [x] Sample course → no problems; review notices listed; steps shown with the suggested file name; Open print window prints in student view
+- [x] Sample course → no problems; review notices listed; steps shown with the suggested file name; Continue to Save as PDF opens the browser's window in student view
 - [x] Template placeholder ("XXX") and withdraw-before-drop reported in Check my syllabus, with working Go to field
 - [x] Overlapping grades stop printing; weights below 100% stop printing until the override is ticked
 - [x] Calendar rows outside the course dates reported for review

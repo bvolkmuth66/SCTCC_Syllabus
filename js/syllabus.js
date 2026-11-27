@@ -536,7 +536,7 @@
   function gradingNotice(errors, warnings) {
     if (!errors.length && !warnings.length) return null;
     return el("div", { class: `notice ${errors.length ? "notice-error" : "notice-warning"} instructor-only` },
-      el("p", null, el("strong", null, errors.length ? "Grading problems to fix before printing:" : "Grading items to check:")),
+      el("p", null, el("strong", null, errors.length ? "Grading problems to fix before saving as PDF:" : "Grading items to check:")),
       el("ul", null, [...errors, ...warnings].map((message) => el("li", null, message))));
   }
 

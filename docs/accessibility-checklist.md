@@ -69,7 +69,7 @@ WCAG 2.2 removed 4.1.1 Parsing; it is listed at the end because WCAG 2.1 (the le
 | 3.2.3 Consistent Navigation | AA | Builder | One page; toolbar is constant | N/A (single page) | — |
 | 3.2.4 Consistent Identification | AA | Builder | Same names for the same actions (Save syllabus, Open a saved syllabus, Save as PDF — the same names in the toolbar and the editor) | Manual | Not tested |
 | 3.2.6 Consistent Help | A | Builder | Help text in the same place in each group (notes and hints under labels) | Manual | Not tested |
-| 3.3.1 Error Identification | A | Builder | Check before printing names each problem in text, with Go to field | Manual | Not tested |
+| 3.3.1 Error Identification | A | Builder | Check before saving as PDF names each problem in text, with Go to field | Manual | Not tested |
 | 3.3.2 Labels or Instructions | A | Builder | Visible labels and hints; required items explained | Auto (partly) + Manual | Not tested |
 | 3.3.3 Error Suggestion | AA | Builder | Findings say how to fix (for example "Choose exactly as many days as meetings") | Manual | Not tested |
 | 3.3.4 Error Prevention (Legal, Financial, Data) | AA | Builder | Confirmation before discarding work or replacing dates; nothing is submitted anywhere | Manual | Not tested |
@@ -102,7 +102,7 @@ WCAG 2.2 removed 4.1.1 Parsing; it is listed at the end because WCAG 2.1 (the le
 
 ## Manual review procedure (yearly, about 1–2 hours)
 
-1. **Keyboard only:** start screen → import → edit each group → Check before printing → Save as PDF, using Tab, Shift+Tab, Enter, Space, Escape. Focus is always visible and never hidden under the toolbar.
+1. **Keyboard only:** start screen → import → edit each group → Check before saving as PDF → Save as PDF, using Tab, Shift+Tab, Enter, Space, Escape. Focus is always visible and never hidden under the toolbar.
 2. **Screen reader:** NVDA or JAWS with Chrome/Edge; VoiceOver with Safari. Headings list, landmarks, form labels, dialogs, and live announcements.
 3. **Zoom and reflow:** 200% browser zoom; window 320 px wide.
 4. **PDF:** make the PDF from the sample course and one real syllabus; run Acrobat Pro's Accessibility Check and PAC (PDF Accessibility Checker); read it with a screen reader; upload to a D2L test shell.

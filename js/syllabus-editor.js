@@ -227,7 +227,7 @@ window.SCTCC = window.SCTCC || {};
   }
 
   function checkGroup() {
-    return group("editor-check", "Check before printing", [
+    return group("editor-check", "Check before saving as PDF", [
       note("Save as PDF runs these checks automatically. You can also check at any time."),
       el("div", { class: "button-row" }, actionButton("run-check", "Check my syllabus", "btn-primary", { id: "run-check" })),
       el("div", { id: "check-results", "aria-live": "polite" })
@@ -876,7 +876,7 @@ window.SCTCC = window.SCTCC || {};
     if (label) container.appendChild(el("p", { class: "grading-total" }, label));
     if (errors.length) {
       container.appendChild(el("div", { class: "notice notice-error" },
-        el("p", null, el("strong", null, errorTitle || (errors.length === 1 ? "Fix before printing:" : `Fix these ${errors.length} problems before printing:`))),
+        el("p", null, el("strong", null, errorTitle || (errors.length === 1 ? "Fix before saving as PDF:" : `Fix these ${errors.length} problems before saving as PDF:`))),
         el("ul", null, errors.map((message) => el("li", null, message)))));
     }
     if (warnings.length) {

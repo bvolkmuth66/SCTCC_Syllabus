@@ -4,7 +4,7 @@
  * Shows the results of SCTCC.validation.validate() in two places:
  *   - the Save as PDF dialog (a native <dialog>, so focus stays inside it and
  *     Escape closes it), and
- *   - the "Check before printing" group in the editor.
+ *   - the "Check before saving as PDF" group in the editor.
  * Each finding with a field has a "Go to" button that opens the editor at that field.
  */
 window.SCTCC = window.SCTCC || {};
@@ -46,7 +46,7 @@ window.SCTCC = window.SCTCC || {};
       : null);
     const errors = result.errors.length;
     container.append(...[
-      block(result.errors, "error", errors === 1 ? "1 problem to fix before printing" : `${errors} problems to fix before printing`),
+      block(result.errors, "error", errors === 1 ? "1 problem to fix before saving as PDF" : `${errors} problems to fix before saving as PDF`),
       block(result.warnings, "warning", "Please review"),
       block(result.notices, "info", "For your information")
     ].filter(Boolean));
@@ -88,13 +88,13 @@ window.SCTCC = window.SCTCC || {};
       }
       body.appendChild(el("h3", { class: "findings-title" }, "How to save your PDF"));
       body.appendChild(el("ol", { class: "print-steps" },
-        el("li", null, "In the print window, set ", el("strong", null, "Destination"), " (or Printer) to ", el("strong", null, "Save as PDF"), ". ",
+        el("li", null, "Choose ", el("strong", null, "Continue to Save as PDF"), ". Your browser opens its own window, which it titles Print. There, set ", el("strong", null, "Destination"), " (or Printer) to ", el("strong", null, "Save as PDF"), ". ",
           el("strong", null, "Do not choose Adobe PDF or Microsoft Print to PDF:"), " they make a PDF whose text cannot be selected or read by screen readers."),
         el("li", null, "Open ", el("strong", null, "More settings"), " and turn ", el("strong", null, "off Headers and footers"), ". The syllabus prints its own footer and page numbers. Leave Background graphics off."),
         el("li", null, "Choose ", el("strong", null, "Save"), ", then pick your own folder or your OneDrive folder. The suggested name is ", el("strong", null, `${options.fileName}.pdf`), "."),
         el("li", null, "Upload the PDF to your D2L course.")));
       body.appendChild(el("p", { class: "editor-note" }, "Use Chrome or Edge for a PDF that screen readers can read and with working links."));
-      actions.appendChild(el("button", { type: "button", class: "btn btn-primary", "data-dialog": "print", autofocus: true }, "Open print window"));
+      actions.appendChild(el("button", { type: "button", class: "btn btn-primary", "data-dialog": "print", autofocus: true }, "Continue to Save as PDF"));
       actions.appendChild(el("button", { type: "button", class: "btn", "data-dialog": "close" }, "Cancel"));
     }
 
