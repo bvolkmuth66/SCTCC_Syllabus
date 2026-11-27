@@ -20,6 +20,7 @@ College-wide content (policies, support information, the footer) is **not** type
 - [Course calendar generator](#course-calendar-generator)
 - [Repository structure](#repository-structure)
 - [Running the builder](#running-the-builder)
+- [Beta test feedback](#beta-test-feedback)
 - [Instructor FAQs](#instructor-faqs)
 - [Editing college content (for content owners)](#editing-college-content-for-content-owners)
 - [The content manifest](#the-content-manifest)
@@ -347,6 +348,10 @@ In the PDF, the calendar table's column headings repeat at the top of each page,
 - *Credits, modality, dates, and requisites* shows the college dates for that term, with **Fill in these dates** (begin, end, last day to drop, last day to withdraw; asks before replacing dates already entered).
 - It warns if the course begins before the semester starts or ends before final exam week ("must include final exam week").
 - *Course calendar* has **Add the college’s no-class dates**.
+
+## Beta test feedback
+
+During the beta test, **Report a problem or idea** in the toolbar opens the Microsoft Form for feedback (SCTCC sign-in) in a new tab. Its address is `feedbackFormUrl` in `js/syllabus-config.js`; set it to `""` after the beta test and the button disappears. The end-of-round survey is sent to testers by email, not linked from the builder.
 
 ## Instructor FAQs
 

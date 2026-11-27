@@ -1023,6 +1023,16 @@
     });
   }
 
+  /* Beta feedback link: shown only when the config gives a web address. */
+  function setUpFeedbackLink() {
+    const link = document.getElementById("toolbar-feedback");
+    if (!link) return;
+    const url = String(config.feedbackFormUrl || "").trim();
+    if (!/^https:\/\//.test(url)) return;
+    link.href = url;
+    link.hidden = false;
+  }
+
   function bindPageEvents() {
     document.getElementById("toggle-mode").addEventListener("click", () => {
       const next = document.body.getAttribute("data-mode") === "student" ? "instructor" : "student";
@@ -1071,6 +1081,7 @@
     state.data = SCTCC.createEmptySyllabusData();
     setMode(config.mode);
     bindPageEvents();
+    setUpFeedbackLink();
     SCTCC.editor.init(app);
     SCTCC.calendarBridge.init(app);
     render(); /* show the blank syllabus immediately while college content loads */
