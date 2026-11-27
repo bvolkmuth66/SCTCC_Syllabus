@@ -269,6 +269,11 @@ body[data-mode="instructor"] .student-only {
   max-width: 100%;
 }
 
+/* A real logo file: about 1.9 inches wide in print, small enough to stay sharp. */
+#college-logo.is-image-logo {
+  width: 180px;
+}
+
 .header-titles {
   flex: 1 1 18rem;
   border-left: 3px solid var(--sctcc-orange);

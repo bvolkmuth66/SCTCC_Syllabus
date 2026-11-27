@@ -280,6 +280,7 @@
     logo.src = config.logo.src;
     logo.alt = config.logo.isPlaceholder ? config.logo.alt : config.logo.officialAlt;
     logo.classList.toggle("is-placeholder", Boolean(config.logo.isPlaceholder));
+    logo.classList.toggle("is-image-logo", !config.logo.isPlaceholder);
 
     const slot = document.getElementById("slot-header");
     slot.textContent = "";
@@ -775,6 +776,10 @@
       panel.appendChild(el("p", { class: "notice notice-warning" },
         el("strong", null, "Logo placeholder: "),
         "Replace it with the official SCTCC logo from Marketing (see the README)."));
+    } else if (config.logo.isInterim) {
+      panel.appendChild(el("p", { class: "notice notice-info" },
+        el("strong", null, "Interim logo: "),
+        "taken from the SCTCC Word syllabus template until Marketing supplies a larger file (see the README)."));
     }
 
     if (manifest) {
