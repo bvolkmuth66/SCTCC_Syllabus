@@ -10,6 +10,7 @@
   "placements": {
     "header": "Below the course title: mission statement and change notice",
     "general-information": "Course Information > General Information, after the instructor's dates",
+    "first-week": "Course Information > First Week Course Attendance Requirements",
     "required-technology": "Course Information > Materials > Required Technology",
     "technical-skills": "Course Information > Materials > Suggested Technical Skills",
     "college-policies": "College Policies & Procedures",
@@ -48,6 +49,16 @@
       "defaultEnabled": true,
       "owner": "Records & Registration (to be confirmed)",
       "instructorNote": "Your course must not begin before the official semester start date and must include final exam week."
+    },
+    {
+      "id": "first-week-attendance",
+      "title": "First Week Course Attendance Requirements",
+      "file": "first-week-attendance.html",
+      "placement": "first-week",
+      "showTitle": false,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "Financial Aid / Records & Registration (to be confirmed)"
     },
     {
       "id": "required-technology",
@@ -113,7 +124,7 @@
     },
     {
       "id": "diversity-statement",
-      "title": "College Diversity Statement",
+      "title": "SCTCC Diversity Statement",
       "file": "diversity-statement.html",
       "placement": "college-policies",
       "showTitle": true,
@@ -122,6 +133,19 @@
       "owner": "Office of Community, Culture, and Institutional Climate (to be confirmed)",
       "followWith": "programDiversity",
       "instructorNote": "Wording from the older SCTCC syllabus template; awaiting confirmation by the college. To add your program's own statement, turn on Program Diversity Statement under Course policies; it appears right after this one."
+    },
+    {
+      "id": "ai-policy",
+      "title": "Artificial Intelligence (AI) Policy",
+      "file": "ai-policy.html",
+      "placement": "college-policies",
+      "showTitle": true,
+      "required": true,
+      "defaultEnabled": true,
+      "owner": "Academic Affairs (to be confirmed)",
+      "pending": true,
+      "instructorAddition": "aiPolicy",
+      "instructorNote": "The college AI statement is being written. Until it is added, this section shows only your own course AI rules (Course policies > Artificial Intelligence (AI) Policy). If neither is filled in, the section is left out."
     },
     {
       "id": "turnitin",
@@ -136,7 +160,7 @@
     },
     {
       "id": "enrollment-requirements",
-      "title": "First-Week Attendance and Administrative Withdrawal",
+      "title": "Administrative Withdrawal (FW grade)",
       "file": "enrollment-requirements.html",
       "placement": "attendance",
       "showTitle": false,

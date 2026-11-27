@@ -178,6 +178,11 @@ window.SCTCC = window.SCTCC || {};
 
   async function loadSection(definition, baseUrl) {
     const result = { definition, fragment: null, meta: {}, error: null };
+    /* "pending": true — the college text is not written yet; nothing to load, and not an error. */
+    if (definition.pending === true) {
+      result.pending = true;
+      return result;
+    }
     if (typeof definition.file !== "string" || !SAFE_FILE_NAME.test(definition.file)) {
       result.error = "The manifest lists an invalid file name for this section.";
       return result;

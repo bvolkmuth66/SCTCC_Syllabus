@@ -85,7 +85,7 @@ SCTCC_Syllabus/
 │   ├── academic-calendar.json      College semester dates, finals, deadlines, no-class dates
 │   ├── grading-scale.json          College default grading scale (Academic Affairs)
 │   ├── faq.html                    The instructor FAQs (questions and answers)
-│   └── *.html                      One file per college section (20 files)
+│   └── *.html                      One file per college section (22 files; ai-policy.html is pending)
 ├── assets/
 │   ├── sctcc-logo-interim.jpg      Interim logo from the Word syllabus template (until Marketing's file)
 │   ├── sctcc-logo-placeholder.svg  The earlier placeholder (kept for reference)
@@ -152,11 +152,13 @@ When the builder opens, it asks **How would you like to start?**
 
 Then:
 
-1. Work through the groups in the **Edit syllabus** panel. They are in the same order as the syllabus, and each shows the number of the syllabus section(s) it fills in (for example **2.2 Materials and technology**), matching the numbers in the preview and the PDF. The numbers update when optional sections are turned on or off. The preview updates as you type. Anything still needed is marked in the preview, for example **[Withdrawal date needed]**.
-   - **Course** and **Description, outcomes, and requisites**: copy from the official SCTCC Course Outline. **Year** is a list of this year and the next two, worked out from the computer’s date, so it moves forward every January 1 (a year already in an opened syllabus stays in the list). **Last revised** has a **Use today’s date** button, and prints in the PDF footer after the version (for example "Version 1.1 · Revised 11/26/2026"). Outcomes appear under a **Student Learning Outcomes** heading as a bulleted list (the July 2026 template numbers them; changed 2026-11-26 at the project lead's request).
-   - **Credits, modality, and dates**: choose the term, then **Fill in these dates**.
+1. Work through the groups in the **Edit syllabus** panel. They are in the same order as the syllabus, and each shows the number of the syllabus section(s) it fills in (for example **2.4 Materials and technology**), matching the numbers in the preview and the PDF. The numbers update when optional sections are turned on or off. The preview updates as you type. Anything still needed is marked in the preview, for example **[Withdrawal date needed]**.
+   - **Course** and **Description and outcomes**: copy from the official SCTCC Course Outline. **Year** is a list of this year and the next two, worked out from the computer’s date, so it moves forward every January 1 (a year already in an opened syllabus stays in the list). **Last revised** has a **Use today’s date** button, and prints in the PDF footer after the version (for example "Version 1.1 · Revised 11/26/2026"). Outcomes appear under a **Student Learning Outcomes** heading as a bulleted list (the July 2026 template numbers them; changed 2026-11-26 at the project lead's request).
+   - **Credits, modality, dates, and requisites**: choose the term, then **Fill in these dates**. Pre/Co-Requisites (from the Course Outline) are entered here and appear as part of **2.1 General Information**.
+   - **First week attendance** (2.3): the college's first-week attendance note is always included; online courses can add a **Course log-in** requirement, shown after it.
    - **Course policies**: your attendance and late-work wording; accepted file formats; optional college statements; your own Class Environment text; and **Additional course sections** such as Exams or Lab Safety.
-   - **Course policies** also has an optional **Program Diversity Statement**, shown right after the **College Diversity Statement**. The two headings say which statement is the college's and which is the program's.
+   - **Course policies** has a box for **your course's AI rules**, shown in **3.5 Artificial Intelligence (AI) Policy** after the college AI statement (being written; until it is added, the section shows only the instructor's rules and is left out if there are none).
+   - **Course policies** also has an optional **Program Diversity Statement**, shown right after the **SCTCC Diversity Statement**. The two headings say which statement is the college's and which is the program's.
    - **Tools and vendors**: each outside tool's accessibility statement (**required**; if the vendor has none, check "This tool has no accessibility statement" and link its VPAT), privacy policy, and support link.
    - **Grading** and **Course calendar**: see the sections below.
    - Web addresses typed into any text box become working links in the syllabus.
@@ -181,6 +183,7 @@ Text still holding a template placeholder such as "COURSE NAME" or "XXX" is flag
 - Credits, modality, meeting days, class times, room, extra modality information, course log-in text
 - Course description, outcomes, prerequisites, corequisites, MnTC goal
 - Required and recommended materials, extra required technology, suggested technical skills
+- AI policy (a heading such as "AI Policy" or "Artificial Intelligence") as the instructor's own AI rules
 - Attendance and late policies, accepted D2L file formats, whether Turnitin / academic dishonesty examples / Class Environment were included, the instructor's own Class Environment wording
 - **Instructor-written sections the template doesn't have** (for example Exams or Student Responsibilities), as Additional course sections
 - Tools from the Technical Support list (for example a publisher's support desk)
@@ -192,7 +195,7 @@ Text still holding a template placeholder such as "COURSE NAME" or "XXX" is flag
 - **The term, year, and all dates.** The instructor chooses the new term and uses **Fill in these dates**. Old calendar dates are dropped; when the new calendar is generated, imported topics are placed in order into the class meetings.
 - Mission statement, change notice, footer, and template instructions.
 - A section that was under College Policies but is not a current college section is offered **unticked**, with a note to include it only if it is the instructor's own statement.
-- The old **Statement of Diversity** is recognized as college text (the College Diversity Statement is always included). A section titled **Program Diversity Statement** is imported into that optional section; other wording found under an old diversity heading is offered unticked as a program statement.
+- The old **Statement of Diversity** is recognized as college text (the SCTCC Diversity Statement is always included). A section titled **Program Diversity Statement** is imported into that optional section; other wording found under an old diversity heading is offered unticked as a program statement.
 
 **The review screen** lists every item found, grouped like the editor, with the text it found. Everything is ticked except items that need a decision. **Import selected** fills a new, unsaved syllabus and lists the next steps; **Cancel** (or Escape) changes nothing.
 
@@ -261,7 +264,7 @@ Open **Course calendar** in the editor. At the top, **Choose a calendar tool**:
 ### The calendar workspace
 
 - **Header:** the course, term, and dates, and whether the workspace is linked to the builder. **Back to the builder** closes it.
-- **Settings** (left): layout (by class meeting or by week), meeting days (these are the course meeting days from *Credits, modality, and dates*; changing them in either place changes both), final exam week, showing no-class dates, the college's no-class dates and your own closures, and **Generate calendar**. The dates always come from the course dates. First-week schedules stay in the editor.
+- **Settings** (left): layout (by class meeting or by week), meeting days (these are the course meeting days from *Credits, modality, dates, and requisites*; changing them in either place changes both), final exam week, showing no-class dates, the college's no-class dates and your own closures, and **Generate calendar**. The dates always come from the course dates. First-week schedules stay in the editor.
 - **Month view** (middle): a real month calendar for the term. Class meetings show their meeting number, topic, and anything due; no-class dates, final exam week, and days outside the course are marked. Use the arrows to move between months. **List view** shows every row in a table.
 - **Class details** (right): choose a class to edit its topic, preparation/reading, due item, and notes, mark it as no class, **Move topic earlier/later**, or **Shift topics later from here** (for a snow day). **Add an unscheduled topic** adds one without a date.
 - **Unscheduled topics** are listed under the month, so nothing that lost its date is hidden.
@@ -284,8 +287,8 @@ The workspace keeps no copy of the syllabus: every change goes to the builder, w
 2. **Calendar layout**
    - **One row per class meeting** — for courses that meet 1, 2, 3, or 4 times a week. Columns: Week, Meeting, Date, Day, Topic, Preparation/Reading, Assignment Due, Notes.
    - **One row per week** — for asynchronous online courses. Columns: Week, Dates, Topic, Preparation/Reading, Assignment Due, Notes.
-3. **Add the college’s no-class dates** copies the holidays and breaks for the syllabus's term from the college academic calendar (see below) into the no-class dates list, without duplicates. **The calendar always runs from the course begin date to the course end date, on the course meeting days,** entered under *Credits, modality, and dates*; the calendar settings show them, and there are no separate calendar dates or days to keep in step. Choosing the meeting days there is all the calendar needs (1 to 4 days a week; with 5 or more, choose one row per week). Older saved syllabi that had only calendar meeting days have them copied to the course. Class times come from the course meeting information. If you change the course dates, generate the calendar again.
-4. **Meeting days** come from *Credits, modality, and dates* (the calendar shows them). The number of meetings per week is the number of days chosen, 1 to 4; with none or more than 4 the calendar explains what to change and is not generated until it is fixed.
+3. **Add the college’s no-class dates** copies the holidays and breaks for the syllabus's term from the college academic calendar (see below) into the no-class dates list, without duplicates. **The calendar always runs from the course begin date to the course end date, on the course meeting days,** entered under *Credits, modality, dates, and requisites*; the calendar settings show them, and there are no separate calendar dates or days to keep in step. Choosing the meeting days there is all the calendar needs (1 to 4 days a week; with 5 or more, choose one row per week). Older saved syllabi that had only calendar meeting days have them copied to the course. Class times come from the course meeting information. If you change the course dates, generate the calendar again.
+4. **Meeting days** come from *Credits, modality, dates, and requisites* (the calendar shows them). The number of meetings per week is the number of days chosen, 1 to 4; with none or more than 4 the calendar explains what to change and is not generated until it is fixed.
 5. Options: **The first week has a different schedule** (choose first-week days), **Include final exam week** (the last week is marked "Finals"; turn off to leave it out), and **Show no-class dates in the calendar** (holidays appear as "No Class" rows instead of being left out).
 6. **No-class dates** — add each holiday or closure with a reason. In the weekly layout they are listed in that week's notes.
 7. **Generate calendar** creates one row for every scheduled meeting (or week) between the dates. Weeks run Monday–Sunday; week 1 is the week the course starts. No table cells are merged.
@@ -341,7 +344,7 @@ In the PDF, the calendar table's column headings repeat at the top of each page,
 `status` can be `"sample"` (placeholder dates, labeled **Sample dates**), `"published"` (copied from the published calendar, labeled *not yet confirmed*), or `"official"` (confirmed).
 
 **In the editor**, once the instructor picks the term and year:
-- *Credits, modality, and dates* shows the college dates for that term, with **Fill in these dates** (begin, end, last day to drop, last day to withdraw; asks before replacing dates already entered).
+- *Credits, modality, dates, and requisites* shows the college dates for that term, with **Fill in these dates** (begin, end, last day to drop, last day to withdraw; asks before replacing dates already entered).
 - It warns if the course begins before the semester starts or ends before final exam week ("must include final exam week").
 - *Course calendar* has **Add the college’s no-class dates**.
 
@@ -371,6 +374,8 @@ Each college section is one small file in `content/`. You only ever need to open
 4. Update the comment block at the top: **LAST-REVIEWED** (today's date, `yyyy-mm-dd`) and **VERSION** if your office versions its text.
 5. Click **Commit changes…**, choose **Create a new branch and start a pull request**, and describe the change.
 6. The file's owner listed in `.github/CODEOWNERS` reviews and approves it. Once merged, every new syllabus PDF uses the new wording.
+
+**A section whose college text is not written yet** is marked `"pending": true` in `content-manifest.json`. Its file is not loaded and it is not an error; the content check lists it as a warning. Today that is **3.5 Artificial Intelligence (AI) Policy** (`ai-policy.html`): until the college statement is added, the section shows only the instructor's own AI rules, and is left out when there are none. To add the statement, put it in `ai-policy.html` and remove `"pending": true` (the steps are in the file's comment). Instructors' rules then follow the college statement under the same heading (manifest `"instructorAddition": "aiPolicy"`).
 
 **Things that are removed automatically** (so they cannot break the syllabus): `<script>`, `<style>`, images, forms, embedded frames, and any formatting attributes. Unknown tags are removed but their text is kept.
 
@@ -441,7 +446,7 @@ The browser's own Print command (Ctrl+P) cannot be stopped, but it still switche
 ## Printing to PDF
 
 1. Click **Save as PDF** in the builder toolbar. If there are problems to fix, the dialog lists them with **Go to field** buttons. Otherwise it shows anything to review and these steps.
-2. Click **Open print window**. The builder switches to the student view and sets the PDF's title, which is also the suggested file name, for example `CPTR 1118 Cisco II Syllabus, Spring 2027`. A readable title matters because screen readers announce it and PDF viewers show it (WCAG 2.4.2). Characters that file names cannot contain (such as `:` or `/`) are left out. The saved `.json` file and the calendar CSV keep hyphenated names such as `CPTR-1118-Spring-2027-Syllabus.json`.
+2. Click **Continue to Save as PDF**. The browser opens its own window, which it titles Print. The builder switches to the student view and sets the PDF's title, which is also the suggested file name, for example `CPTR 1118 Cisco II Syllabus, Spring 2027`. A readable title matters because screen readers announce it and PDF viewers show it (WCAG 2.4.2). Characters that file names cannot contain (such as `:` or `/`) are left out. The saved `.json` file and the calendar CSV keep hyphenated names such as `CPTR-1118-Spring-2027-Syllabus.json`.
 3. Set **Destination** to **Save as PDF**. **Do not choose "Adobe PDF" or "Microsoft Print to PDF."** Those print drivers turn the text into shapes: the PDF has no tags (headings, lists, reading order), its text cannot be selected or searched, and screen readers read nonsense. A syllabus made that way fails the accessibility requirements.
 4. Under **More settings**, turn **Headers and footers off**. The syllabus prints its own footer (college name, course, term, syllabus version, and page numbers). Leave **Background graphics** off to save ink.
 5. Save to your own folder or OneDrive, and upload the PDF to D2L.
@@ -552,7 +557,7 @@ Phase 5 (tested on 2026-11-25 in headless Chrome and Node):
 
 - [x] Blank syllabus → Save as PDF opens a dialog listing what is missing; focus starts on Close; Escape closes and returns focus to Save as PDF
 - [x] Go to field opens the right editor group and focuses the field (also from Student preview, and to "Add a grade" for scale problems)
-- [x] Sample course → no problems; review notices listed; steps shown with the suggested file name; Open print window prints in student view
+- [x] Sample course → no problems; review notices listed; steps shown with the suggested file name; Continue to Save as PDF opens the browser's window in student view
 - [x] Template placeholder ("XXX") and withdraw-before-drop reported in Check my syllabus, with working Go to field
 - [x] Overlapping grades stop printing; weights below 100% stop printing until the override is ticked
 - [x] Calendar rows outside the course dates reported for review

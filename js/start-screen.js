@@ -219,7 +219,7 @@ window.SCTCC = window.SCTCC || {};
 
     SCTCC.editor.openImported(data, `Imported ${applied} item${applied === 1 ? "" : "s"} from “${fileName}.” Next steps:`, [
       "Course: choose the new term and year.",
-      "Credits, modality, and dates: click “Fill in these dates,” and update any dates in your course log-in text.",
+      "Credits, modality, dates, and requisites: click “Fill in these dates,” and update any dates in your course log-in text.",
       `Course calendar: add the college’s no-class dates and generate the calendar.${hasTopics ? " Your imported topics will be placed in order." : ""}`,
       "Grading: check the categories and the scale.",
       "Review each section in the preview, then Save your syllabus to your own folder or OneDrive."

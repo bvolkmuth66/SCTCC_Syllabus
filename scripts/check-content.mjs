@@ -330,6 +330,11 @@ const manifest = await checkManifest();
 if (manifest) {
   for (const section of manifest.sections) {
     const path = join(CONTENT, section.file || "");
+    /* A pending section's file is a placeholder until the college text is written. */
+    if (section.pending === true) {
+      report("warning", path, 1, `Section "${section.id}" is marked pending: its college text has not been added yet, so it is not loaded.`);
+      continue;
+    }
     if (section.file && await exists(path)) checkFragment(path, await readFile(path, "utf8"));
   }
   if (manifest.faqFile) {

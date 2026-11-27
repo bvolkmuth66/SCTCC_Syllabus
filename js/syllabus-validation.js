@@ -20,8 +20,9 @@ window.SCTCC = window.SCTCC || {};
   const GROUPS = [
     [/^(course\.(prefix|number|title|term|year)|meta\.)/, "editor-course"],
     [/^instructor\./, "editor-instructor"],
-    [/^course\.(credits|modality|modalityNote|meetingPattern|location|startDate|endDate|dropDate|withdrawalDate|courseLogin)/, "editor-schedule"],
-    [/^course\.(description|outcomes|prerequisites|corequisites|mnTransferGoal)/, "editor-description"],
+    [/^course\.(credits|modality|modalityNote|meetingPattern|location|startDate|endDate|dropDate|withdrawalDate|prerequisites|corequisites)/, "editor-schedule"],
+    [/^course\.courseLogin/, "editor-first-week"],
+    [/^course\.(description|outcomes|mnTransferGoal)/, "editor-description"],
     [/^materials\./, "editor-materials"],
     [/^policies\./, "editor-policies"],
     [/^vendors\./, "editor-vendors"],
@@ -39,6 +40,7 @@ window.SCTCC = window.SCTCC || {};
     academicIntegrityExamples: "policies.attendance",
     classEnvironment: "policies.classEnvironment",
     programDiversity: "policies.programDiversity",
+    aiPolicy: "policies.aiPolicy",
     timeCommitment: "grading.timeCommitment",
     recommendedMaterials: "materials.recommended"
   };
@@ -217,6 +219,12 @@ window.SCTCC = window.SCTCC || {};
     content.sections.forEach((entry) => {
       if (entry.fragment) return;
       const definition = entry.definition;
+      if (entry.pending) {
+        if (definition.instructorAddition === "aiPolicy" && !String(data.policies.aiPolicy || "").trim()) {
+          notices.push(finding(`The college “${definition.title}” statement is not written yet, so this section is left out of your syllabus. You can add your course’s own AI rules under Course policies.`, "policies.aiPolicy"));
+        }
+        return;
+      }
       const enabled = definition.required || (definition.optionalKey && data.optionalSections[definition.optionalKey]);
       if (!enabled) return;
       const message = `The college section “${definition.title}” could not be loaded.`;

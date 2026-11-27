@@ -54,7 +54,7 @@ window.SCTCC = window.SCTCC || {};
 
   /*
    * Calendar settings. The calendar always runs from the course begin date to the
-   * course end date, and meets on the course meeting days (Credits, modality, and dates).
+   * course end date, and meets on the course meeting days (Credits, modality, dates, and requisites).
    */
   function resolveSettings(data) {
     const calendar = data.calendar;
@@ -92,7 +92,7 @@ window.SCTCC = window.SCTCC || {};
     if (settings.mode === "meetings") {
       const count = settings.meetingDays.length;
       if (count < 1) {
-        errors.push("Choose the meeting days under Credits, modality, and dates.");
+        errors.push("Choose the meeting days under Credits, modality, dates, and requisites.");
       } else if (count > 4) {
         errors.push(`The calendar shows 1 to 4 class meetings a week, and ${count} meeting days are chosen. Choose “One row per week” as the calendar layout instead.`);
       }

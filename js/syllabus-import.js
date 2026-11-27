@@ -207,6 +207,12 @@ window.SCTCC = window.SCTCC || {};
     "diversity statement": "college:diversity-statement",
     "college diversity statement": "college:diversity-statement",
     "program diversity statement": "programDiversity",
+    "ai policy": "aiPolicy",
+    "artificial intelligence": "aiPolicy",
+    "artificial intelligence policy": "aiPolicy",
+    "artificial intelligence (ai) policy": "aiPolicy",
+    "use of ai": "aiPolicy",
+    "generative ai": "aiPolicy",
     "program statement of diversity": "programDiversity"
   };
 
@@ -223,6 +229,7 @@ window.SCTCC = window.SCTCC || {};
     [/academic (integrity|honesty)/, "college:academic-integrity"],
     [/title ix|nondiscrimination/, "college:nondiscrimination-title-ix"],
     [/program.*(diversity statement|statement (of|on) diversity)/, "programDiversity"],
+    [/\bartificial intelligence\b|\b(generative )?ai\b.*(policy|use|tools)|^(use of )?(generative )?ai$/, "aiPolicy"],
     [/^(college |sctcc )?(diversity statement|statement (of|on) diversity)/, "college:diversity-statement"],
     [/technical support|tech support/, "techSupport"],
     [/learning outcomes|course outcomes/, "description"],
@@ -245,7 +252,7 @@ window.SCTCC = window.SCTCC || {};
     "pulse-app": "Pulse App for D2L",
     "student-services": "Student Services & Academic Support",
     "accessibility-data-privacy": "Accessibility & Data Privacy Policies",
-    "diversity-statement": "College Diversity Statement"
+    "diversity-statement": "SCTCC Diversity Statement"
   };
 
   /* Wording that belongs to college content even when it sits in an instructor section. */
@@ -628,17 +635,17 @@ window.SCTCC = window.SCTCC || {};
         soe: part([/(\d+(?:\.\d+)?)\s*soe/i, /soe\s*[–—:-]?\s*(\d+(?:\.\d+)?)/i])
       };
       if (Number.isFinite(total) && total > 0) {
-        propose("Credits, modality, and dates", "Credits", `${total} credits: Lecture – ${values.lecture}, Laboratory – ${values.laboratory}, SOE – ${values.soe}`,
+        propose("Credits, modality, dates, and requisites", "Credits", `${total} credits: Lecture – ${values.lecture}, Laboratory – ${values.laboratory}, SOE – ${values.soe}`,
           (d) => { Object.assign(d.course.credits, values); }, { note: `From “${creditsField}”. Check the lecture, lab, and SOE split.` });
       }
     }
     const meetingField = fieldText("field:meeting");
     if (meetingField) {
       if (/asynchronous|online|no face-to-face|d2l only/i.test(meetingField)) {
-        propose("Credits, modality, and dates", "Modality", "Exclusively online", (d) => { d.course.modality = "online"; },
+        propose("Credits, modality, dates, and requisites", "Modality", "Exclusively online", (d) => { d.course.modality = "online"; },
           { note: `From “${meetingField}”. Choose hybrid instead if the course has some class meetings.` });
       }
-      propose("Credits, modality, and dates", "Additional modality information", meetingField, (d) => { d.course.modalityNote = meetingField; });
+      propose("Credits, modality, dates, and requisites", "Additional modality information", meetingField, (d) => { d.course.modalityNote = meetingField; });
     }
 
     /* ----- General information ----- */
@@ -652,7 +659,7 @@ window.SCTCC = window.SCTCC || {};
         const total = toNumber(credits[1]);
         const values = { total, lecture: toNumber(credits[2]), laboratory: toNumber(credits[3]), soe: toNumber(credits[4]) };
         if (Object.values(values).every(Number.isFinite)) {
-          propose("Credits, modality, and dates", "Credits", `${total} credits: Lecture – ${values.lecture}, Laboratory – ${values.laboratory}, SOE – ${values.soe}`,
+          propose("Credits, modality, dates, and requisites", "Credits", `${total} credits: Lecture – ${values.lecture}, Laboratory – ${values.laboratory}, SOE – ${values.soe}`,
             (d) => { Object.assign(d.course.credits, values); });
         }
         return;
@@ -664,10 +671,10 @@ window.SCTCC = window.SCTCC || {};
         modalityFound = true;
         const modality = /online/i.test(text) && !/hybrid/i.test(text) ? "online" : (/hybrid/i.test(text) ? "hybrid" : "residential");
         const labels = { online: "Exclusively online", hybrid: "Hybrid", residential: "Residential (face-to-face)" };
-        propose("Credits, modality, and dates", "Modality", labels[modality], (d) => { d.course.modality = modality; });
+        propose("Credits, modality, dates, and requisites", "Modality", labels[modality], (d) => { d.course.modality = modality; });
         if (modality !== "online") {
           const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].filter((day) => new RegExp(`${day}s?\\b`, "i").test(text));
-          if (days.length) propose("Credits, modality, and dates", "Meeting days", days.join(", "), (d) => {
+          if (days.length) propose("Credits, modality, dates, and requisites", "Meeting days", days.join(", "), (d) => {
             d.course.meetingPattern.days = days;
             d.course.meetingPattern.meetingsPerWeek = days.length;
           });
@@ -683,23 +690,23 @@ window.SCTCC = window.SCTCC || {};
             if (!time[3] && /p/i.test(endSuffix) && Number(time[1]) > Number(time[4]) && Number(time[1]) !== 12) startSuffix = "am";
             const start = to24(time[1], time[2], startSuffix);
             const end = to24(time[4], time[5], endSuffix);
-            propose("Credits, modality, and dates", "Class times", `${start} to ${end}`, (d) => {
+            propose("Credits, modality, dates, and requisites", "Class times", `${start} to ${end}`, (d) => {
               d.course.meetingPattern.startTime = start;
               d.course.meetingPattern.endTime = end;
             });
           }
           const room = /room\s+(?:number\s+)?([0-9]-?\d{3}\w?)/i.exec(text);
-          if (room) propose("Credits, modality, and dates", "Room number", room[1], (d) => { d.course.location = room[1]; });
+          if (room) propose("Credits, modality, dates, and requisites", "Room number", room[1], (d) => { d.course.location = room[1]; });
         }
         return;
       }
       modalityNote.push(block);
     });
     const modalityText = blocksToText(modalityNote);
-    if (modalityText) propose("Credits, modality, and dates", "Additional modality information", modalityText, (d) => { d.course.modalityNote = modalityText; });
+    if (modalityText) propose("Credits, modality, dates, and requisites", "Additional modality information", modalityText, (d) => { d.course.modalityNote = modalityText; });
 
     const loginText = blocksToText(ownBlocks(byKey("login").flatMap((s) => s.blocks)));
-    if (loginText) propose("Credits, modality, and dates", "Course log-in requirement (turns the section on)", loginText, (d) => {
+    if (loginText) propose("First week attendance", "Course log-in requirement (turns the section on)", loginText, (d) => {
       d.course.courseLogin = loginText;
       d.optionalSections.courseLogin = true;
     }, { note: "Update the date and time for the new term." });
@@ -709,9 +716,9 @@ window.SCTCC = window.SCTCC || {};
     const outcomes = descriptionBlocks.filter((b) => b.list || /^\d+[.)]\s/.test(clean(b.text))).map((b) => clean(b.text).replace(/^\d+[.)]\s*/, ""));
     const descriptionText = blocksToText(descriptionBlocks.filter((b) => !b.list && !/^\d+[.)]\s/.test(clean(b.text))
       && !/(upon (successful )?completion|students will be able to|course outcomes?:?$)/i.test(clean(b.text))));
-    if (descriptionText) propose("Description, outcomes, and requisites", "Course description", descriptionText, (d) => { d.course.description = descriptionText; },
+    if (descriptionText) propose("Description and outcomes", "Course description", descriptionText, (d) => { d.course.description = descriptionText; },
       { note: "Confirm it still matches the SCTCC Course Outline." });
-    if (outcomes.length) propose("Description, outcomes, and requisites", `Course outcomes (${outcomes.length})`, outcomes.map((o, i) => `${i + 1}. ${o}`).join("\n"),
+    if (outcomes.length) propose("Description and outcomes", `Course outcomes (${outcomes.length})`, outcomes.map((o, i) => `${i + 1}. ${o}`).join("\n"),
       (d) => { d.course.outcomes = outcomes.slice(); }, { note: "Confirm they still match the SCTCC Course Outline." });
 
     const prereqBlocks = byKey("prereqs").flatMap((s) => s.blocks).filter((b) => b.type === "p" && clean(b.text));
@@ -732,14 +739,14 @@ window.SCTCC = window.SCTCC || {};
         coreqs = pair[2].trim();
       }
     }
-    if (prereqIntro) propose("Description, outcomes, and requisites", "Prerequisite introduction", prereqIntro, (d) => { d.course.prerequisites.intro = prereqIntro; });
-    if (prereqItems.length) propose("Description, outcomes, and requisites", "Prerequisites", prereqItems.join("\n"), (d) => { d.course.prerequisites.items = prereqItems.slice(); });
-    if (coreqs) propose("Description, outcomes, and requisites", "Corequisites", coreqs, (d) => { d.course.corequisites = coreqs; });
+    if (prereqIntro) propose("Credits, modality, dates, and requisites", "Prerequisite introduction", prereqIntro, (d) => { d.course.prerequisites.intro = prereqIntro; });
+    if (prereqItems.length) propose("Credits, modality, dates, and requisites", "Prerequisites", prereqItems.join("\n"), (d) => { d.course.prerequisites.items = prereqItems.slice(); });
+    if (coreqs) propose("Credits, modality, dates, and requisites", "Corequisites", coreqs, (d) => { d.course.corequisites = coreqs; });
 
     const mntcText = clean(byKey("mntc").flatMap((s) => s.blocks).map((b) => b.text || "").join(" "));
     const goal = /Goal\s+(?:Area\s+)?(\d{1,2}|[IVX]+)/i.exec(mntcText);
     if (goal && !/does not|doesn’t|n\/a/i.test(mntcText)) {
-      propose("Description, outcomes, and requisites", "MnTC goal area (turns the section on)", goal[1], (d) => {
+      propose("Description and outcomes", "MnTC goal area (turns the section on)", goal[1], (d) => {
         d.course.mnTransferGoal = goal[1];
         d.optionalSections.mnTransferGoal = true;
       });
@@ -811,9 +818,16 @@ window.SCTCC = window.SCTCC || {};
       }, {
         checked: Boolean(programText),
         note: programText
-          ? "Shown right after the College Diversity Statement."
+          ? "Shown right after the SCTCC Diversity Statement."
           : "This was in your old diversity statement but is not the college wording. The college statement is always included; keep this only if it is your program’s own statement."
       });
+    }
+
+    /* ----- AI policy: the instructor's own rules (the college statement is added automatically) ----- */
+    const aiText = blocksToText(ownBlocks(byKey("aiPolicy").flatMap((s) => s.blocks)));
+    if (aiText) {
+      propose("Course policies", "Your course’s AI rules", aiText, (d) => { d.policies.aiPolicy = aiText; },
+        { note: "Shown in section 3.5, Artificial Intelligence (AI) Policy, after the college statement once it is added." });
     }
 
     /* ----- Instructor-written sections without a place in the template ----- */
