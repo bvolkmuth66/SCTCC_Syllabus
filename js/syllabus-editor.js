@@ -1751,14 +1751,19 @@ window.SCTCC = window.SCTCC || {};
     openData(SCTCC.createEmptySyllabusData(), "Started a new, blank syllabus.");
   }
 
-  function loadSample() {
+  function loadSample(options) {
+    const fromLink = Boolean(options && options.fromLink);
     const result = SCTCC.validateSyllabusData(window.SCTCC_SAMPLE_DATA || {}, { newId: true });
     if (!result.ok) {
       showMessages("error", "The sample course could not be loaded.", result.errors);
       return;
     }
     SCTCC.files.setCurrentFile(null);
-    openData(result.data, "Loaded the sample course. It is not saved unless you save it.", [], { dirty: true });
+    /* Opened from a ?example link, it counts as unchanged, so leaving the page asks nothing. */
+    openData(result.data, "Loaded the sample course. It is not saved unless you save it.", [], { dirty: !fromLink });
+    if (fromLink) {
+      showMessages("info", "This is the sample course.", ["To start your own syllabus, choose Start over… under Save and open your syllabus."]);
+    }
   }
 
   function openImported(data, title, lines) {
