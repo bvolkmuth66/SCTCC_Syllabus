@@ -1093,8 +1093,11 @@
 
     state.contentPromise = SCTCC.contentLoader.loadContent(config);
     SCTCC.startScreen.init(app);
-    SCTCC.startScreen.show();
+    /* index.html?example opens the sample course directly (a link for demonstrations). */
+    const openExample = new URLSearchParams(window.location.search).has("example");
+    if (!openExample) SCTCC.startScreen.show();
     state.content = await state.contentPromise;
+    if (openExample) SCTCC.editor.loadSample({ fromLink: true });
     render();
     SCTCC.editor.refreshCollegeDates();
     SCTCC.editor.refreshGrading(); /* the college grading scale has loaded */
